@@ -8,7 +8,8 @@
     "type-check:watch": "npm run type-check -- --watch",
     "build": "npm run build:types && npm run build:js",
     "build:types": "tsc --emitDeclarationOnly",
-    "build:js": "babel src --out-dir dist --extensions \".ts,.tsx\" --source-maps inline"
+    "build:js": "babel src --out-dir dist --extensions \".ts,.tsx\" --source-maps inline",
+    "bundle": "webpack"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
   "license": "MIT",
@@ -16,10 +17,13 @@
     "@babel/cli": "7.5.0",
     "@babel/core": "7.5.4",
     "@babel/plugin-proposal-class-properties": "7.5.0",
-    "@babel/plugin-proposal-object-rest-spread": "7.5.4",
     "@babel/plugin-proposal-numeric-separator": "7.2.0",
+    "@babel/plugin-proposal-object-rest-spread": "7.5.4",
     "@babel/preset-env": "7.5.4",
     "@babel/preset-typescript": "7.3.3",
-    "typescript": "3.5.3"
+    "babel-loader": "8.0.6",
+    "typescript": "3.5.3",
+    "webpack": "4.35.3",
+    "webpack-cli": "3.3.5"
   }
 }
