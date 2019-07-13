@@ -1,5 +1,5 @@
 import { BoundingBox, CollisionObject, QuadTree } from './schemas';
-import { doBoundingBoxesIntersect } from './util';
+import { doBoundingBoxesIntersect, divideBoundingBox } from './util';
 
 export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
     const quadTree: QuadTree = {
@@ -55,41 +55,9 @@ export function addToQuadTree(quadTree: QuadTree, object: CollisionObject): bool
     // We need to split this quadrant up
 
     // Let's first build the child quadrants
-    const quadWidth: number = quadTree.bounds.width / 2;
-    const quadHeight: number = quadTree.bounds.height / 2;
-
-    const nwBoundingBox: BoundingBox = {
-        x: 0,
-        y: 0,
-        width: quadWidth,
-        height: quadHeight,
-    };
-    const neBoundingBox: BoundingBox = {
-        x: quadWidth,
-        y: 0,
-        width: quadWidth,
-        height: quadHeight,
-    };
-    const swBoundingBox: BoundingBox = {
-        x: 0,
-        y: quadHeight,
-        width: quadWidth,
-        height: quadHeight,
-    };
-    const seBoundingBox: BoundingBox = {
-        x: quadWidth,
-        y: quadHeight,
-        width: quadWidth,
-        height: quadHeight,
-    };
-
     // Let's create the child QuadTree's from the build quadrant bounds
-    const quadrants: QuadTree[] = [
-        createQuadTree(nwBoundingBox, quadTree.capacity),
-        createQuadTree(neBoundingBox, quadTree.capacity),
-        createQuadTree(swBoundingBox, quadTree.capacity),
-        createQuadTree(seBoundingBox, quadTree.capacity),
-    ];
+    const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
+    const quadrants: QuadTree[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
     const quadObjects: CollisionObject[] = [...quadTree.data, object];
 
     // adjust current quadtree settings
@@ -108,17 +76,25 @@ export function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject):
 }
 
 export function clearQuadTree(quadTree: QuadTree): void {
-    return;
+    quadTree.data = [];
+    quadTree.quadrants = [];
 }
 
-export function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): CollisionObject[] {
-    // Check if current node has data
-    if ((quadTree.data || []).length > 0) {
-
+export function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionObject> {
+    // Check if current node has children
+    // If it doesn't we should go ahead and return it's data
+    // Only if, the bounds intersect though
+    if ((quadTree.quadrants || []).length === 0) {
+        return doBoundingBoxesIntersect(quadTree.bounds, bounds) ?
+            new Set<CollisionObject>(quadTree.data) : new Set<CollisionObject>();
     }
 
-    const objectsWithinBounds: CollisionObject[] = [
+    // Check the current nodes children
+    // querying them for the same info and collecting
+    // the results
+    const childQueryResultSet: Set<CollisionObject> = quadTree.quadrants
+        .map(quadrant => queryQuadTree(quadrant, bounds))
+        .reduce((prevResults: Set<CollisionObject>, currResult: Set<CollisionObject>) => new Set<CollisionObject>([...prevResults, ...currResult]), new Set<CollisionObject>());
 
-
-    ];
+    return childQueryResultSet;
 }

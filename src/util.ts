@@ -13,3 +13,40 @@ export function doBoundingBoxesIntersect(box1: BoundingBox, box2: BoundingBox): 
 
     return true;
 }
+
+export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
+    const quadWidth: number = bounds.width / 2;
+    const quadHeight: number = bounds.height / 2;
+
+    const nwBoundingBox: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: quadWidth,
+        height: quadHeight,
+    };
+    const neBoundingBox: BoundingBox = {
+        x: quadWidth,
+        y: 0,
+        width: quadWidth,
+        height: quadHeight,
+    };
+    const swBoundingBox: BoundingBox = {
+        x: 0,
+        y: quadHeight,
+        width: quadWidth,
+        height: quadHeight,
+    };
+    const seBoundingBox: BoundingBox = {
+        x: quadWidth,
+        y: quadHeight,
+        width: quadWidth,
+        height: quadHeight,
+    };
+
+    return [
+        nwBoundingBox,
+        neBoundingBox,
+        swBoundingBox,
+        seBoundingBox,
+    ];
+}

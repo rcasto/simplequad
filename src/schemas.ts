@@ -19,5 +19,5 @@ export interface QuadTree {
     add: (object: CollisionObject) => boolean;
     remove: (object: CollisionObject) => boolean;
     clear: () => void;
-    query: (bounds: BoundingBox) => CollisionObject[];
+    query: (bounds: BoundingBox) => Set<CollisionObject>;
 }
