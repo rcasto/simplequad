@@ -1,6 +1,6 @@
 
-import { BoundingBox, CollisionObject } from "./schemas";
-import { createQuadTree, addToQuadTree } from "./index";
+import { BoundingBox, CollisionObject } from "../src/schemas";
+import { createQuadTree, addToQuadTree } from "../src/index";
 
 interface Box extends CollisionObject {
     id: string;

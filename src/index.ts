@@ -1,4 +1,5 @@
 import { BoundingBox, CollisionObject, QuadTree } from './schemas';
+import { doBoundingBoxesIntersect } from './util';
 
 export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
     const quadTree: QuadTree = {
@@ -102,20 +103,6 @@ export function addToQuadTree(quadTree: QuadTree, object: CollisionObject): bool
         .every(quadObject => addToQuadTree(quadTree, quadObject));
 }
 
-function doBoundingBoxesIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
-    // If one rectangle is to the side of other (outside)
-    if (box1.x > box2.x + box2.width || box2.x > box1.x + box1.width) {
-        return false;
-    }
-
-    // If one rectangle is above the other (outside)
-    if (box1.y > box2.y + box2.height || box2.y > box1.y + box1.height) {
-        return false;
-    }
-
-    return true;
-}
-
 export function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     return true;
 }
@@ -125,5 +112,13 @@ export function clearQuadTree(quadTree: QuadTree): void {
 }
 
 export function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): CollisionObject[] {
-    return [];
+    // Check if current node has data
+    if ((quadTree.data || []).length > 0) {
+
+    }
+
+    const objectsWithinBounds: CollisionObject[] = [
+
+
+    ];
 }
