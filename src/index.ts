@@ -15,7 +15,7 @@ export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadT
     return quadTree;
 }
 
-export function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
+function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // Check children first, if not added to any child
     // Then check self, and add if appropriate
 
@@ -71,16 +71,16 @@ export function addToQuadTree(quadTree: QuadTree, object: CollisionObject): bool
         .every(quadObject => addToQuadTree(quadTree, quadObject));
 }
 
-export function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
+function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     return true;
 }
 
-export function clearQuadTree(quadTree: QuadTree): void {
+function clearQuadTree(quadTree: QuadTree): void {
     quadTree.data = [];
     quadTree.quadrants = [];
 }
 
-export function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionObject> {
+function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionObject> {
     // Check if current node has children
     // If it doesn't we should go ahead and return it's data
     // Only if, the bounds intersect though
