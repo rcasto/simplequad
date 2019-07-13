@@ -94,6 +94,7 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
     // the results
     const childQueryResultSet: Set<CollisionObject> = quadTree.quadrants
         .map(quadrant => queryQuadTree(quadrant, bounds))
+        // union all the collision sets together
         .reduce((prevResults: Set<CollisionObject>, currResult: Set<CollisionObject>) => new Set<CollisionObject>([...prevResults, ...currResult]), new Set<CollisionObject>());
 
     return childQueryResultSet;

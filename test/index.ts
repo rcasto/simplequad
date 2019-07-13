@@ -1,6 +1,6 @@
 
 import { BoundingBox, CollisionObject } from "../src/schemas";
-import { createQuadTree, addToQuadTree } from "../src/index";
+import { createQuadTree } from "../src/index";
 
 interface Box extends CollisionObject {
     id: string;
@@ -61,12 +61,37 @@ const seBox: Box = {
     }
 };
 
-addToQuadTree(quadTree, nwBox);
-addToQuadTree(quadTree, neBox);
-addToQuadTree(quadTree, swBox);
+quadTree.add(nwBox);
+quadTree.add(neBox);
+quadTree.add(swBox);
 
 // Adding 1 more instance of the box
 // exceeds the nodes capacity, triggering a split
-addToQuadTree(quadTree, seBox);
+quadTree.add(seBox);
 
 console.log(quadTree);
+
+// Query the entire bounds and make sure
+// all the objects are returned (should be 4)
+const queryResults1 = quadTree.query(bounds);
+console.log(queryResults1);
+
+// Now query on a smaller window, picking up 2 of them
+// The top half of the overall quadtree bounds
+const topHalfBounds: BoundingBox = {
+    x: 0,
+    y: 0,
+    width: bounds.width,
+    height: bounds.height / 2,
+};
+const queryResult2 = quadTree.query(topHalfBounds);
+console.log(queryResult2);
+
+const topHalfHalfBounds: BoundingBox = {
+    x: 0,
+    y: 0,
+    width: topHalfBounds.width,
+    height: topHalfBounds.height / 2,
+};
+const queryResult3 = quadTree.query(topHalfHalfBounds);
+console.log(queryResult3);
