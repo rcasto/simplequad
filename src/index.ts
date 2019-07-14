@@ -72,7 +72,31 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
 }
 
 function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
-    return true;
+    const objectIndex: number = quadTree.data.indexOf(object);
+
+    // Object was found, let's remove it
+    if (objectIndex >= 0) {
+        quadTree.data.splice(objectIndex, 1);
+        return true;
+    }
+
+    // Check children to find object and remove if found
+    const wasRemoved: boolean = quadTree.quadrants
+        .some(quadrant => removeFromQuadTree(quadrant, object));
+
+    // If one of the children contained the object we just removed
+    // Let's query the bounding box of us (the parent) to see if we 
+    // can collapse or consume our children. Meaning the child subtree
+    // contains less elements than our individual bucket capacity.
+    if (wasRemoved) {
+        const childObjectSet: Set<CollisionObject> = queryQuadTree(quadTree, quadTree.bounds);
+        if (childObjectSet.size <= quadTree.capacity) {
+            quadTree.data = [...childObjectSet];
+            quadTree.quadrants = [];
+        }
+    }
+
+    return wasRemoved;
 }
 
 function clearQuadTree(quadTree: QuadTree): void {
