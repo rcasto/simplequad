@@ -3,68 +3,51 @@ import { createQuadTree } from '../src/index';
 import { BoundingBox, CollisionObject, QuadTree } from '../src/schemas';
 
 test('can create quad tree', t => {
-    const bounds: BoundingBox = {
-        x: 0,
-        y: 0,
-        width: 50,
-        height: 100,
-    };
-    const quadTree: QuadTree = createQuadTree(bounds);
+    const quadTree: QuadTree = createMockQuadTree();
 
     t.truthy(!!quadTree);
-    t.deepEqual(quadTree.bounds, bounds);
-    t.truthy(quadTree.capacity === 3);
-    t.truthy(Array.isArray(quadTree.data) && quadTree.data.length === 0);
-    t.truthy(Array.isArray(quadTree.quadrants) && quadTree.quadrants.length === 0);
+    t.deepEqual(quadTree.bounds, {
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+    });
+    t.is(quadTree.capacity, 3);
+    t.truthy(Array.isArray(quadTree.data));
+    t.is(quadTree.data.length, 0);
+    t.truthy(Array.isArray(quadTree.quadrants));
+    t.is(quadTree.quadrants.length, 0);
 });
 
 test('can create quad tree - setting bucket capacity', t => {
-    const bounds: BoundingBox = {
-        x: 0,
-        y: 0,
-        width: 50,
-        height: 100,
-    };
     const capacity: number = 15;
-    const quadTree: QuadTree = createQuadTree(bounds, capacity);
+    const quadTree: QuadTree = createMockQuadTree(capacity);
 
     t.truthy(!!quadTree);
-    t.truthy(quadTree.capacity === capacity);
+    t.is(quadTree.capacity, capacity);
 });
 
 test('can add an object to quadtree', t => {
-    const bounds: BoundingBox = {
-        x: 0,
-        y: 0,
-        width: 800,
-        height: 600,
-    };
-    const quadTree: QuadTree = createQuadTree(bounds);
+    const quadTree: QuadTree = createMockQuadTree();
     const object: CollisionObject = createMockObject();
 
     t.truthy(quadTree.add(object));
-    t.truthy(quadTree.data.length === 1);
+    t.is(quadTree.data.length, 1);
     t.truthy(quadTree.data.includes(object));
-    t.truthy(quadTree.quadrants.length === 0);
+    t.is(quadTree.quadrants.length, 0);
 });
 
 test('can add an object to quadtree - can add objects up to capacity', t => {
-    const bounds: BoundingBox = {
-        x: 0,
-        y: 0,
-        width: 800,
-        height: 600,
-    };
-    const quadTree: QuadTree = createQuadTree(bounds, 2);
+    const quadTree: QuadTree = createMockQuadTree(2);
     const object1: CollisionObject = createMockObject();
     const object2: CollisionObject = createMockObject();
 
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
-    t.truthy(quadTree.data.length === 2);
+    t.is(quadTree.data.length, 2);
     t.truthy(quadTree.data.includes(object1));
     t.truthy(quadTree.data.includes(object2));
-    t.truthy(quadTree.quadrants.length === 0);
+    t.is(quadTree.quadrants.length, 0);
 });
 
 test('can add an object to quadtree - bucket overflow and split', t => {
@@ -113,6 +96,28 @@ test('can add an object to quadtree - bucket overflow and split', t => {
     t.is(quadTree.quadrants[3].data.length, 1);
     t.truthy(quadTree.quadrants[3].data.includes(object2));
 });
+
+test('can clear the quad tree', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    quadTree.add(createMockObject());
+    quadTree.add(createMockObject());
+    quadTree.clear();
+
+    t.is(quadTree.data.length, 0);
+    t.is(quadTree.quadrants.length, 0);
+});
+
+// Provides tree with pre-defined bounds
+// Those fitting randomized mock objects for sure below
+function createMockQuadTree(capacity?: number): QuadTree {
+    const bounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+    };
+    return createQuadTree(bounds, capacity);
+}
 
 function createMockObject(): CollisionObject {
     return {
