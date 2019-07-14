@@ -9,7 +9,8 @@
     "build": "npm run build:types && npm run build:js",
     "build:types": "tsc --emitDeclarationOnly",
     "build:js": "babel src --out-dir dist --extensions \".ts,.tsx\" --source-maps inline",
-    "bundle": "webpack"
+    "bundle": "webpack",
+    "test": "ava"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
   "license": "MIT",
@@ -21,9 +22,26 @@
     "@babel/plugin-proposal-object-rest-spread": "7.5.4",
     "@babel/preset-env": "7.5.4",
     "@babel/preset-typescript": "7.3.3",
+    "ava": "^2.2.0",
     "babel-loader": "8.0.6",
+    "ts-node": "^8.3.0",
     "typescript": "3.5.3",
     "webpack": "4.35.3",
     "webpack-cli": "3.3.5"
+  },
+  "ava": {
+    "files": [
+      "test/**/*"
+    ],
+    "sources": [
+      "src/**/*"
+    ],
+    "compileEnhancements": false,
+		"extensions": [
+			"ts"
+		],
+		"require": [
+			"ts-node/register"
+		]
   }
 }
