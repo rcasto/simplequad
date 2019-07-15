@@ -99,6 +99,38 @@ test('can add an object to quadtree - bucket overflow and split', t => {
     t.is(quadTree.quadrants[3].quadrants.length, 0);
 });
 
+test('can handle adding the same object twice', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const object: CollisionObject = createMockObject({
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+    });
+
+    quadTree.add(object);
+
+    t.falsy(quadTree.add(object));
+    t.is(quadTree.data.size, 1);
+    t.is(quadTree.quadrants.length, 0);
+});
+
+// Thinking through how to handle this more
+test.skip('can handle adding 2 objects that occupy the same originating point', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const bounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+    };
+    const object1: CollisionObject = createMockObject(bounds);
+    const object2: CollisionObject = createMockObject(bounds);
+
+    quadTree.add(object1);
+    quadTree.add(object2);
+});
+
 test('can clear the quad tree', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object1: CollisionObject = createMockObject({
