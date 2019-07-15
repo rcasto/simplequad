@@ -1,5 +1,5 @@
-import { BoundingBox, CollisionObject, QuadTree } from './schemas';
-import { doBoundingBoxesIntersect, divideBoundingBox } from './util';
+import { BoundingBox, CollisionObject, Point, QuadTree } from './schemas';
+import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox } from './util';
 
 export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
     const quadTree: QuadTree = {
@@ -24,22 +24,18 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
         // Run through all children checking if the object can be added
         // It is possible an object could span across multiple quadrants
         const wasAddedToChild: boolean = quadTree.quadrants
-            .reduce((wasAdded: boolean, quadrant) => (wasAdded || addToQuadTree(quadrant, object)), false);
+            .reduce((wasAdded: boolean, quadrant: QuadTree) => (wasAdded || addToQuadTree(quadrant, object)), false);
         // If it was added to any child, let's go ahead and bail
-        // Otherwise, no need to check self (this node)
-        if (wasAddedToChild) {
-            return true;
-        }
+        // Only leaf nodes should have data
+        // If it didn't intersect with any child, it won't intersect with us
+        return wasAddedToChild;
     }
 
     // Below is the self check (this node)
     // This is the base case that is ran for all nodes
 
     // Let's first check if the objects bounding box intersects
-    // with this quadrants bounding box
-    const objectBoundingBox: BoundingBox = object.getBoundingBox();
-
-    if (!doBoundingBoxesIntersect(quadTree.bounds, objectBoundingBox)) {
+    if (!containsPoint(quadTree.bounds, object.getBoundingBox())) {
         return false;
     }
 
@@ -109,8 +105,18 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
     // If it doesn't we should go ahead and return it's data
     // Only if, the bounds intersect though
     if ((quadTree.quadrants || []).length === 0) {
-        return doBoundingBoxesIntersect(quadTree.bounds, bounds) ?
-            new Set<CollisionObject>(quadTree.data) : new Set<CollisionObject>();
+        // Check first if the query bounds intersect with the bounds
+        // of the bucket
+        if (doBoundingBoxesIntersect(quadTree.bounds, bounds)) {
+            // Once we know the query bounds intersect with the bucket
+            // Let's iterate over the data in the bucket to see
+            // if the objects themselves intersect with the query bounds
+            return new Set<CollisionObject>(
+                quadTree.data.filter(quadObject => doBoundingBoxesIntersect(quadObject.getBoundingBox(), bounds)));
+        }
+        // Query bounds don't intersect with this data buckets bounds
+        // We can go ahead and return an empty set
+        return new Set<CollisionObject>();
     }
 
     // Check the current nodes children
@@ -119,7 +125,7 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
     const childQueryResultSet: Set<CollisionObject> = quadTree.quadrants
         .map(quadrant => queryQuadTree(quadrant, bounds))
         // union all the collision sets together
-        .reduce((prevResults: Set<CollisionObject>, currResult: Set<CollisionObject>) => new Set<CollisionObject>([...prevResults, ...currResult]), new Set<CollisionObject>());
+        .reduce((prevResultSet: Set<CollisionObject>, currResultSet: Set<CollisionObject>) => new Set<CollisionObject>([...prevResultSet, ...currResultSet]), new Set<CollisionObject>());
 
     return childQueryResultSet;
 }

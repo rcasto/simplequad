@@ -27,10 +27,14 @@
   },
   "ava": {
     "files": [
-      "test/**/*"
+      "test/**/*",
+      "!test/util.ts"
     ],
     "sources": [
       "src/**/*"
+    ],
+    "helpers": [
+      "test/util.ts"
     ],
     "compileEnhancements": false,
 		"extensions": [
