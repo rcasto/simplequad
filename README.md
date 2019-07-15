@@ -2,11 +2,9 @@
 A simple QuadTree implementation. Mainly implemented for my own learning and introduction into making 2D games.  
 
 ## Installation
-Not on npm yet, will update with that info later.
-
-1. Clone the repo
-2. Run `npm run build`
-3. Utilize one of the CJS, ES, or IIFE modules output in the `dist` folder
+```
+npm install simplequad
+```
 
 ## Usage
 ```typescript
