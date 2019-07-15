@@ -10,7 +10,8 @@
     "build:types": "dts-generator --prefix simplequad --project . --out dist/simplequad.d.ts",
     "test": "ava",
     "clean": "rimraf dist",
-    "clean:all": "rimraf dist node_modules"
+    "clean:all": "rimraf dist node_modules",
+    "prepublish": "npm-run-all test build"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
   "license": "MIT",
