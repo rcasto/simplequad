@@ -1,10 +1,10 @@
-import { BoundingBox, CollisionObject, Point, QuadTree } from './schemas';
+import { BoundingBox, CollisionObject, QuadTree } from './schemas';
 import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox } from './util';
 
 export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
     const quadTree: QuadTree = {
         bounds,
-        data: [],
+        data: new Set<CollisionObject>(),
         capacity,
         quadrants: [],
         add: (object) => addToQuadTree(quadTree, object),
@@ -15,6 +15,13 @@ export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadT
     return quadTree;
 }
 
+/*
+    Currently there is a bug where adding 2 objects with same originating point (x, y)
+    causes a stack overflow, due to potential of infinitely sub dividing if at node capacity
+    Number of identical points, must match capacity to guarantee
+
+    Will need to think through this case more, but it is known.
+*/
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // Check children first, if not added to any child
     // Then check self, and add if appropriate
@@ -39,10 +46,15 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
         return false;
     }
 
+    // Let's also check if this bucket already contains the object
+    if (quadTree.data.has(object)) {
+        return false;
+    }
+
     // Let's see if this quadrant has any capacity
     // If it does, we can go ahead and store the current object
-    if (quadTree.data.length + 1 <= quadTree.capacity) {
-        quadTree.data.push(object);
+    if (quadTree.data.size + 1 <= quadTree.capacity) {
+        quadTree.data.add(object);
         return true;
     }
 
@@ -59,7 +71,7 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // adjust current quadtree settings
     // May need to adjust these in-place instead of creating new references
     quadTree.quadrants = quadrants;
-    quadTree.data = [];
+    quadTree.data = new Set<CollisionObject>();
 
     // add objects from this quad node back to it's own subtree
     // children will be attempted to be added to first
@@ -68,11 +80,9 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
 }
 
 function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
-    const objectIndex: number = quadTree.data.indexOf(object);
-
     // Object was found, let's remove it
-    if (objectIndex >= 0) {
-        quadTree.data.splice(objectIndex, 1);
+    if (quadTree.data.has(object)) {
+        quadTree.data.delete(object);
         return true;
     }
 
@@ -87,7 +97,7 @@ function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolea
     if (wasRemoved) {
         const childObjectSet: Set<CollisionObject> = queryQuadTree(quadTree, quadTree.bounds);
         if (childObjectSet.size <= quadTree.capacity) {
-            quadTree.data = [...childObjectSet];
+            quadTree.data = childObjectSet;
             quadTree.quadrants = [];
         }
     }
@@ -96,7 +106,7 @@ function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolea
 }
 
 function clearQuadTree(quadTree: QuadTree): void {
-    quadTree.data = [];
+    quadTree.data = new Set<CollisionObject>();
     quadTree.quadrants = [];
 }
 
@@ -112,7 +122,7 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
             // Let's iterate over the data in the bucket to see
             // if the objects themselves intersect with the query bounds
             return new Set<CollisionObject>(
-                quadTree.data.filter(quadObject => doBoundingBoxesIntersect(quadObject.getBoundingBox(), bounds)));
+                [...quadTree.data].filter(quadObject => doBoundingBoxesIntersect(quadObject.getBoundingBox(), bounds)));
         }
         // Query bounds don't intersect with this data buckets bounds
         // We can go ahead and return an empty set

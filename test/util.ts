@@ -13,20 +13,7 @@ export function createMockQuadTree(capacity?: number): QuadTree {
     return createQuadTree(bounds, capacity);
 }
 
-export function createMockObject(): CollisionObject {
-    const randomX = Math.random();
-    const randomY = Math.random();
-    const randomHeight = Math.random();
-    const randomWidth = Math.random();
-    return createMockBoundObject({
-        x: randomX * 100,
-        y: randomY * 100,
-        height: randomHeight * 300,
-        width: randomWidth * 400,
-    });
-}
-
-export function createMockBoundObject(bounds: BoundingBox): CollisionObject {
+export function createMockObject(bounds: BoundingBox): CollisionObject {
     return {
         getBoundingBox() {
             return bounds;

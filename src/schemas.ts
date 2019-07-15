@@ -15,7 +15,7 @@ export interface CollisionObject {
 export interface QuadTree {
     // Properties
     bounds: BoundingBox;
-    data: CollisionObject[];
+    data: Set<CollisionObject>;
     capacity: number;
     quadrants: QuadTree[];
     // Methods
