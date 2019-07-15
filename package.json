@@ -22,6 +22,10 @@
     "@babel/preset-env": "7.5.4",
     "@babel/preset-typescript": "7.3.3",
     "ava": "2.2.0",
+    "rollup": "1.16.7",
+    "rollup-plugin-babel": "4.3.3",
+    "rollup-plugin-commonjs": "10.0.1",
+    "rollup-plugin-node-resolve": "5.2.0",
     "ts-node": "8.3.0",
     "typescript": "3.5.3"
   },
@@ -37,11 +41,11 @@
       "test/util.ts"
     ],
     "compileEnhancements": false,
-		"extensions": [
-			"ts"
-		],
-		"require": [
-			"ts-node/register"
-		]
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
   }
 }
