@@ -1,4 +1,4 @@
-# SimpleQuad
+# simplequad
 A simple QuadTree implementation. Mainly implemented for my own learning and introduction into making 2D games.  
 
 ## Installation
@@ -10,7 +10,7 @@ Not on npm yet, will update with that info later.
 
 ## Usage
 ```typescript
-import { BoundingBox, createQuadTree, QuadTree } from 'simple-quad';
+import { BoundingBox, createQuadTree, QuadTree } from 'simplequad';
 
 // Define both the bounds with which this QuadTree should manage
 // and the capacity of each node or bucket in the QuadTree

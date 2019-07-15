@@ -1,5 +1,5 @@
 {
-  "name": "simple-quad",
+  "name": "simplequad",
   "version": "1.0.0",
   "description": "A simple QuadTree implementation",
   "main": "dist/index.js",
