@@ -1,4 +1,11 @@
-import { BoundingBox } from './schemas';
+import { BoundingBox, Point } from './schemas';
+
+export function containsPoint(bounds: BoundingBox, point: Point) {
+    return point.x >= bounds.x && 
+           point.x <= bounds.x + bounds.width &&
+           point.y >= bounds.y &&
+           point.y <= bounds.y + bounds.height;
+}
 
 export function doBoundingBoxesIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
     // If one rectangle is to the side of other (outside)
