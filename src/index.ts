@@ -1,5 +1,5 @@
 import { BoundingBox, CollisionObject, QuadTree } from './schemas';
-import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox } from './util';
+import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox, isSamePoint } from './util';
 
 export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
     const quadTree: QuadTree = {
@@ -15,13 +15,6 @@ export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadT
     return quadTree;
 }
 
-/*
-    Currently there is a bug where adding 2 objects with same originating point (x, y)
-    causes a stack overflow, due to potential of infinitely sub dividing if at node capacity
-    Number of identical points, must match capacity to guarantee
-
-    Will need to think through this case more, but it is known.
-*/
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // Check children first, if not added to any child
     // Then check self, and add if appropriate
@@ -40,14 +33,22 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
 
     // Below is the self check (this node)
     // This is the base case that is ran for all nodes
+    const objectBoundingBox: BoundingBox = object.getBoundingBox();
 
     // Let's first check if the objects bounding box intersects
-    if (!containsPoint(quadTree.bounds, object.getBoundingBox())) {
+    if (!containsPoint(quadTree.bounds, objectBoundingBox)) {
         return false;
     }
 
     // Let's also check if this bucket already contains the object
     if (quadTree.data.has(object)) {
+        return false;
+    }
+
+    // Now let's run through and verify that no other
+    // object is occupying the same point (x, y)
+    if ([...quadTree.data]
+        .some(quadObject => isSamePoint(objectBoundingBox, quadObject.getBoundingBox()))) {
         return false;
     }
 

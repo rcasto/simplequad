@@ -115,7 +115,7 @@ test('can handle adding the same object twice', t => {
     t.is(quadTree.quadrants.length, 0);
 });
 
-test.skip('can handle adding 2 objects that occupy the same originating point', t => {
+test('can handle adding 2 objects that occupy the same originating point', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const bounds: BoundingBox = {
         x: 0,

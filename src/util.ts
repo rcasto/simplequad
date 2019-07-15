@@ -1,5 +1,10 @@
 import { BoundingBox, Point } from './schemas';
 
+export function isSamePoint(point1: Point, point2: Point) {
+    return point1.x === point2.x &&
+           point1.y === point2.y;
+}
+
 export function containsPoint(bounds: BoundingBox, point: Point) {
     return point.x >= bounds.x && 
            point.x <= bounds.x + bounds.width &&
