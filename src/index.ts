@@ -98,22 +98,20 @@ function clearQuadTree(quadTree: QuadTree): void {
 }
 
 function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionObject> {
+    // Check first if the query bounds intersect with the bounds
+    // of the bucket, if it doesn't we can bail immediately with an empty set
+    if (!doBoundingBoxesIntersect(quadTree.bounds, bounds)) {
+        return new Set<CollisionObject>();
+    }
+
     // Check if current node has children
     // If it doesn't we should go ahead and return it's data
     // Only if, the bounds intersect though
     if ((quadTree.quadrants || []).length === 0) {
-        // Check first if the query bounds intersect with the bounds
-        // of the bucket
-        if (doBoundingBoxesIntersect(quadTree.bounds, bounds)) {
-            // Once we know the query bounds intersect with the bucket
-            // Let's iterate over the data in the bucket to see
-            // if the objects themselves intersect with the query bounds
-            return new Set<CollisionObject>(
-                [...quadTree.data].filter(quadObject => doBoundingBoxesIntersect(quadObject.getBoundingBox(), bounds)));
-        }
-        // Query bounds don't intersect with this data buckets bounds
-        // We can go ahead and return an empty set
-        return new Set<CollisionObject>();
+        // Let's iterate over the data in the bucket to see
+        // if the objects themselves intersect with the query bounds
+        return new Set<CollisionObject>(
+            [...quadTree.data].filter(quadObject => doBoundingBoxesIntersect(quadObject.getBoundingBox(), bounds)));
     }
 
     // Check the current nodes children
@@ -122,7 +120,13 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
     const childQueryResultSet: Set<CollisionObject> = quadTree.quadrants
         .map(quadrant => queryQuadTree(quadrant, bounds))
         // union all the collision sets together
-        .reduce((prevResultSet: Set<CollisionObject>, currResultSet: Set<CollisionObject>) => new Set<CollisionObject>([...prevResultSet, ...currResultSet]), new Set<CollisionObject>());
+        .reduce((prevResultSet: Set<CollisionObject>, currResultSet: Set<CollisionObject>) => {
+            // Avoid creating a new Set if the currResultSet doesn't add anything
+            if (currResultSet.size === 0) {
+                return prevResultSet;
+            }
+            return new Set<CollisionObject>([...prevResultSet, ...currResultSet]);
+        }, new Set<CollisionObject>());
 
     return childQueryResultSet;
 }
