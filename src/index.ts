@@ -140,5 +140,4 @@ export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadT
     };
     return quadTree;
 }
-
-export default createQuadTree;
+export * from './schema';
