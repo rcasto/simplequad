@@ -2,6 +2,13 @@ import { BoundingBox, CollisionObject, QuadTree } from './schema';
 import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox, isSamePoint } from './util';
 
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
+    const objectBoundingBox: BoundingBox = object.getBoundingBox();
+
+    // Let's first check if the objects bounding box intersects
+    if (!containsPoint(quadTree.bounds, objectBoundingBox)) {
+        return false;
+    }
+
     // Check children first, if not added to any child
     // Then check self, and add if appropriate
 
@@ -15,15 +22,6 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
         // Only leaf nodes should have data
         // If it didn't intersect with any child, it won't intersect with us
         return wasAddedToChild;
-    }
-
-    // Below is the self check (this node)
-    // This is the base case that is ran for all nodes
-    const objectBoundingBox: BoundingBox = object.getBoundingBox();
-
-    // Let's first check if the objects bounding box intersects
-    if (!containsPoint(quadTree.bounds, objectBoundingBox)) {
-        return false;
     }
 
     // Let's also check if this bucket already contains the object
@@ -67,7 +65,13 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
 }
 
 function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
-    // Object was found, let's remove it
+    // Check first if the objects point is within the bounds
+    // of the bucket, if it doesn't we can bail immediately with false
+    if (!containsPoint(quadTree.bounds, object.getBoundingBox())) {
+        return false;
+    }
+
+    // If object is found, let's remove it
     if (quadTree.data.has(object)) {
         quadTree.data.delete(object);
         return true;
