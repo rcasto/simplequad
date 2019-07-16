@@ -9,7 +9,7 @@
     "build": "npm-run-all clean --parallel build:*",
     "build:bundles": "rollup --config",
     "build:bundles-min": "rollup --config --minify",
-    "build:types": "dts-generator --prefix '' --project . --out dist/simplequad.d.ts",
+    "build:types": "dts-generator --prefix simplequad --project . --out dist/simplequad.d.ts",
     "test": "ava",
     "clean": "rimraf dist",
     "clean:all": "rimraf dist node_modules",
