@@ -1,4 +1,4 @@
-import { BoundingBox, Point } from './schemas';
+import { BoundingBox, Point } from './schema';
 
 export function isSamePoint(point1: Point, point2: Point) {
     return point1.x === point2.x &&

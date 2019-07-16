@@ -1,5 +1,5 @@
 import test from 'ava';
-import { BoundingBox, CollisionObject, QuadTree } from '../src/schemas';
+import { BoundingBox, CollisionObject, QuadTree } from '../src/schema';
 import { createMockQuadTree, createMockObject } from './util';
 
 test('can create quad tree', t => {

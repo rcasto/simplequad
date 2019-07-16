@@ -1,19 +1,5 @@
-import { BoundingBox, CollisionObject, QuadTree } from './schemas';
+import { BoundingBox, CollisionObject, QuadTree } from './schema';
 import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox, isSamePoint } from './util';
-
-export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
-    const quadTree: QuadTree = {
-        bounds,
-        data: new Set<CollisionObject>(),
-        capacity,
-        quadrants: [],
-        add: (object) => addToQuadTree(quadTree, object),
-        remove: (object) => removeFromQuadTree(quadTree, object),
-        clear: () => clearQuadTree(quadTree),
-        query: (bounds) => queryQuadTree(quadTree, bounds)
-    };
-    return quadTree;
-}
 
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // Check children first, if not added to any child
@@ -140,3 +126,19 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
 
     return childQueryResultSet;
 }
+
+export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
+    const quadTree: QuadTree = {
+        bounds,
+        data: new Set<CollisionObject>(),
+        capacity,
+        quadrants: [],
+        add: (object) => addToQuadTree(quadTree, object),
+        remove: (object) => removeFromQuadTree(quadTree, object),
+        clear: () => clearQuadTree(quadTree),
+        query: (bounds) => queryQuadTree(quadTree, bounds)
+    };
+    return quadTree;
+}
+
+export default createQuadTree;

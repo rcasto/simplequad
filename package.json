@@ -2,18 +2,24 @@
   "name": "simplequad",
   "version": "1.0.0",
   "description": "A simple QuadTree implementation",
-  "main": "dist/simplequad.cjs.js",
+  "main": "dist/simplequad.umd.js",
+  "module": "dist/simplequad.esm.js",
   "types": "dist/simplequad.d.ts",
   "scripts": {
     "build": "npm-run-all clean --parallel build:*",
     "build:bundles": "rollup --config",
-    "build:types": "dts-generator --prefix simplequad --project . --out dist/simplequad.d.ts",
+    "build:bundles-min": "rollup --config --minify",
+    "build:types": "dts-generator --prefix '' --project . --out dist/simplequad.d.ts",
     "test": "ava",
     "clean": "rimraf dist",
     "clean:all": "rimraf dist node_modules",
     "prepublish": "npm-run-all test build"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
+  "repository": {
+		"type": "git",
+		"url": "https://github.com/rcasto/simplequad.git"
+	},
   "license": "MIT",
   "devDependencies": {
     "@babel/cli": "7.5.0",
@@ -31,6 +37,7 @@
     "rollup-plugin-babel": "4.3.3",
     "rollup-plugin-commonjs": "10.0.1",
     "rollup-plugin-node-resolve": "5.2.0",
+    "rollup-plugin-uglify": "6.0.2",
     "ts-node": "8.3.0",
     "typescript": "3.5.3"
   },

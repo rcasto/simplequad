@@ -1,4 +1,4 @@
-import { QuadTree, BoundingBox, CollisionObject } from "../src/schemas";
+import { QuadTree, BoundingBox, CollisionObject } from "../src/schema";
 import { createQuadTree } from "../src";
 
 // Provides tree with pre-defined bounds
