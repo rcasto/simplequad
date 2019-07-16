@@ -10,7 +10,7 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
         // Run through all children checking if the object can be added
         // It is possible an object could span across multiple quadrants
         const wasAddedToChild: boolean = quadTree.quadrants
-            .reduce((wasAdded: boolean, quadrant: QuadTree) => (wasAdded || addToQuadTree(quadrant, object)), false);
+            .some((quadrant: QuadTree) => addToQuadTree(quadrant, object));
         // If it was added to any child, let's go ahead and bail
         // Only leaf nodes should have data
         // If it didn't intersect with any child, it won't intersect with us
