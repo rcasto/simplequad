@@ -269,6 +269,21 @@ test('can query the quad tree with bounds - multi level', t => {
     t.truthy(results.has(object2));
 });
 
+test('can query the quad tree with bounds - self bounding box', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const object: CollisionObject = createMockObject({
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 200,
+    });
+    quadTree.add(object);
+
+    const results: Set<CollisionObject> = quadTree.query(object.getBoundingBox());
+    t.is(results.size, 1);
+    t.truthy(results.has(object));
+});
+
 test('can remove object added to quad tree', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object: CollisionObject = createMockObject({
