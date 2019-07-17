@@ -118,12 +118,10 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
     // the results
     const childQueryResultSet: Set<CollisionObject> = quadTree.quadrants
         .map(quadrant => queryQuadTree(quadrant, bounds))
+        // filter out empty sets
+        .filter(queryResultSet => queryResultSet.size > 0)
         // union all the collision sets together
         .reduce((prevResultSet: Set<CollisionObject>, currResultSet: Set<CollisionObject>) => {
-            // Avoid creating a new Set if the currResultSet doesn't add anything
-            if (currResultSet.size === 0) {
-                return prevResultSet;
-            }
             return new Set<CollisionObject>([...prevResultSet, ...currResultSet]);
         }, new Set<CollisionObject>());
 
