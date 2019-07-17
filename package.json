@@ -1,6 +1,6 @@
 {
   "name": "simplequad",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A simple QuadTree implementation",
   "main": "dist/simplequad.umd.js",
   "module": "dist/simplequad.esm.js",
