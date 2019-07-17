@@ -1,5 +1,5 @@
 # simplequad
-A simple QuadTree implementation. Mainly implemented for my own learning and introduction into making 2D games.  
+A simple QuadTree implementation. Mainly implemented for my own learning and introduction into 2D games.  
 
 ## Installation
 
@@ -69,8 +69,6 @@ quadTree.clear();
 [Live CodePen example](https://codepen.io/rcasto/full/EqYxWw)
 
 ## API
-- createQuadTree(bounds: BoundingBox, capacity?: number): QuadTree
-
 ### QuadTree
 ```typescript
 export interface QuadTree {
@@ -86,6 +84,31 @@ export interface QuadTree {
     query: (bounds: BoundingBox) => Set<CollisionObject>;
 }
 ```
+
+### Point
+```typescript
+export interface Point {
+    x: number;
+    y: number;
+}
+```
+
+### BoundingBox
+```typescript
+export interface BoundingBox extends Point {
+    width: number;
+    height: number;
+}
+```
+
+### CollisionObject
+```typescript
+export interface CollisionObject {
+    getBoundingBox: () => BoundingBox;
+}
+```
+
+All of these schemas can be found in the `schema.ts` file of the repo.
 
 ## Testing
 Tests can be ran by simply executing:
