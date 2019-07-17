@@ -30,27 +30,30 @@ export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
     const quadWidth: number = bounds.width / 2;
     const quadHeight: number = bounds.height / 2;
 
+    const offsetX: number = bounds.x + quadWidth;
+    const offsetY: number = bounds.y + quadHeight;
+
     const nwBoundingBox: BoundingBox = {
-        x: 0,
-        y: 0,
+        x: bounds.x,
+        y: bounds.y,
         width: quadWidth,
         height: quadHeight,
     };
     const neBoundingBox: BoundingBox = {
-        x: quadWidth,
-        y: 0,
+        x: offsetX,
+        y: bounds.y,
         width: quadWidth,
         height: quadHeight,
     };
     const swBoundingBox: BoundingBox = {
-        x: 0,
-        y: quadHeight,
+        x: bounds.x,
+        y: offsetY,
         width: quadWidth,
         height: quadHeight,
     };
     const seBoundingBox: BoundingBox = {
-        x: quadWidth,
-        y: quadHeight,
+        x: offsetX,
+        y: offsetY,
         width: quadWidth,
         height: quadHeight,
     };

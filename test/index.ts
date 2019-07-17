@@ -1,6 +1,7 @@
 import test from 'ava';
 import { BoundingBox, CollisionObject, QuadTree } from '../src/schema';
 import { createMockQuadTree, createMockObject } from './util';
+import { createQuadTree } from '../src';
 
 test('can create quad tree', t => {
     const quadTree: QuadTree = createMockQuadTree();
@@ -97,6 +98,30 @@ test('can add an object to quadtree - bucket overflow and split', t => {
     t.is(quadTree.quadrants[3].data.size, 1);
     t.truthy(quadTree.quadrants[3].data.has(object2));
     t.is(quadTree.quadrants[3].quadrants.length, 0);
+});
+
+test('can add an object to quadtree - bucket overflow and split offset bucket', t => {
+    const quadTree: QuadTree = createQuadTree({
+        x: 100,
+        y: 100,
+        width: 100,
+        height: 100,
+    }, 1);
+    const object1: CollisionObject = createMockObject({
+        x: 100,
+        y: 150,
+        width: 5,
+        height: 5,
+    });
+    const object2: CollisionObject = createMockObject({
+        x: 150,
+        y: 150,
+        width: 5,
+        height: 5,
+    });
+
+    t.truthy(quadTree.add(object1));
+    t.truthy(quadTree.add(object2));
 });
 
 test('can handle adding the same object twice', t => {

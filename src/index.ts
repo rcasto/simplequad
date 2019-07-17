@@ -4,22 +4,19 @@ import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox, isSamePoint
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     const objectBoundingBox: BoundingBox = object.getBoundingBox();
 
-    // Let's first check if the objects bounding box intersects
+    // Let's first check if the point this object occupies is within
+    // the bounds of the bucket
     if (!containsPoint(quadTree.bounds, objectBoundingBox)) {
         return false;
     }
 
-    // Check children first, if not added to any child
-    // Then check self, and add if appropriate
-
-    // Checking children first
+    // Checking children, if this node is a "Container" (No data)
     if ((quadTree.quadrants || []).length > 0) {
         // Run through all children checking if the object can be added
-        // It is possible an object could span across multiple quadrants
+        // At the first successful add, we can bail out, only needs to be stored once
         const wasAddedToChild: boolean = quadTree.quadrants
             .some((quadrant: QuadTree) => addToQuadTree(quadrant, object));
-        // If it was added to any child, let's go ahead and bail
-        // Only leaf nodes should have data
+        // Only leaf nodes should have data (We are a "Container node")
         // If it didn't intersect with any child, it won't intersect with us
         return wasAddedToChild;
     }
@@ -30,7 +27,7 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     }
 
     // Now let's run through and verify that no other
-    // object is occupying the same point (x, y)
+    // object this bucket stores is occupying the same point (x, y)
     if ([...quadTree.data]
         .some(quadObject => isSamePoint(objectBoundingBox, quadObject.getBoundingBox()))) {
         return false;
@@ -45,10 +42,10 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
 
     // The current node fits the current object, but
     // There isn't any capacity
-    // We need to split this quadrant up
+    // We need to split this bucket up
 
     // Let's first build the child quadrants
-    // Let's create the child QuadTree's from the build quadrant bounds
+    // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
     const quadrants: QuadTree[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
     const quadObjects: CollisionObject[] = [...quadTree.data, object];
@@ -109,8 +106,6 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): Set<CollisionOb
     }
 
     // Check if current node has children
-    // If it doesn't we should go ahead and return it's data
-    // Only if, the bounds intersect though
     if ((quadTree.quadrants || []).length === 0) {
         // Let's iterate over the data in the bucket to see
         // if the objects themselves intersect with the query bounds
