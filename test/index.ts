@@ -309,6 +309,57 @@ test('can query the quad tree with bounds - self bounding box', t => {
     t.truthy(results.has(object));
 });
 
+test('can query the quad tree with bounds - square window, cross bucket bounds, multi object', t => {
+    const quadTree: QuadTree = createQuadTree({
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 200,
+    }, 1);
+    const object1: CollisionObject = createMockObject({
+        x: 50,
+        y: 50,
+        width: 50,
+        height: 100,
+    });
+    const object2: CollisionObject = createMockObject({
+        x: 50,
+        y: 100,
+        width: 100,
+        height: 50,
+    });
+    const object3: CollisionObject = createMockObject({
+        x: 100,
+        y: 50,
+        width: 50,
+        height: 100,
+    });
+    const object4: CollisionObject = createMockObject({
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 50,
+    });
+    const queryWindow: BoundingBox = {
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+    };
+
+    quadTree.add(object1);
+    quadTree.add(object2);
+    quadTree.add(object3);
+    quadTree.add(object4);
+
+    const results: Set<CollisionObject> = quadTree.query(queryWindow);
+    t.is(results.size, 4);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
+    t.truthy(results.has(object3));
+    t.truthy(results.has(object4));
+});
+
 test('can remove object added to quad tree', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object: CollisionObject = createMockObject({
