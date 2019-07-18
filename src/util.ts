@@ -1,10 +1,5 @@
 import { BoundingBox, Point } from './schema';
 
-export function isSamePoint(point1: Point, point2: Point) {
-    return point1.x === point2.x &&
-           point1.y === point2.y;
-}
-
 export function containsPoint(bounds: BoundingBox, point: Point) {
     return point.x >= bounds.x && 
            point.x <= bounds.x + bounds.width &&
@@ -64,4 +59,14 @@ export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
         swBoundingBox,
         seBoundingBox,
     ];
+}
+
+export function flattenLists<T>(lists: Array<T[]>): T[] {
+    return (lists || [])
+        .reduce((prevList, currList) => {
+            if (currList.length === 0) {
+                return prevList;
+            }
+            return prevList.concat(currList);
+        }, []);
 }
