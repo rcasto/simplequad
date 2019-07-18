@@ -21,12 +21,6 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
         return wasAddedToChild;
     }
 
-    // Let's initialize the point map for this point
-    // If it's not already initialized
-    if (!quadTree.data.has(objectBoundingBox)) {
-        quadTree.data.set(objectBoundingBox, []);
-    }
-
     // Let's also check if this bucket already contains the object
     const quadTreeData: CollisionObject[] = quadTree.data.get(objectBoundingBox) || [];
 
@@ -37,7 +31,7 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // Let's see if this quadrant has any capacity
     // If it does, we can go ahead and store the current object
     if (quadTree.numData + 1 <= quadTree.capacity) {
-        quadTreeData.push(object);
+        quadTree.data.set(objectBoundingBox, [...quadTreeData, object]);
         quadTree.numData++;
         return true;
     }
@@ -50,7 +44,7 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
     const quadrants: QuadTree[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
-    const quadObjects: CollisionObject[] = flattenLists<CollisionObject>([...quadTree.data.values()])
+    const quadObjects: CollisionObject[] = [...flattenLists<CollisionObject>([...quadTree.data.values()]), object]
 
     // adjust current quadtree settings
     // May need to adjust these in-place instead of creating new references
