@@ -38,7 +38,7 @@ test('can add an object to quadtree', t => {
 
     t.truthy(quadTree.add(object));
     t.is(quadTree.data.size, 1);
-    t.truthy(quadTree.data.has(object));
+    t.truthy(quadTreeBucketContains(quadTree, object));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -60,8 +60,8 @@ test('can add an object to quadtree - can add objects up to capacity', t => {
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 2);
-    t.truthy(quadTree.data.has(object1));
-    t.truthy(quadTree.data.has(object2));
+    t.truthy(quadTreeBucketContains(quadTree, object1));
+    t.truthy(quadTreeBucketContains(quadTree, object2));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -85,18 +85,18 @@ test('can add an object to quadtree - bucket overflow and split', t => {
     t.is(quadTree.data.size, 0);
     t.is(quadTree.quadrants.length, 4);
     // NW quadrant
-    t.is(quadTree.quadrants[0].data.size, 1);
-    t.truthy(quadTree.quadrants[0].data.has(object1));
+    t.is(quadTree.quadrants[0].numData, 1);
+    t.truthy(quadTreeBucketContains(quadTree.quadrants[0], object1));
     t.is(quadTree.quadrants[0].quadrants.length, 0);
     // NE quadrant
-    t.is(quadTree.quadrants[1].data.size, 0);
+    t.is(quadTree.quadrants[1].numData, 0);
     t.is(quadTree.quadrants[1].quadrants.length, 0);
     // SW quadrant
-    t.is(quadTree.quadrants[2].data.size, 0);
+    t.is(quadTree.quadrants[2].numData, 0);
     t.is(quadTree.quadrants[2].quadrants.length, 0);
     // SE quadrant
-    t.is(quadTree.quadrants[3].data.size, 1);
-    t.truthy(quadTree.quadrants[3].data.has(object2));
+    t.is(quadTree.quadrants[3].numData, 1);
+    t.truthy(quadTreeBucketContains(quadTree.quadrants[3], object2));
     t.is(quadTree.quadrants[3].quadrants.length, 0);
 });
 
@@ -154,7 +154,7 @@ test('can handle adding 2 objects that occupy the same originating point', t => 
     quadTree.add(object1);
     
     t.falsy(quadTree.add(object2));
-    t.is(quadTree.data.size, 1);
+    t.is(quadTree.numData, 1);
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -191,9 +191,9 @@ test('can query the quad tree with bounds', t => {
 
     quadTree.add(object);
 
-    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 1);
-    t.truthy(results.has(object));
+    const results: CollisionObject[] = quadTree.query(quadTree.bounds);
+    t.is(results.length, 1);
+    t.truthy(results.includes(object));
 });
 
 test('can query the quad tree with bounds - single quadrant query window', t => {
@@ -220,9 +220,9 @@ test('can query the quad tree with bounds - single quadrant query window', t => 
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<CollisionObject> = quadTree.query(queryBounds);
-    t.is(results.size, 1);
-    t.truthy(results.has(object2));
+    const results: CollisionObject[] = quadTree.query(queryBounds);
+    t.is(results.length, 1);
+    t.truthy(results.includes(object2));
 });
 
 test('can query the quad tree with bounds - single quadrant object bounding box overlap', t => {
@@ -242,10 +242,10 @@ test('can query the quad tree with bounds - single quadrant object bounding box 
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<CollisionObject> = quadTree.query(object1.getBoundingBox());
-    t.is(results.size, 2);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
+    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    t.is(results.length, 2);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
 });
 
 test('can query the quad tree with bounds - multi quadrant query window', t => {
@@ -265,10 +265,10 @@ test('can query the quad tree with bounds - multi quadrant query window', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<CollisionObject> = quadTree.query(object1.getBoundingBox());
-    t.is(results.size, 2);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
+    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    t.is(results.length, 2);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
 });
 
 test('can query the quad tree with bounds - multi level', t => {
@@ -288,10 +288,10 @@ test('can query the quad tree with bounds - multi level', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<CollisionObject> = quadTree.query(object1.getBoundingBox());
-    t.is(results.size, 2);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
+    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    t.is(results.length, 2);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
 });
 
 test('can query the quad tree with bounds - self bounding box', t => {
@@ -304,9 +304,9 @@ test('can query the quad tree with bounds - self bounding box', t => {
     });
     quadTree.add(object);
 
-    const results: Set<CollisionObject> = quadTree.query(object.getBoundingBox());
-    t.is(results.size, 1);
-    t.truthy(results.has(object));
+    const results: CollisionObject[] = quadTree.query(object.getBoundingBox());
+    t.is(results.length, 1);
+    t.truthy(results.includes(object));
 });
 
 test('can query the quad tree with bounds - square window, cross bucket bounds, multi object', t => {
@@ -352,12 +352,12 @@ test('can query the quad tree with bounds - square window, cross bucket bounds, 
     quadTree.add(object3);
     quadTree.add(object4);
 
-    const results: Set<CollisionObject> = quadTree.query(queryWindow);
-    t.is(results.size, 4);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
-    t.truthy(results.has(object3));
-    t.truthy(results.has(object4));
+    const results: CollisionObject[] = quadTree.query(queryWindow);
+    t.is(results.length, 4);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
+    t.truthy(results.includes(object3));
+    t.truthy(results.includes(object4));
 });
 
 test('can remove object added to quad tree', t => {
@@ -400,7 +400,7 @@ test('can remove object added to quad tree - collapse subtree', t => {
     quadTree.remove(object1);
 
     t.is(quadTree.data.size, 1);
-    t.truthy(quadTree.data.has(object2));
+    t.truthy(quadTreeBucketContains(quadTree, object2));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -429,13 +429,21 @@ test('can remove object added to quad tree - collapse subtree higher capacity', 
     quadTree.add(object2);
     quadTree.add(object3);
 
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.numData, 0);
     t.is(quadTree.quadrants.length, 4);
 
     quadTree.remove(object1);
 
-    t.is(quadTree.data.size, 2);
-    t.truthy(quadTree.data.has(object2));
-    t.truthy(quadTree.data.has(object3));
+    t.is(quadTree.numData, 2);
+    t.truthy(quadTreeBucketContains(quadTree, object2));
+    t.truthy(quadTreeBucketContains(quadTree, object3));
     t.is(quadTree.quadrants.length, 0);
 });
+
+function quadTreeBucketContains(quadTree: QuadTree, object: CollisionObject): boolean {
+    const objectPointDataSet = quadTree.data.get(object.getBoundingBox());
+    if (objectPointDataSet) {
+        return objectPointDataSet.includes(object);
+    }
+    return false;
+}
