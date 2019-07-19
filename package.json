@@ -47,13 +47,13 @@
   "ava": {
     "files": [
       "test/**/*",
-      "!test/util.ts"
+      "!test/helpers/*.ts"
     ],
     "sources": [
       "src/**/*"
     ],
     "helpers": [
-      "test/util.ts"
+      "test/helpers/*.ts"
     ],
     "compileEnhancements": false,
     "extensions": [

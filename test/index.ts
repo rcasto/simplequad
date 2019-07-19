@@ -1,5 +1,5 @@
 import test from 'ava';
-import { createMockQuadTree, createMockObject } from './util';
+import { createMockQuadTree, createMockObject } from './helpers/util';
 import { BoundingBox, CollisionObject, QuadTree, createQuadTree } from '../src';
 import { createPointKey } from '../src/util';
 

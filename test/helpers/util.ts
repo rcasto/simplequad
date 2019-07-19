@@ -1,5 +1,5 @@
-import { QuadTree, BoundingBox, CollisionObject } from "../src/schema";
-import { createQuadTree } from "../src";
+import { QuadTree, BoundingBox, CollisionObject } from "../../src/schema";
+import { createQuadTree } from "../../src";
 
 // Provides tree with pre-defined bounds
 // Those fitting randomized mock objects for sure below
