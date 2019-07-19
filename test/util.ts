@@ -15,7 +15,7 @@ export function createMockQuadTree(capacity?: number): QuadTree {
 
 export function createMockObject(bounds: BoundingBox): CollisionObject {
     return {
-        getBoundingBox() {
+        getBounds() {
             return bounds;
         }
     };

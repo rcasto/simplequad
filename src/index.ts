@@ -1,12 +1,12 @@
-import { BoundingBox, CollisionObject, QuadTree } from './schema';
-import { containsPoint, createPointKey, doBoundingBoxesIntersect, divideBoundingBox, flattenLists } from './util';
+import { Bound, BoundingBox, CollisionObject, QuadTree } from './schema';
+import { containsPoint, createPointKey, doBoundsIntersect, divideBoundingBox, flattenLists } from './util';
 
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
-    const objectBoundingBox: BoundingBox = object.getBoundingBox();
+    const objectBound: Bound = object.getBounds();
 
     // Let's first check if the point this object occupies is within
     // the bounds of the bucket
-    if (!containsPoint(quadTree.bounds, objectBoundingBox)) {
+    if (!containsPoint(quadTree.bounds, objectBound)) {
         return false;
     }
 
@@ -22,7 +22,7 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     }
 
     // Let's get the data already associated with this bucket
-    const objectPointKey: string = createPointKey(objectBoundingBox);
+    const objectPointKey: string = createPointKey(objectBound);
     const objectPointData: CollisionObject[] = quadTree.data.get(objectPointKey) || [];
 
     // Let's check if the object is already in the bucket
@@ -64,8 +64,8 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
 }
 
 function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
-    const objectBoundingBox: BoundingBox = object.getBoundingBox();
-    const objectPointKey: string = createPointKey(objectBoundingBox);
+    const objectBound: Bound = object.getBounds();
+    const objectPointKey: string = createPointKey(objectBound);
     const objectPointData: CollisionObject[] = quadTree.data.get(objectPointKey) || [];
     const objectIndex: number = objectPointData.indexOf(object);
 
@@ -106,10 +106,10 @@ function clearQuadTree(quadTree: QuadTree): void {
     quadTree.quadrants = [];
 }
 
-function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): CollisionObject[] {
+function queryQuadTree(quadTree: QuadTree, bounds: Bound): CollisionObject[] {
     // Check first if the query bounds intersect with the bounds
     // of the bucket, if it doesn't we can bail immediately with an empty list
-    if (!doBoundingBoxesIntersect(quadTree.bounds, bounds)) {
+    if (!doBoundsIntersect(quadTree.bounds, bounds)) {
         return [];
     }
 
@@ -118,7 +118,7 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): CollisionObject
         // Let's iterate over the data in the bucket to see
         // if the objects themselves intersect with the query bounds
         return flattenLists([...quadTree.data.values()])
-            .filter(quadObject => doBoundingBoxesIntersect(quadObject.getBoundingBox(), bounds));
+            .filter(quadObject => doBoundsIntersect(quadObject.getBounds(), bounds));
     }
 
     // Check the current nodes children

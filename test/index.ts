@@ -156,7 +156,7 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBoundingBox())) || [];
+    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBounds())) || [];
     t.is(objectsAtPoint.length, 2);
     t.truthy(objectsAtPoint.includes(object1));
     t.truthy(objectsAtPoint.includes(object2));
@@ -180,7 +180,7 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBoundingBox())) || [];
+    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBounds())) || [];
     t.is(objectsAtPoint.length, 2);
     t.truthy(objectsAtPoint.includes(object1));
     t.truthy(objectsAtPoint.includes(object2));
@@ -351,7 +351,7 @@ test('can query the quad tree with bounds - single quadrant object bounding box 
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    const results: CollisionObject[] = quadTree.query(object1.getBounds());
     t.is(results.length, 2);
     t.truthy(results.includes(object1));
     t.truthy(results.includes(object2));
@@ -374,7 +374,7 @@ test('can query the quad tree with bounds - multi quadrant query window', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    const results: CollisionObject[] = quadTree.query(object1.getBounds());
     t.is(results.length, 2);
     t.truthy(results.includes(object1));
     t.truthy(results.includes(object2));
@@ -397,7 +397,7 @@ test('can query the quad tree with bounds - multi level', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    const results: CollisionObject[] = quadTree.query(object1.getBounds());
     t.is(results.length, 2);
     t.truthy(results.includes(object1));
     t.truthy(results.includes(object2));
@@ -413,7 +413,7 @@ test('can query the quad tree with bounds - self bounding box', t => {
     });
     quadTree.add(object);
 
-    const results: CollisionObject[] = quadTree.query(object.getBoundingBox());
+    const results: CollisionObject[] = quadTree.query(object.getBounds());
     t.is(results.length, 1);
     t.truthy(results.includes(object));
 });
@@ -432,7 +432,7 @@ test('can query the quad tree with bounds - self bounding box / multi-object', t
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    const results: CollisionObject[] = quadTree.query(object1.getBounds());
     t.is(results.length, 2);
     t.truthy(results.includes(object1));
     t.truthy(results.includes(object2));
@@ -523,7 +523,7 @@ test('can remove object at point with multiple objects', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    let objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object2.getBoundingBox())) || [];
+    let objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object2.getBounds())) || [];
     t.is(quadTree.data.size, 1);
     t.is(quadTree.quadrants.length, 0);
     t.is(objectsAtPoint.length, 2);
@@ -531,7 +531,7 @@ test('can remove object at point with multiple objects', t => {
     t.truthy(objectsAtPoint.includes(object2));
 
     quadTree.remove(object1);
-    objectsAtPoint = quadTree.data.get(createPointKey(object2.getBoundingBox())) || [];
+    objectsAtPoint = quadTree.data.get(createPointKey(object2.getBounds())) || [];
 
     t.is(quadTree.data.size, 1);
     t.is(quadTree.quadrants.length, 0);
@@ -540,7 +540,7 @@ test('can remove object at point with multiple objects', t => {
     t.truthy(objectsAtPoint.includes(object2));
 
     quadTree.remove(object2);
-    objectsAtPoint = quadTree.data.get(createPointKey(object2.getBoundingBox())) || [];
+    objectsAtPoint = quadTree.data.get(createPointKey(object2.getBounds())) || [];
 
     t.is(quadTree.data.size, 0);
     t.is(quadTree.quadrants.length, 0);
@@ -612,7 +612,7 @@ test('can remove object added to quad tree - collapse subtree higher capacity', 
 });
 
 function quadTreeBucketContains(quadTree: QuadTree, object: CollisionObject): boolean {
-    const objectPointDataSet = quadTree.data.get(createPointKey(object.getBoundingBox()));
+    const objectPointDataSet = quadTree.data.get(createPointKey(object.getBounds()));
     if (objectPointDataSet) {
         return objectPointDataSet.includes(object);
     }
