@@ -1,5 +1,6 @@
 import { QuadTree, BoundingBox, CollisionObject } from "../../src/schema";
 import { createQuadTree } from "../../src";
+import { createPointKey } from "../../src/util";
 
 // Provides tree with pre-defined bounds
 // Those fitting randomized mock objects for sure below
@@ -19,4 +20,12 @@ export function createMockObject(bounds: BoundingBox): CollisionObject {
             return bounds;
         }
     };
+}
+
+export function quadTreeBucketContains(quadTree: QuadTree, object: CollisionObject): boolean {
+    const objectPointDataSet = quadTree.data.get(createPointKey(object.getBounds()));
+    if (objectPointDataSet) {
+        return objectPointDataSet.includes(object);
+    }
+    return false;
 }
