@@ -133,4 +133,9 @@ Tests can be ran by simply executing:
 npm test
 ```
 
+Generating code coverage report for tests:
+```
+npm run test:coverage
+```
+
 Make sure to first install the packages via `npm install`.

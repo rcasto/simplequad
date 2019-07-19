@@ -1,3 +1,5 @@
 node_modules
 dist
 simplequad-*.tgz
+.nyc_output
+coverage
