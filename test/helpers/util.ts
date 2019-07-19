@@ -1,4 +1,4 @@
-import { QuadTree, BoundingBox, CollisionObject } from "../../src/schema";
+import { QuadTree, BoundingBox, CollisionObject, Bound } from "../../src/schema";
 import { createQuadTree } from "../../src";
 import { createPointKey } from "../../src/util";
 
@@ -14,7 +14,7 @@ export function createMockQuadTree(capacity?: number): QuadTree {
     return createQuadTree(bounds, capacity);
 }
 
-export function createMockObject(bounds: BoundingBox): CollisionObject {
+export function createMockObject(bounds: Bound): CollisionObject {
     return {
         getBounds() {
             return bounds;
