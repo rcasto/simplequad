@@ -10,7 +10,7 @@ npm install simplequad
 
 ### CDN
 ```html
-<script src="https://unpkg.com/simplequad"></script>
+<script src="https://unpkg.com/simplequad@latest/dist/simplequad.umd.min.js"></script>
 ```
 
 The window global is `SimpleQuad`.
@@ -30,14 +30,14 @@ const bounds: BoundingBox = {
 const nodeCapacity: number = 5;
 
 // Create the QuadTree by passing in the Bounds and Capacity
-const quadTree: QuadTree = SimpleQuad.createQuadTree(bounds, nodeCapacity);
+const quadTree: QuadTree = createQuadTree(bounds, nodeCapacity);
 
 // Create a monster object
 const monster: CollisionObject = {
     hp: 100,
     attack: 50,
     favoriteFood: 'tacos',
-    // Current requirement is that objects added to the QuadTree
+    // Requirement is that objects added to the QuadTree
     // implement a getBoundingBox method, this method returns a BoundingBox
     // containing the object
     getBoundingBox() {
@@ -53,7 +53,7 @@ const monster: CollisionObject = {
 // Let's first check for the monster
 // He shouldn't be there
 let monsterResultSet = quadTree.query(monster.getBoundingBox());
-console.log(`# of monsters found: ${monsterResultSet.size}`);
+console.log(`# of monsters found: ${monsterResultSet.length}`);
 
 // Now let's add the monster object to the QuadTree
 quadTree.add(monster);
@@ -62,7 +62,7 @@ console.log("Added the monster");
 // Now lets make sure the monster is there
 // Let's hope he didn't run off
 monsterResultSet = quadTree.query(monster.getBoundingBox());
-console.log(`# of monsters found: ${monsterResultSet.size}`);
+console.log(`# of monsters found: ${monsterResultSet.length}`);
 
 // Remove the monster from the QuadTree
 // No one likes monsters...geesh
@@ -72,7 +72,7 @@ console.log("Removed the monster");
 // Let's just make sure we actually
 // got rid of the monster
 monsterResultSet = quadTree.query(monster.getBoundingBox());
-console.log(`# of monsters found: ${monsterResultSet.size}`);
+console.log(`# of monsters found: ${monsterResultSet.length}`);
 
 // Remove all objects from the QuadTree
 // It's already empty...but let's just make sure
