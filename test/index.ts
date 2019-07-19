@@ -509,6 +509,44 @@ test('can remove object added to quad tree', t => {
     t.is(quadTree.quadrants.length, 0);
 });
 
+test('can remove object at point with multiple objects', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const bounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: 5,
+        height: 5,
+    };
+    const object1: CollisionObject = createMockObject(bounds);
+    const object2: CollisionObject = createMockObject(bounds);
+
+    quadTree.add(object1);
+    quadTree.add(object2);
+
+    let objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object2.getBoundingBox())) || [];
+    t.is(quadTree.data.size, 1);
+    t.is(quadTree.quadrants.length, 0);
+    t.is(objectsAtPoint.length, 2);
+    t.truthy(objectsAtPoint.includes(object1));
+    t.truthy(objectsAtPoint.includes(object2));
+
+    quadTree.remove(object1);
+    objectsAtPoint = quadTree.data.get(createPointKey(object2.getBoundingBox())) || [];
+
+    t.is(quadTree.data.size, 1);
+    t.is(quadTree.quadrants.length, 0);
+    t.is(objectsAtPoint.length, 1);
+    t.falsy(objectsAtPoint.includes(object1));
+    t.truthy(objectsAtPoint.includes(object2));
+
+    quadTree.remove(object2);
+    objectsAtPoint = quadTree.data.get(createPointKey(object2.getBoundingBox())) || [];
+
+    t.is(quadTree.data.size, 0);
+    t.is(quadTree.quadrants.length, 0);
+    t.is(objectsAtPoint.length, 0);
+});
+
 test('can remove object added to quad tree - collapse subtree', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object1: CollisionObject = createMockObject({
