@@ -8,8 +8,14 @@ export interface BoundingBox extends Point {
     height: number;
 }
 
+export interface Circle extends Point {
+    r: number;
+}
+
+export type Bound = BoundingBox | Circle;
+
 export interface CollisionObject {
-    getBoundingBox: () => BoundingBox;
+    getBounds: () => Bound;
 }
 
 export interface QuadTree {
@@ -22,5 +28,5 @@ export interface QuadTree {
     add: (object: CollisionObject) => boolean;
     remove: (object: CollisionObject) => boolean;
     clear: () => void;
-    query: (bounds: BoundingBox) => CollisionObject[];
+    query: (bounds: Bound) => CollisionObject[];
 }
