@@ -61,12 +61,16 @@ export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
     ];
 }
 
+export function createPointKey(point: Point): string {
+    return `(${point.x}, ${point.y})`;
+}
+
 export function flattenLists<T>(lists: Array<T[]>): T[] {
     return (lists || [])
         .reduce((prevList, currList) => {
             if (currList.length === 0) {
                 return prevList;
             }
-            return prevList.concat(currList);
+            return [...prevList, ...currList];
         }, []);
 }

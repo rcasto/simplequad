@@ -1,5 +1,5 @@
-import { BoundingBox, CollisionObject, Point, QuadTree } from './schema';
-import { containsPoint, doBoundingBoxesIntersect, divideBoundingBox, flattenLists } from './util';
+import { BoundingBox, CollisionObject, QuadTree } from './schema';
+import { containsPoint, createPointKey, doBoundingBoxesIntersect, divideBoundingBox, flattenLists } from './util';
 
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     const objectBoundingBox: BoundingBox = object.getBoundingBox();
@@ -21,18 +21,24 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
         return wasAddedToChild;
     }
 
-    // Let's also check if this bucket already contains the object
-    const quadTreeData: CollisionObject[] = quadTree.data.get(objectBoundingBox) || [];
+    // Let's get the data already associated with this bucket
+    const objectPointKey: string = createPointKey(objectBoundingBox);
+    const objectPointData: CollisionObject[] = quadTree.data.get(objectPointKey) || [];
 
-    if (quadTreeData.includes(object)) {
+    // Let's check if the object is already in the bucket
+    if (objectPointData.includes(object)) {
         return false;
     }
 
     // Let's see if this quadrant has any capacity
     // If it does, we can go ahead and store the current object
-    if (quadTree.numData + 1 <= quadTree.capacity) {
-        quadTree.data.set(objectBoundingBox, [...quadTreeData, object]);
-        quadTree.numData++;
+    //
+    // We also wanna go ahead and add, if this point (x, y) has already
+    // had an object added, we'll chain it on to the list of objects 
+    // associated with this point
+    if (objectPointData.length > 0 ||
+        quadTree.data.size + 1 <= quadTree.capacity) {
+        quadTree.data.set(objectPointKey, [...objectPointData, object]);
         return true;
     }
 
@@ -44,7 +50,7 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
     const quadrants: QuadTree[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
-    const quadObjects: CollisionObject[] = [...flattenLists<CollisionObject>([...quadTree.data.values()]), object]
+    const quadObjects: CollisionObject[] = [...flattenLists([...quadTree.data.values()]), object];
 
     // adjust current quadtree settings
     // May need to adjust these in-place instead of creating new references
@@ -58,20 +64,21 @@ function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
 }
 
 function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
-    const objectPointData = quadTree.data.get(object.getBoundingBox());
-
-    // If there is no objectPointDataSet, nothing has been added
-    // to then be removed, bail
-    if (!objectPointData) {
-        return false;
-    }
+    const objectBoundingBox: BoundingBox = object.getBoundingBox();
+    const objectPointKey: string = createPointKey(objectBoundingBox);
+    const objectPointData: CollisionObject[] = quadTree.data.get(objectPointKey) || [];
+    const objectIndex: number = objectPointData.indexOf(object);
 
     // If object is found, let's remove it
-    const objectIndex = objectPointData.indexOf(object);
-
     if (objectIndex >= 0) {
         objectPointData.splice(objectIndex, 1);
-        quadTree.numData--;
+        // If there were multiple objects at this point
+        // we don't need to remove this point key
+        if (objectPointData.length > 0) {
+            quadTree.data.set(objectPointKey, objectPointData);
+        } else {
+            quadTree.data.delete(objectPointKey);
+        }
         return true;
     }
 
@@ -95,14 +102,13 @@ function removeFromQuadTree(quadTree: QuadTree, object: CollisionObject): boolea
 }
 
 function clearQuadTree(quadTree: QuadTree): void {
-    quadTree.data = new Map<Point, CollisionObject[]>();
+    quadTree.data = new Map<string, CollisionObject[]>();
     quadTree.quadrants = [];
-    quadTree.numData = 0;
 }
 
 function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): CollisionObject[] {
     // Check first if the query bounds intersect with the bounds
-    // of the bucket, if it doesn't we can bail immediately with an empty set
+    // of the bucket, if it doesn't we can bail immediately with an empty list
     if (!doBoundingBoxesIntersect(quadTree.bounds, bounds)) {
         return [];
     }
@@ -111,7 +117,7 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): CollisionObject
     if ((quadTree.quadrants || []).length === 0) {
         // Let's iterate over the data in the bucket to see
         // if the objects themselves intersect with the query bounds
-        return [...flattenLists([...quadTree.data.values()])]
+        return flattenLists([...quadTree.data.values()])
             .filter(quadObject => doBoundingBoxesIntersect(quadObject.getBoundingBox(), bounds));
     }
 
@@ -127,8 +133,7 @@ function queryQuadTree(quadTree: QuadTree, bounds: BoundingBox): CollisionObject
 export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
     const quadTree: QuadTree = {
         bounds,
-        data: new Map<Point, CollisionObject[]>(),
-        numData: 0,
+        data: new Map<string, CollisionObject[]>(),
         capacity,
         quadrants: [],
         add: (object) => addToQuadTree(quadTree, object),

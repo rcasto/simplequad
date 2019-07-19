@@ -1,7 +1,7 @@
 import test from 'ava';
-import { BoundingBox, CollisionObject, QuadTree } from '../src/schema';
 import { createMockQuadTree, createMockObject } from './util';
-import { createQuadTree } from '../src';
+import { BoundingBox, CollisionObject, QuadTree, createQuadTree } from '../src';
+import { createPointKey } from '../src/util';
 
 test('can create quad tree', t => {
     const quadTree: QuadTree = createMockQuadTree();
@@ -85,17 +85,17 @@ test('can add an object to quadtree - bucket overflow and split', t => {
     t.is(quadTree.data.size, 0);
     t.is(quadTree.quadrants.length, 4);
     // NW quadrant
-    t.is(quadTree.quadrants[0].numData, 1);
+    t.is(quadTree.quadrants[0].data.size, 1);
     t.truthy(quadTreeBucketContains(quadTree.quadrants[0], object1));
     t.is(quadTree.quadrants[0].quadrants.length, 0);
     // NE quadrant
-    t.is(quadTree.quadrants[1].numData, 0);
+    t.is(quadTree.quadrants[1].data.size, 0);
     t.is(quadTree.quadrants[1].quadrants.length, 0);
     // SW quadrant
-    t.is(quadTree.quadrants[2].numData, 0);
+    t.is(quadTree.quadrants[2].data.size, 0);
     t.is(quadTree.quadrants[2].quadrants.length, 0);
     // SE quadrant
-    t.is(quadTree.quadrants[3].numData, 1);
+    t.is(quadTree.quadrants[3].data.size, 1);
     t.truthy(quadTreeBucketContains(quadTree.quadrants[3], object2));
     t.is(quadTree.quadrants[3].quadrants.length, 0);
 });
@@ -140,7 +140,55 @@ test('can handle adding the same object twice', t => {
     t.is(quadTree.quadrants.length, 0);
 });
 
-test('can handle adding 2 objects that occupy the same originating point', t => {
+test('can handle adding 2 objects that occupy the same originating point, capacity > 1', t => {
+    const quadTree: QuadTree = createMockQuadTree(2);
+    const bounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+    };
+    const object1: CollisionObject = createMockObject(bounds);
+    const object2: CollisionObject = createMockObject(bounds);
+
+    quadTree.add(object1);
+    
+    t.truthy(quadTree.add(object2));
+    t.is(quadTree.data.size, 1);
+
+    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBoundingBox())) || [];
+    t.is(objectsAtPoint.length, 2);
+    t.truthy(objectsAtPoint.includes(object1));
+    t.truthy(objectsAtPoint.includes(object2));
+    t.is(quadTree.quadrants.length, 0);
+});
+
+test('can handle adding 2 objects that occupy the same originating point, capacity > 1 - bounds copied', t => {
+    const quadTree: QuadTree = createMockQuadTree(2);
+    const bounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+    };
+    const copyBounds: BoundingBox = Object.assign({}, { ...bounds });
+    const object1: CollisionObject = createMockObject(bounds);
+    const object2: CollisionObject = createMockObject(copyBounds);
+
+    quadTree.add(object1);
+    
+    t.truthy(quadTree.add(object2));
+    t.is(quadTree.data.size, 1);
+
+    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBoundingBox())) || [];
+    t.is(objectsAtPoint.length, 2);
+    t.truthy(objectsAtPoint.includes(object1));
+    t.truthy(objectsAtPoint.includes(object2));
+    t.is(quadTree.quadrants.length, 0);
+});
+
+// blackhole scenario
+test('can handle adding 2 objects that occupy the same originating point, capacity of 1', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const bounds: BoundingBox = {
         x: 0,
@@ -153,9 +201,42 @@ test('can handle adding 2 objects that occupy the same originating point', t => 
 
     quadTree.add(object1);
     
-    t.falsy(quadTree.add(object2));
-    t.is(quadTree.numData, 1);
+    t.truthy(quadTree.add(object2));
+    t.is(quadTree.data.size, 1);
     t.is(quadTree.quadrants.length, 0);
+});
+
+test('can handle adding object directly on bucket boundary crossing', t => {
+    const quadTree: QuadTree = createQuadTree({
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 200,
+    }, 1);
+    const object1: CollisionObject = createMockObject({
+        x: 175,
+        y: 175,
+        width: 5,
+        height: 5,
+    });
+    const object2: CollisionObject = createMockObject({
+        x: 100,
+        y: 100,
+        width: 5,
+        height: 5,
+    });
+
+    t.truthy(quadTree.add(object1));
+    t.truthy(quadTree.add(object2));
+
+    t.is(quadTree.data.size, 0);
+    t.is(quadTree.quadrants.length, 4);
+
+    const results = quadTree.query(quadTree.bounds);
+
+    t.is(results.length, 2);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
 });
 
 test('can clear the quad tree', t => {
@@ -194,6 +275,34 @@ test('can query the quad tree with bounds', t => {
     const results: CollisionObject[] = quadTree.query(quadTree.bounds);
     t.is(results.length, 1);
     t.truthy(results.includes(object));
+});
+
+test('can query the quad tree with bounds - multi object 1 point (whole window bounds)', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const bounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+    };
+    const object1: CollisionObject = createMockObject(bounds);
+    const object2: CollisionObject = createMockObject(bounds);
+    const object3: CollisionObject = createMockObject({
+        x: 2,
+        y: 0,
+        width: 2,
+        height: 2,
+    });
+
+    quadTree.add(object1);
+    quadTree.add(object2);
+    quadTree.add(object3);
+
+    const results: CollisionObject[] = quadTree.query(quadTree.bounds);
+    t.is(results.length, 3);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
+    t.truthy(results.includes(object3));
 });
 
 test('can query the quad tree with bounds - single quadrant query window', t => {
@@ -309,6 +418,26 @@ test('can query the quad tree with bounds - self bounding box', t => {
     t.truthy(results.includes(object));
 });
 
+test('can query the quad tree with bounds - self bounding box / multi-object', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const bounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+    };
+    const object1: CollisionObject = createMockObject(bounds);
+    const object2: CollisionObject = createMockObject(bounds);
+
+    quadTree.add(object1);
+    quadTree.add(object2);
+
+    const results: CollisionObject[] = quadTree.query(object1.getBoundingBox());
+    t.is(results.length, 2);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
+});
+
 test('can query the quad tree with bounds - square window, cross bucket bounds, multi object', t => {
     const quadTree: QuadTree = createQuadTree({
         x: 0,
@@ -347,12 +476,16 @@ test('can query the quad tree with bounds - square window, cross bucket bounds, 
         height: 100,
     };
 
-    quadTree.add(object1);
-    quadTree.add(object2);
-    quadTree.add(object3);
-    quadTree.add(object4);
+    t.truthy(quadTree.add(object1));
+    t.truthy(quadTree.add(object2));
+    t.truthy(quadTree.add(object3));
+    t.truthy(quadTree.add(object4));
 
     const results: CollisionObject[] = quadTree.query(queryWindow);
+
+    // wole window
+    t.is(quadTree.query(quadTree.bounds).length, 4);
+
     t.is(results.length, 4);
     t.truthy(results.includes(object1));
     t.truthy(results.includes(object2));
@@ -429,19 +562,19 @@ test('can remove object added to quad tree - collapse subtree higher capacity', 
     quadTree.add(object2);
     quadTree.add(object3);
 
-    t.is(quadTree.numData, 0);
+    t.is(quadTree.data.size, 0);
     t.is(quadTree.quadrants.length, 4);
 
     quadTree.remove(object1);
 
-    t.is(quadTree.numData, 2);
+    t.is(quadTree.data.size, 2);
     t.truthy(quadTreeBucketContains(quadTree, object2));
     t.truthy(quadTreeBucketContains(quadTree, object3));
     t.is(quadTree.quadrants.length, 0);
 });
 
 function quadTreeBucketContains(quadTree: QuadTree, object: CollisionObject): boolean {
-    const objectPointDataSet = quadTree.data.get(object.getBoundingBox());
+    const objectPointDataSet = quadTree.data.get(createPointKey(object.getBoundingBox()));
     if (objectPointDataSet) {
         return objectPointDataSet.includes(object);
     }
