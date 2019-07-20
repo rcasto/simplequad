@@ -13,9 +13,9 @@ test('can query the quad tree with bounds', t => {
 
     quadTree.add(object);
 
-    const results: CollisionObject[] = quadTree.query(quadTree.bounds);
-    t.is(results.length, 1);
-    t.truthy(results.includes(object));
+    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
+    t.is(results.size, 1);
+    t.truthy(results.has(object));
 });
 
 test('can query the quad tree with bounds - multi object 1 point (whole window bounds)', t => {
@@ -39,11 +39,11 @@ test('can query the quad tree with bounds - multi object 1 point (whole window b
     quadTree.add(object2);
     quadTree.add(object3);
 
-    const results: CollisionObject[] = quadTree.query(quadTree.bounds);
-    t.is(results.length, 3);
-    t.truthy(results.includes(object1));
-    t.truthy(results.includes(object2));
-    t.truthy(results.includes(object3));
+    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
+    t.is(results.size, 3);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
+    t.truthy(results.has(object3));
 });
 
 test('can query the quad tree with bounds - single quadrant query window', t => {
@@ -70,9 +70,9 @@ test('can query the quad tree with bounds - single quadrant query window', t => 
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(queryBounds);
-    t.is(results.length, 1);
-    t.truthy(results.includes(object2));
+    const results: Set<CollisionObject> = quadTree.query(queryBounds);
+    t.is(results.size, 1);
+    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - single quadrant object bounding box overlap', t => {
@@ -92,10 +92,10 @@ test('can query the quad tree with bounds - single quadrant object bounding box 
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBounds());
-    t.is(results.length, 2);
-    t.truthy(results.includes(object1));
-    t.truthy(results.includes(object2));
+    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
+    t.is(results.size, 2);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - multi quadrant query window', t => {
@@ -115,10 +115,10 @@ test('can query the quad tree with bounds - multi quadrant query window', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBounds());
-    t.is(results.length, 2);
-    t.truthy(results.includes(object1));
-    t.truthy(results.includes(object2));
+    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
+    t.is(results.size, 2);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - multi level', t => {
@@ -138,10 +138,10 @@ test('can query the quad tree with bounds - multi level', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBounds());
-    t.is(results.length, 2);
-    t.truthy(results.includes(object1));
-    t.truthy(results.includes(object2));
+    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
+    t.is(results.size, 2);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - self bounding box', t => {
@@ -154,9 +154,9 @@ test('can query the quad tree with bounds - self bounding box', t => {
     });
     quadTree.add(object);
 
-    const results: CollisionObject[] = quadTree.query(object.getBounds());
-    t.is(results.length, 1);
-    t.truthy(results.includes(object));
+    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
+    t.is(results.size, 1);
+    t.truthy(results.has(object));
 });
 
 test('can query the quad tree with bounds - self bounding box / multi-object', t => {
@@ -173,10 +173,10 @@ test('can query the quad tree with bounds - self bounding box / multi-object', t
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: CollisionObject[] = quadTree.query(object1.getBounds());
-    t.is(results.length, 2);
-    t.truthy(results.includes(object1));
-    t.truthy(results.includes(object2));
+    const results: Set<CollisionObject> = quadTree.query(quadTree.bounds);
+    t.is(results.size, 2);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - square window, cross bucket bounds, multi object', t => {
@@ -222,14 +222,11 @@ test('can query the quad tree with bounds - square window, cross bucket bounds, 
     t.truthy(quadTree.add(object3));
     t.truthy(quadTree.add(object4));
 
-    const results: CollisionObject[] = quadTree.query(queryWindow);
+    const results: Set<CollisionObject> = quadTree.query(queryWindow);
 
-    // wole window
-    t.is(quadTree.query(quadTree.bounds).length, 4);
-
-    t.is(results.length, 4);
-    t.truthy(results.includes(object1));
-    t.truthy(results.includes(object2));
-    t.truthy(results.includes(object3));
-    t.truthy(results.includes(object4));
+    t.is(results.size, 4);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
+    t.truthy(results.has(object3));
+    t.truthy(results.has(object4));
 });

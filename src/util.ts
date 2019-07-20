@@ -100,12 +100,12 @@ export function createPointKey(point: Point): string {
     return `(${point.x},${point.y})`;
 }
 
-export function flattenLists<T>(lists: Array<T[]>): T[] {
+export function flattenSets<T>(lists: Set<T>[]): Set<T> {
     return (lists || [])
-        .reduce((prevList, currList) => {
-            if (currList.length === 0) {
-                return prevList;
+        .reduce((prevSet, currSet) => {
+            if (currSet.size === 0) {
+                return prevSet;
             }
-            return [...prevList, ...currList];
-        }, []);
+            return new Set<T>([...prevSet, ...currSet]);
+        }, new Set<T>());
 }

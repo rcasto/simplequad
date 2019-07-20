@@ -21,12 +21,12 @@ export interface CollisionObject {
 export interface QuadTree {
     // Properties
     bounds: BoundingBox;
-    data: Map<string, CollisionObject[]>;
+    data: Map<string, Set<CollisionObject>>;
     capacity: number;
     quadrants: QuadTree[];
     // Methods
     add: (object: CollisionObject) => boolean;
     remove: (object: CollisionObject) => boolean;
     clear: () => void;
-    query: (bounds: Bound) => CollisionObject[];
+    query: (bounds: Bound) => Set<CollisionObject>;
 }

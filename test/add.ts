@@ -132,10 +132,10 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBounds())) || [];
-    t.is(objectsAtPoint.length, 2);
-    t.truthy(objectsAtPoint.includes(object1));
-    t.truthy(objectsAtPoint.includes(object2));
+    const objectsAtPoint: Set<CollisionObject> = quadTree.data.get(createPointKey(object1.getBounds())) || new Set<CollisionObject>();
+    t.is(objectsAtPoint.size, 2);
+    t.truthy(objectsAtPoint.has(object1));
+    t.truthy(objectsAtPoint.has(object2));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -156,10 +156,10 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: CollisionObject[] = quadTree.data.get(createPointKey(object1.getBounds())) || [];
-    t.is(objectsAtPoint.length, 2);
-    t.truthy(objectsAtPoint.includes(object1));
-    t.truthy(objectsAtPoint.includes(object2));
+    const objectsAtPoint: Set<CollisionObject> = quadTree.data.get(createPointKey(object1.getBounds())) || new Set<CollisionObject>();
+    t.is(objectsAtPoint.size, 2);
+    t.truthy(objectsAtPoint.has(object1));
+    t.truthy(objectsAtPoint.has(object2));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -210,7 +210,7 @@ test('can handle adding object directly on bucket boundary crossing', t => {
 
     const results = quadTree.query(quadTree.bounds);
 
-    t.is(results.length, 2);
-    t.truthy(results.includes(object1));
-    t.truthy(results.includes(object2));
+    t.is(results.size, 2);
+    t.truthy(results.has(object1));
+    t.truthy(results.has(object2));
 });

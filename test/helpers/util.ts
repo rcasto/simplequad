@@ -25,7 +25,7 @@ export function createMockObject(bounds: Bound): CollisionObject {
 export function quadTreeBucketContains(quadTree: QuadTree, object: CollisionObject): boolean {
     const objectPointDataSet = quadTree.data.get(createPointKey(object.getBounds()));
     if (objectPointDataSet) {
-        return objectPointDataSet.includes(object);
+        return objectPointDataSet.has(object);
     }
     return false;
 }

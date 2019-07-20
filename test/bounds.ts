@@ -124,6 +124,6 @@ function doIntersect(object1: CollisionObject, object2: CollisionObject): boolea
     const quadTree: QuadTree = createQuadTree(bounds, 2);
     quadTree.add(object1);
 
-    const results: CollisionObject[] = quadTree.query(object2.getBounds());
-    return results.length > 0;
+    const results: Set<CollisionObject> = quadTree.query(object2.getBounds());
+    return results.size > 0;
 }
