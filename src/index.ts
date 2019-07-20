@@ -1,12 +1,12 @@
 import { Bound, BoundingBox, CollisionObject, QuadTree } from './schema';
-import { containsPoint, createPointKey, doBoundsIntersect, divideBoundingBox, flattenSets } from './util';
+import { createPointKey, doBoundsIntersect, divideBoundingBox, flattenSets } from './util';
 
 function addToQuadTree(quadTree: QuadTree, object: CollisionObject): boolean {
     const objectBound: Bound = object.getBounds();
 
     // Let's first check if the point this object occupies is within
     // the bounds of the bucket
-    if (!containsPoint(quadTree.bounds, objectBound)) {
+    if (!doBoundsIntersect(quadTree.bounds, objectBound)) {
         return false;
     }
 

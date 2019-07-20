@@ -12,7 +12,7 @@ export interface Circle extends Point {
     r: number;
 }
 
-export type Bound = BoundingBox | Circle;
+export type Bound = BoundingBox | Circle | Point;
 
 export interface CollisionObject {
     getBounds: () => Bound;

@@ -1,6 +1,31 @@
 import { Bound, BoundingBox, Circle, Point } from './schema';
 
-export function containsPoint(bounds: BoundingBox, point: Point) {
+// The # of combinations between these 3 bounds is as follows:
+// - Circle and Circle
+// - Circle and Point
+// - Circle and BoundingBox
+// - BoundingBox and BoundingBox
+// - BoundingBox and Point
+// - Point and Point
+
+function isCircle(bound: Bound): bound is Circle {
+    return (bound as Circle).r !== undefined;
+}
+
+function isBoundingBox(bound: Bound): bound is BoundingBox {
+    return (bound as BoundingBox).width !== undefined;
+}
+
+function isPoint(bound: Bound): bound is Point {
+    return !isCircle(bound) && !isBoundingBox(bound);
+}
+
+function doPointsIntersect(point1: Point, point2: Point): boolean {
+    return point1.x === point2.x &&
+           point1.y === point2.y;
+}
+
+function doBoundingBoxPointIntersect(bounds: BoundingBox, point: Point) {
     return doBoundingBoxesIntersect(bounds, {
         x: point.x,
         y: point.y,
@@ -9,26 +34,12 @@ export function containsPoint(bounds: BoundingBox, point: Point) {
     });
 }
 
-export function isCircle(bound: Bound): bound is Circle {
-    return (bound as Circle).r !== undefined;
-}
-
-export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
-    const isBound1Circle: boolean = isCircle(bound1);
-    const isBound2Circle: boolean = isCircle(bound2);
-    // They are both circles
-    if (isBound1Circle && isBound2Circle) {
-        return doCirclesIntersect(bound1 as Circle, bound2 as Circle);
-    }
-    // They are both bounding boxes
-    if (!isBound1Circle && !isBound2Circle) {
-        return doBoundingBoxesIntersect(bound1 as BoundingBox, bound2 as BoundingBox);
-    }
-    // One is circle, one is box
-    if (isBound1Circle) {
-        return doCircleBoundingBoxIntersect(bound1 as Circle, bound2 as BoundingBox);
-    }
-    return doCircleBoundingBoxIntersect(bound2 as Circle, bound1 as BoundingBox);
+function doCirclePointIntersect(circle: Circle, point: Point) {
+    return doCirclesIntersect(circle, {
+        x: point.x,
+        y: point.y,
+        r: 0,
+    });
 }
 
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Axis-Aligned_Bounding_Box
@@ -54,6 +65,60 @@ function doCircleBoundingBoxIntersect(circle: Circle, box: BoundingBox): boolean
     const dx: number = circle.x - Math.max(box.x, Math.min(circle.x, box.x + box.width));
     const dy: number = circle.y - Math.max(box.y, Math.min(circle.y, box.y + box.height));
     return Math.pow(dx, 2) + Math.pow(dy, 2) <= Math.pow(circle.r, 2);
+}
+
+export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
+    const isBound1Circle: boolean = isCircle(bound1);
+    const isBound2Circle: boolean = isCircle(bound2);
+
+    const isBound1BoundingBox: boolean = isBoundingBox(bound1);
+    const isBound2BoundingBox: boolean = isBoundingBox(bound2);
+
+    const isBound1Point: boolean = isPoint(bound1);
+    const isBound2Point: boolean = isPoint(bound2);
+
+    // They are both circles
+    if (isBound1Circle && isBound2Circle) {
+        return doCirclesIntersect(bound1 as Circle, bound2 as Circle);
+    }
+
+    // They are both bounding boxes
+    if (isBound1BoundingBox && isBound2BoundingBox) {
+        return doBoundingBoxesIntersect(bound1 as BoundingBox, bound2 as BoundingBox);
+    }
+
+    // They are both points
+    if (isBound1Point && isBound2Point) {
+        return doPointsIntersect(bound1 as Point, bound2 as Point);
+    }
+
+    // 1 is circle, 2 is bounding box
+    if (isBound1Circle && isBound2BoundingBox) {
+        return doCircleBoundingBoxIntersect(bound1 as Circle, bound2 as BoundingBox);
+    }
+
+    // 1 is circle, 2 is point
+    if (isBound1Circle && isBound2Point) {
+        return doCirclePointIntersect(bound1 as Circle, bound2 as Point);
+    }
+
+    // 1 is bounding box, 2 is circle
+    if (isBound1BoundingBox && isBound2Circle) {
+        return doCircleBoundingBoxIntersect(bound2 as Circle, bound1 as BoundingBox);
+    }
+
+    // 1 is bounding box, 2 is point
+    if (isBound1BoundingBox && isBound2Point) {
+        return doBoundingBoxPointIntersect(bound1 as BoundingBox, bound2 as Point);
+    }
+
+    // 1 is point, 2 is 2 is circle
+    if (isBound1Point && isBound2Circle) {
+        return doCirclePointIntersect(bound2 as Circle, bound1 as Point);
+    }
+
+    // 1 is point, 2 is bounding box
+    return doBoundingBoxPointIntersect(bound2 as BoundingBox, bound1 as Point);
 }
 
 export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
