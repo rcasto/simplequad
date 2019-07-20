@@ -17,7 +17,13 @@ The window global is `SimpleQuad`.
 
 ## Usage
 ```typescript
-import { BoundingBox, createQuadTree, QuadTree } from 'simplequad';
+import { BoundingBox, CollisionObject, createQuadTree, QuadTree } from 'simplequad';
+
+interface Monster extends CollisionObject {
+    hp: number;
+    attack: number;
+    favoriteFood: string;
+}
 
 // Define both the bounds with which this QuadTree should manage
 // and the capacity of each node or bucket in the QuadTree
@@ -30,17 +36,19 @@ const bounds: BoundingBox = {
 const nodeCapacity: number = 5;
 
 // Create the QuadTree by passing in the Bounds and Capacity
+// The bounds here are required to be a BoundingBox
 const quadTree: QuadTree = createQuadTree(bounds, nodeCapacity);
 
 // Create a monster object
-const monster: CollisionObject = {
+const monster: Monster = {
     hp: 100,
     attack: 50,
     favoriteFood: 'tacos',
     // Requirement is that objects added to the QuadTree
-    // implement a getBoundingBox method, this method returns a BoundingBox
+    // implement a getBoundingBox method, this method returns a Bound
     // containing the object
-    getBoundingBox() {
+    // A Bound can be a Circle, Point, or BoundingBox.
+    getBounds() {
         return {
             x: 0,
             y: 0,
@@ -52,8 +60,8 @@ const monster: CollisionObject = {
 
 // Let's first check for the monster
 // He shouldn't be there
-let monsterResultSet = quadTree.query(monster.getBoundingBox());
-console.log(`# of monsters found: ${monsterResultSet.length}`);
+let monsterResultSet = quadTree.query(monster.getBounds());
+console.log(`# of monsters found: ${monsterResultSet.size}`);
 
 // Now let's add the monster object to the QuadTree
 quadTree.add(monster);
@@ -61,8 +69,8 @@ console.log("Added the monster");
 
 // Now lets make sure the monster is there
 // Let's hope he didn't run off
-monsterResultSet = quadTree.query(monster.getBoundingBox());
-console.log(`# of monsters found: ${monsterResultSet.length}`);
+monsterResultSet = quadTree.query(monster.getBounds());
+console.log(`# of monsters found: ${monsterResultSet.size}`);
 
 // Remove the monster from the QuadTree
 // No one likes monsters...geesh
@@ -71,12 +79,12 @@ console.log("Removed the monster");
 
 // Let's just make sure we actually
 // got rid of the monster
-monsterResultSet = quadTree.query(monster.getBoundingBox());
-console.log(`# of monsters found: ${monsterResultSet.length}`);
+monsterResultSet = quadTree.query(monster.getBounds());
+console.log(`# of monsters found: ${monsterResultSet.size}`);
 
 // Remove all objects from the QuadTree
 // It's already empty...but let's just make sure
-// we got all the monster
+// we got all the monsters
 quadTree.clear();
 console.log("Cleared all monsters...they be gone");
 ```
@@ -86,21 +94,21 @@ console.log("Cleared all monsters...they be gone");
 - simplequad with circles - [CodePen](https://codepen.io/rcasto/full/EqYxWw)
 
 ## API
-All of the schema definitions can be found in the `schema.ts` file of the repo.
+All of the schema definitions shown below, can also be found in the `schema.ts` within the repo.
 
 ### QuadTree
 ```typescript
 export interface QuadTree {
     // Properties
     bounds: BoundingBox;
-    data: Map<string, CollisionObject[]>;
+    data: Map<string, Set<CollisionObject>>;
     capacity: number;
     quadrants: QuadTree[];
     // Methods
     add: (object: CollisionObject) => boolean;
     remove: (object: CollisionObject) => boolean;
     clear: () => void;
-    query: (bounds: BoundingBox) => CollisionObject[];
+    query: (bounds: Bound) => Set<CollisionObject>;
 }
 ```
 
@@ -120,10 +128,22 @@ export interface BoundingBox extends Point {
 }
 ```
 
+### Circle
+```typescript
+export interface Circle extends Point {
+    r: number;
+}
+```
+
+### Bound
+```typescript
+export type Bound = BoundingBox | Circle | Point;
+```
+
 ### CollisionObject
 ```typescript
 export interface CollisionObject {
-    getBoundingBox: () => BoundingBox;
+    getBounds: () => Bound;
 }
 ```
 
