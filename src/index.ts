@@ -130,6 +130,14 @@ function queryQuadTree(quadTree: QuadTree, bounds: Bound): Set<CollisionObject> 
     return childQueryResultSet;
 }
 
+/**
+ * Creates a quadtree "managing" the input bounds with input node capacity.
+ * 
+ * All collision objects should intersect or be contained within these "managed" bounds.
+ * @param {BoundingBox} bounds - The bounding box with which the quadtree "manages".
+ * @param {number} capacity - The # of collision objects a node can contain before subdividing.
+ * @return {QuadTree} The created quadtree "managing" the input bounds.
+ */
 export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadTree {
     const quadTree: QuadTree = {
         bounds,
