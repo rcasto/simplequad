@@ -1,5 +1,7 @@
 # simplequad
-A simple QuadTree implementation. Mainly implemented for my own learning and introduction into 2D games.  
+A simple [quadtree](https://en.wikipedia.org/wiki/Quadtree) implementation geared towards collision detection.
+
+**Note:** This library will help you determine which objects have collided with each other or intersect a query window of your choice. It will not help with resolving these collisions, however. 
 
 ## Installation
 
@@ -158,4 +160,4 @@ Generating code coverage report for tests:
 npm run test:coverage
 ```
 
-Make sure to first install the packages via `npm install`.
+**Note:** Make sure to first install the dev dependency packages via `npm install`.

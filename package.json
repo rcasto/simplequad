@@ -1,7 +1,7 @@
 {
   "name": "simplequad",
   "version": "1.0.4",
-  "description": "A simple QuadTree implementation",
+  "description": "A simple quadtree implementation geared towards collision detection",
   "main": "dist/simplequad.umd.js",
   "module": "dist/simplequad.esm.js",
   "types": "dist/index.d.ts",
@@ -17,10 +17,18 @@
     "prepublish": "npm-run-all test build"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
+  "homepage": "https://github.com/rcasto/simplequad#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/rcasto/simplequad.git"
   },
+  "keywords": [
+    "quadtree",
+    "2d-collision",
+    "2d-collision-library",
+    "quadtree-js",
+    "quadtree-lib"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@babel/cli": "7.5.0",
