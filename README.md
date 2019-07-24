@@ -93,7 +93,8 @@ console.log("Cleared all monsters...they be gone");
 
 ### Examples
 - simplequad with monster (above example) - [CodePen](https://codepen.io/rcasto/pen/JgPjVm?editors=0012)
-- simplequad with circles - [CodePen](https://codepen.io/rcasto/full/EqYxWw)
+- simplequad with static circles - [CodePen](https://codepen.io/rcasto/full/EqYxWw)
+- simplequad with moving circles - [CodePen](https://codepen.io/rcasto/full/wVGGzV)
 
 ## API
 All of the schema definitions shown below, can also be found in the `schema.ts` within the repo.
