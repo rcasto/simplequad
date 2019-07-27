@@ -130,6 +130,10 @@ function queryQuadTree(quadTree: QuadTree, bounds: Bound): Set<CollisionObject> 
     return childQueryResultSet;
 }
 
+function getQuadTreeData(quadTree: QuadTree): CollisionObject[] {
+    return [...flattenSets([...quadTree.data.values()])];
+}
+
 /**
  * Creates a quadtree "managing" the input bounds with input node capacity.
  * 
@@ -147,7 +151,8 @@ export function createQuadTree(bounds: BoundingBox, capacity: number = 3): QuadT
         add: (object) => addToQuadTree(quadTree, object),
         remove: (object) => removeFromQuadTree(quadTree, object),
         clear: () => clearQuadTree(quadTree),
-        query: (bounds) => queryQuadTree(quadTree, bounds)
+        query: (bounds) => queryQuadTree(quadTree, bounds),
+        getData: () => getQuadTreeData(quadTree),
     };
     return quadTree;
 }

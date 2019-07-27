@@ -83,4 +83,13 @@ export interface QuadTree {
      * @return {Set<CollisionObject>} The set of objects the query window bounds intersect with. If empty, there are no intersections.
      */
     query: (bounds: Bound) => Set<CollisionObject>;
+    /**
+     * Convenience method offered to get the data for a node in an easier manner
+     * Will take a flatten the map of data to a collection.
+     * 
+     * The data comes from being set based, so you can assume all of the items
+     * are unique or different references.
+     * @return {T[]} The list of collision objects that this "bucket" holds
+     */
+    getData: () => CollisionObject[];
 }

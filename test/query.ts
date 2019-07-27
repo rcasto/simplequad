@@ -230,3 +230,56 @@ test('can query the quad tree with bounds - square window, cross bucket bounds, 
     t.truthy(results.has(object3));
     t.truthy(results.has(object4));
 });
+
+test('can get data within bucket', t => {
+    const quadTree: QuadTree = createMockQuadTree(5);
+    const object1: CollisionObject = createMockObject({
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 200,
+    });
+    const object2: CollisionObject = createMockObject({
+        x: 100,
+        y: 150,
+        width: 200,
+        height: 200,
+    });
+    const object3: CollisionObject = createMockObject({
+        x: 100,
+        y: 200,
+        width: 200,
+        height: 200,
+    });
+    quadTree.add(object1);
+    quadTree.add(object2);
+    quadTree.add(object3);
+
+    const results: CollisionObject[] = quadTree.getData();
+    t.is(results.length, 3);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
+    t.truthy(results.includes(object3));
+});
+
+test('can get data within bucket - same point', t => {
+    const quadTree: QuadTree = createMockQuadTree(5);
+    const bounds: BoundingBox = {
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 200,
+    };
+    const object1: CollisionObject = createMockObject(bounds);
+    const object2: CollisionObject = createMockObject(bounds);
+    const object3: CollisionObject = createMockObject(bounds);
+    quadTree.add(object1);
+    quadTree.add(object2);
+    quadTree.add(object3);
+
+    const results: CollisionObject[] = quadTree.getData();
+    t.is(results.length, 3);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
+    t.truthy(results.includes(object3));
+});
