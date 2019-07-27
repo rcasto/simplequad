@@ -165,12 +165,17 @@ export function createPointKey(point: Point): string {
     return `(${point.x},${point.y})`;
 }
 
-export function flattenSets<T>(lists: Set<T>[]): Set<T> {
-    return (lists || [])
-        .reduce((prevSet, currSet) => {
-            if (currSet.size === 0) {
-                return prevSet;
+export function flattenSets<T>(sets: Set<T>[]): Set<T> {
+    const flattenedSet: Set<T> = new Set<T>();
+
+    (sets || [])
+        .forEach(set => {
+            if (set.size === 0) {
+                return;
             }
-            return new Set<T>([...prevSet, ...currSet]);
-        }, new Set<T>());
+            set
+                .forEach(setItem => flattenedSet.add(setItem));
+        });
+    
+    return flattenedSet;
 }
