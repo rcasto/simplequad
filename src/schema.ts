@@ -21,7 +21,7 @@ export interface CollisionObject {
     getBounds: () => Bound;
 }
 
-export interface QuadTree {
+export interface QuadTree<T extends CollisionObject = CollisionObject> {
     // Properties
     /**
      * The bounding box that this quadtree "manages".
@@ -38,7 +38,7 @@ export interface QuadTree {
      * 
      * This will be empty for "container nodes".
      */
-    data: Map<string, Set<CollisionObject>>;
+    data: Map<string, Set<T>>;
     /**
      * The number of collision objects this node can hold
      * before subdividing.
@@ -53,25 +53,25 @@ export interface QuadTree {
      * This will be of length 4 for "container" nodes.
      * This will be empty for leaf nodes.
      */
-    quadrants: QuadTree[];
+    quadrants: QuadTree<T>[];
     // Methods
     /**
      * Adds a collision object to the quadtree.
      * 
      * Will subdivide leaf nodes when there capacity is reached and re-distribute collision objects.
-     * @param {CollisionObject} object - The collision object to add to the quadtree.
+     * @param {T} object - The collision object to add to the quadtree.
      * @return {boolean} True if the collision object was added, false if the collision object was not.
      */
-    add: (object: CollisionObject) => boolean;
+    add: (object: T) => boolean;
     /**
      * Removes a collision object from the quadtree.
      * 
      * Will collapse or consume child leaf nodes to parent node if # of child collision objects is less than
      * individual node capacity. Meaning parent can fit child collision objects.
-     * @param {CollisionObject} object - The collision object to remove from the quadtree.
+     * @param {T} object - The collision object to remove from the quadtree.
      * @return {boolean} True if the collision object was removed, false if the collision object was not.
      */
-    remove: (object: CollisionObject) => boolean;
+    remove: (object: T) => boolean;
     /**
      * Clears the quadtree of all data and quadrant subdivisions (child nodes).
      */
@@ -80,9 +80,9 @@ export interface QuadTree {
      * Queries the quadtree, finding what collision objects intersect with the input
      * query bound.
      * @param {Bound} bounds - The query window bounds, or "lens" into the quadtree to find intersections.
-     * @return {Set<CollisionObject>} The set of objects the query window bounds intersect with. If empty, there are no intersections.
+     * @return {Set<T>} The set of objects the query window bounds intersect with. If empty, there are no intersections.
      */
-    query: (bounds: Bound) => Set<CollisionObject>;
+    query: (bounds: Bound) => Set<T>;
     /**
      * Convenience method offered to get the data for a node in an easier manner
      * Will take a flatten the map of data to a collection.
@@ -91,5 +91,5 @@ export interface QuadTree {
      * are unique or different references.
      * @return {T[]} The list of collision objects that this "bucket" holds
      */
-    getData: () => CollisionObject[];
+    getData: () => T[];
 }
