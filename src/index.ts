@@ -38,7 +38,8 @@ function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object:
     // associated with this point
     if (objectPointSet.size > 0 ||
         quadTree.data.size + 1 <= quadTree.capacity) {
-        quadTree.data.set(objectPointKey, new Set([...objectPointSet, object]));
+        objectPointSet.add(object);
+        quadTree.data.set(objectPointKey, objectPointSet);
         return true;
     }
 
@@ -50,7 +51,7 @@ function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object:
     // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
     const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
-    const quadObjects: T[] = [...flattenSets([...quadTree.data.values()]), object];
+    const quadObjects: T[] = [...getQuadTreeData(quadTree), object];
 
     // adjust current quadtree settings
     // May need to adjust these in-place instead of creating new references
@@ -117,7 +118,7 @@ function queryQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, bounds:
         // Let's iterate over the data in the bucket to see
         // if the objects themselves intersect with the query bounds
         return new Set<T>(
-            [...flattenSets([...quadTree.data.values()])]
+            getQuadTreeData(quadTree)
                 .filter(quadObject => doBoundsIntersect(quadObject.getBounds(), bounds)));
     }
 
