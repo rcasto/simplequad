@@ -1,7 +1,7 @@
 # simplequad
-A simple [quadtree](https://en.wikipedia.org/wiki/Quadtree) implementation geared towards 2D collision detection.
+A simple [quadtree](https://en.wikipedia.org/wiki/Quadtree) implementation useful for 2D collision detection and more.
 
-**Note:** This library will help you determine which objects have collided with each other or intersect a query window of your choice. It will not help with resolving these collisions, however. 
+**Note:** This library will help you determine which objects have collided with each other. It will not help with resolving these collisions, however.
 
 ## Installation
 
