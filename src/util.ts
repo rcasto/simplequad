@@ -27,12 +27,10 @@ function doPointsIntersect(point1: Point, point2: Point): boolean {
 }
 
 function doBoundingBoxPointIntersect(bounds: BoundingBox, point: Point) {
-    return doBoundingBoxesIntersect(bounds, {
-        x: point.x,
-        y: point.y,
-        width: 0,
-        height: 0,
-    });
+    return (
+        point.x >= bounds.x && point.x <= bounds.x + bounds.width &&
+        point.y >= bounds.y && point.y <= bounds.y + bounds.height
+    );
 }
 
 function doCirclePointIntersect(circle: Circle, point: Point) {

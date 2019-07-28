@@ -1,9 +1,4 @@
-import { BoundingBox, Point, Bound } from './src/schema';
-
-// interface RotatedBoundingBox extends BoundingBox {
-//     // This property goes from 0 -> 2 * pi
-//     rot: number;
-// }
+import { BoundingBox, Point } from './src/schema';
 
 interface Vector extends Point {}
 
@@ -79,10 +74,10 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
 
     let normalVector: Vector;
     let scalarProjection: number;
-    let maxBox1: number = Number.MIN_VALUE;
-    let minBox1: number = Number.MAX_VALUE;
-    let maxBox2: number = Number.MIN_VALUE;
-    let minBox2: number = Number.MAX_VALUE;
+    let maxBox1: number;
+    let minBox1: number;
+    let maxBox2: number;
+    let minBox2: number;
 
     while (normalVectors.length) {
         normalVector = normalVectors.pop() as Vector;
@@ -96,7 +91,7 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
         // This will be done for both boxes
         box1Sides
             .forEach(box1Side => {
-                scalarProjection = getProjectionMagnitude(box1Side, normalVector);
+                scalarProjection = getProjectionMagnitude(normalize(box1Side), normalVector);
                 if (scalarProjection < minBox1) {
                     minBox1 = scalarProjection;
                 }
@@ -107,7 +102,7 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
 
         box2Sides
             .forEach(box2Side => {
-                scalarProjection = getProjectionMagnitude(box2Side, normalVector);
+                scalarProjection = getProjectionMagnitude(normalize(box2Side), normalVector);
                 if (scalarProjection < minBox2) {
                     minBox2 = scalarProjection;
                 }
@@ -126,17 +121,3 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
 
     return true;
 }
-
-// const boundingBox1: BoundingBox = {
-//     x: 0,
-//     y: 0,
-//     width: 200,
-//     height: 200,
-// };
-// const boundingBox2: BoundingBox = {
-//     x: 150,
-//     y: 20,
-//     width: 200,
-//     height: 200,
-// };
-// console.log(doIntersect(boundingBox1, boundingBox2));
