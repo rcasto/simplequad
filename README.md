@@ -92,10 +92,17 @@ console.log("Cleared all monsters...they be gone");
 ```
 
 ### Examples
-- simplequad with monster (above example) - [CodePen](https://codepen.io/rcasto/pen/JgPjVm?editors=0012)
-- simplequad with static circles - [CodePen](https://codepen.io/rcasto/full/EqYxWw)
-- simplequad with moving circles - [CodePen](https://codepen.io/rcasto/full/wVGGzV)
-- simplequad with images - [CodePen](https://codepen.io/rcasto/full/MNjryG)
+- simplequad with monster (above example)
+    - [CodePen](https://codepen.io/rcasto/pen/JgPjVm?editors=0012)
+- simplequad with static circles
+    - [CodePen](https://codepen.io/rcasto/full/EqYxWw)
+- simplequad with moving circles
+    - [CodePen](https://codepen.io/rcasto/full/wVGGzV)
+- simplequad with images 
+    - [CodePen](https://codepen.io/rcasto/full/MNjryG)
+- simple with images (web worker)
+    - [CodePen](https://codepen.io/rcasto/full/PMbXMm)
+    - [GitHub Page](https://rcasto.github.io/simplequad-playground/)
 
 ## API
 All of the schema definitions shown below, can also be found in the `schema.ts` within the repo.
