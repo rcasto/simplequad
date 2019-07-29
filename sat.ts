@@ -89,6 +89,7 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
     while (normalVectorIndex < normalVectors.length) {
         maxBox1 = Number.MIN_VALUE;
         minBox1 = Number.MAX_VALUE;
+
         maxBox2 = Number.MIN_VALUE;
         minBox2 = Number.MAX_VALUE;
 
