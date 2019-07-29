@@ -43,12 +43,6 @@ function doCirclePointIntersect(circle: Circle, point: Point) {
 
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Axis-Aligned_Bounding_Box
 function doBoundingBoxesIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
-    // return (
-    //     box1.x <= box2.x + box2.width &&
-    //     box1.x + box1.width >= box2.x &&
-    //     box1.y <= box2.y + box2.height &&
-    //     box1.y + box1.height >= box2.y
-    // );
     return doIntersect(box1, box2);
 }
 
