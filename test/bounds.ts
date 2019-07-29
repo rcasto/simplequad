@@ -41,6 +41,21 @@ test('can find 2 circles intersect', t => {
     t.truthy(doIntersect(object1, object2));
 });
 
+test('can find 2 circles intersect - circle contains circle', t => {
+    const object1: CollisionObject = createMockObject({
+        x: 10,
+        y: 10,
+        r: 5,
+    });
+    const object2: CollisionObject = createMockObject({
+        x: 10,
+        y: 10,
+        r: 2,
+    });
+
+    t.truthy(doIntersect(object1, object2));
+});
+
 test('can find circle intersects with point', t => {
     const object1: CollisionObject = createMockObject({
         x: 10,
