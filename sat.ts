@@ -56,13 +56,13 @@ function getNormal(vector: Point): Point {
     };
 }
 
-function normalize(vector: Point): Point {
-    const magnitude: number = getMagnitude(vector);
-    return {
-        x: vector.x / magnitude,
-        y: vector.y / magnitude,
-    };
-}
+// function normalize(vector: Point): Point {
+//     const magnitude: number = getMagnitude(vector);
+//     return {
+//         x: vector.x / magnitude,
+//         y: vector.y / magnitude,
+//     };
+// }
 
 function getDot(vector1: Point, vector2: Point): number {
     return vector1.x * vector2.x + vector1.y * vector2.y;
@@ -109,7 +109,7 @@ function getSATInfoForCircle(circle: Circle): SATInfo {
     return {
         axes: [],
         points: [circle],
-        buffer: circle.r || 0,
+        buffer: circle.r,
     }
 }
 

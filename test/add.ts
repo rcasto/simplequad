@@ -60,6 +60,7 @@ test('can add an object to quadtree - bucket overflow and split', t => {
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 0);
     t.is(quadTree.quadrants.length, 4);
+    t.is(quadTree.query(quadTree.bounds).size, 2);
     // NW quadrant
     t.is(quadTree.quadrants[0].data.size, 1);
     t.truthy(quadTreeBucketContains(quadTree.quadrants[0], object1));
