@@ -1,8 +1,6 @@
 import { BoundingBox, Point } from './src/schema';
 
-interface Vector extends Point {}
-
-function getVectorBetweenPoints(point1: Point, point2: Point): Vector {
+function getVectorBetweenPoints(point1: Point, point2: Point): Point {
     return {
         x: point2.x - point1.x,
         y: point2.y - point1.y,
@@ -34,7 +32,7 @@ function getPoints(boundingBox: BoundingBox): Point[] {
     ];
 }
 
-function getSideVectors(boundingBox: BoundingBox): Vector[] {
+function getSideVectors(boundingBox: BoundingBox): Point[] {
     const points: Point[] = getPoints(boundingBox);
     return [
         getVectorBetweenPoints(points[0], points[1]),
@@ -44,14 +42,14 @@ function getSideVectors(boundingBox: BoundingBox): Vector[] {
     ];
 }
 
-function getNormal(vector: Vector): Vector {
+function getNormal(vector: Point): Point {
     return {
         x: -vector.y,
         y: vector.x,
     };
 }
 
-function normalize(vector: Vector): Vector {
+function normalize(vector: Point): Point {
     const magnitude: number = getMagnitude(vector);
     return {
         x: vector.x / magnitude,
@@ -59,11 +57,11 @@ function normalize(vector: Vector): Vector {
     };
 }
 
-function getDot(vector1: Vector, vector2: Vector): number {
+function getDot(vector1: Point, vector2: Point): number {
     return vector1.x * vector2.x + vector1.y * vector2.y;
 }
 
-function getMagnitude(vector: Vector): number {
+function getMagnitude(vector: Point): number {
     return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
 }
 
@@ -71,22 +69,25 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
     const box1Points: Point[] = getPoints(box1);
     const box2Points: Point[] = getPoints(box2);
 
-    const box1Sides: Vector[] = getSideVectors(box1);
-    const box2Sides: Vector[] = getSideVectors(box2);
+    const box1Sides: Point[] = getSideVectors(box1);
+    const box2Sides: Point[] = getSideVectors(box2);
 
-    // These are the axes
-    const normalVectors: Vector[] = [...box1Sides, ...box2Sides]
+    const axes: Point[] = [...box1Sides, ...box2Sides]
         .map(sideVector => getNormal(sideVector))
         .map(normalVector => normalize(normalVector));
 
+    return doIntersectSAT(axes, box1Points, box2Points);
+}
+
+export function doIntersectSAT(axes: Point[], pointList1: Point[], pointList2: Point[]): boolean {
     let scalarProjection: number;
     let maxBox1: number;
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
-    let normalVectorIndex: number = 0;
+    let axesIndex: number = 0;
 
-    while (normalVectorIndex < normalVectors.length) {
+    while (axesIndex < axes.length) {
         maxBox1 = Number.MIN_VALUE;
         minBox1 = Number.MAX_VALUE;
 
@@ -96,9 +97,9 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
         // project all sides of box1 onto normal (separating axis)
         // We want to record the minimum and maximum scalar projections
         // This will be done for both boxes
-        box1Points
-            .forEach(box1Point => {
-                scalarProjection = getDot(box1Point, normalVectors[normalVectorIndex]);
+        pointList1
+            .forEach(pointIn1 => {
+                scalarProjection = getDot(pointIn1, axes[axesIndex]);
                 if (scalarProjection < minBox1) {
                     minBox1 = scalarProjection;
                 }
@@ -107,9 +108,9 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
                 }
             });
 
-        box2Points
-            .forEach(box2Point => {
-                scalarProjection = getDot(box2Point, normalVectors[normalVectorIndex]);
+        pointList2
+            .forEach(pointIn2 => {
+                scalarProjection = getDot(pointIn2, axes[axesIndex]);
                 if (scalarProjection < minBox2) {
                     minBox2 = scalarProjection;
                 }
@@ -125,7 +126,7 @@ export function doIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
             return false;
         }
 
-        normalVectorIndex++;
+        axesIndex++;
     }
 
     return true;
