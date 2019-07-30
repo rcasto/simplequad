@@ -23,19 +23,19 @@ function getPoints(boundingBox: BoundingBox): Point[] {
         x: boundingBox.x + boundingBox.width,
         y: boundingBox.y,
     };
-    const bottomLeftPoint: Point = {
-        x: boundingBox.x,
-        y: boundingBox.y + boundingBox.height,
-    };
     const bottomRightPoint: Point = {
         x: boundingBox.x + boundingBox.width,
+        y: boundingBox.y + boundingBox.height,
+    };
+    const bottomLeftPoint: Point = {
+        x: boundingBox.x,
         y: boundingBox.y + boundingBox.height,
     };
     return [
         topLeftPoint,
         topRightPoint,
-        bottomLeftPoint,
         bottomRightPoint,
+        bottomLeftPoint,
     ];
 }
 
@@ -135,10 +135,9 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
     let minBox2: number;
     let axesIndex: number = 0;
     const axes: Point[] = [...sat1.axes, ...sat2.axes];
-
-    // normalize the axes
-    // don't need this until adding minimum translation vector (MTV)
-    // axes = axes.map(axis => normalize(axis));
+        // normalize the axes
+        // don't need this until adding minimum translation vector (MTV)
+        // .map(axis => normalize(axis));
 
     while (axesIndex < axes.length) {
         maxBox1 = Number.MIN_VALUE;

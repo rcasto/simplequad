@@ -15,7 +15,7 @@ function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object:
     }
 
     // Checking children, if this node is a "Container" (No data)
-    if ((quadTree.quadrants || []).length > 0) {
+    if ((quadTree.quadrants || []).length) {
         // Run through all children checking if the object can be added
         // At the first successful add, we can bail out, only needs to be stored once
         const wasAddedToChild: boolean = quadTree.quadrants
@@ -136,7 +136,7 @@ function queryQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, bounds:
 }
 
 function getQuadTreeData<T extends CollisionObject>(quadTree: QuadTree<T>): T[] {
-    return [...flattenSets([...quadTree.data.values()])];
+    return Array.from(flattenSets(Array.from(quadTree.data.values())));
 }
 
 /**
