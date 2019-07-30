@@ -1,5 +1,5 @@
 import { Bound, BoundingBox, Circle, Point } from './schema';
-import { doIntersectBoundingBoxesSAT, doIntersectBoundingBoxCircleSAT, doIntersectCirclesSAT } from '../sat';
+import { doIntersectBoundingBoxesSAT, doIntersectBoundingBoxCircleSAT, doIntersectCirclesSAT } from './sat';
 
 // The # of combinations between these 3 bounds is as follows:
 // - Circle and Circle
@@ -19,6 +19,13 @@ function isBoundingBox(bound: Bound): bound is BoundingBox {
 
 function isPoint(bound: Bound): bound is Point {
     return !isCircle(bound) && !isBoundingBox(bound);
+}
+
+function toCircleFromPoint(point: Point): Circle {
+    return {
+        ...point,
+        r: 0,
+    };
 }
 
 export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
@@ -43,14 +50,8 @@ export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
 
     // They are both points
     if (isBound1Point && isBound2Point) {
-        const point1Circle: Circle = {
-            ...bound1 as Point,
-            r: 0,
-        };
-        const point2Circle: Circle = {
-            ...bound2 as Point,
-            r: 0,
-        };
+        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
         return doIntersectCirclesSAT(point1Circle, point2Circle);
     }
 
@@ -61,10 +62,7 @@ export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
 
     // 1 is circle, 2 is point
     if (isBound1Circle && isBound2Point) {
-        const point2Circle: Circle = {
-            ...bound2 as Point,
-            r: 0,
-        };
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
         return doIntersectCirclesSAT(bound1 as Circle, point2Circle);
     }
 
@@ -75,28 +73,19 @@ export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
 
     // 1 is bounding box, 2 is point
     if (isBound1BoundingBox && isBound2Point) {
-        const pointCircle: Circle = {
-            ...bound2 as Point,
-            r: 0,
-        };
-        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, pointCircle);
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, point2Circle);
     }
 
     // 1 is point, 2 is 2 is circle
     if (isBound1Point && isBound2Circle) {
-        const point1Circle: Circle = {
-            ...bound1 as Point,
-            r: 0,
-        };
+        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
         return doIntersectCirclesSAT(point1Circle, bound2 as Circle);
     }
 
     // 1 is point, 2 is bounding box
-    const pointCircle: Circle = {
-        ...bound1 as Point,
-        r: 0,
-    };
-    return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, pointCircle);
+    const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+    return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, point1Circle);
 }
 
 export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {

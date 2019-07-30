@@ -1,11 +1,4 @@
-import { BoundingBox, Point, Circle } from './src/schema';
-
-interface SATInfo {
-    axes: Point[];
-    points: Point[];
-    // Mainly used to handle circles easier
-    buffer: number;
-}
+import { BoundingBox, Point, Circle, SATInfo } from './schema';
 
 function getVectorBetweenPoints(point1: Point, point2: Point): Point {
     return {
