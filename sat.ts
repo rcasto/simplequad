@@ -105,6 +105,15 @@ export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox
     return doIntersectSAT(sat1, sat2);
 }
 
+export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): boolean {
+    const sat1: SATInfo = getSATInfoForCircle(circle1);
+    const sat2: SATInfo = getSATInfoForCircle(circle2);
+
+    sat2.axes.push(getVectorBetweenPoints(circle1, circle2));
+
+    return doIntersectSAT(sat1, sat2);
+}
+
 function getSATInfoForCircle(circle: Circle): SATInfo {
     return {
         axes: [],
