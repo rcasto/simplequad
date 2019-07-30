@@ -1,6 +1,9 @@
 # simplequad
 A simple [quadtree](https://en.wikipedia.org/wiki/Quadtree) implementation useful for 2D collision detection and more.
 
+![simplequad](./simplequad.gif)  
+[Make your own!](https://rcasto.github.io/simplequad-playground/)
+
 **Note:** This library will help you determine which objects have collided with each other. It will not help with resolving these collisions, however.
 
 ## Installation
