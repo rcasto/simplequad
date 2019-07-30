@@ -67,7 +67,7 @@ function getMagnitude(vector: Point): number {
 
 function closestToPoint(targetPoint: Point, points: Point[]): Point {
     let closestPoint: Point = points[0];
-    let closestDistance: number = Number.MAX_VALUE;
+    let closestDistance: number = Number.POSITIVE_INFINITY;
     let currentDistance: number;
     points
         .forEach(point => {
@@ -142,11 +142,11 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
         // .map(axis => normalize(axis));
 
     while (axesIndex < axes.length) {
-        maxBox1 = Number.MIN_VALUE;
-        minBox1 = Number.MAX_VALUE;
+        maxBox1 = Number.NEGATIVE_INFINITY;
+        minBox1 = Number.POSITIVE_INFINITY;
 
-        maxBox2 = Number.MIN_VALUE;
-        minBox2 = Number.MAX_VALUE;
+        maxBox2 = Number.NEGATIVE_INFINITY;
+        minBox2 = Number.POSITIVE_INFINITY;
 
         // project all sides of box1 onto normal (separating axis)
         // We want to record the minimum and maximum scalar projections
