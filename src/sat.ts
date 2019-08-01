@@ -99,19 +99,13 @@ export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox
 }
 
 export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): boolean {
-    const sat1: SATInfo = getSATInfoForCircle(circle1);
-    const sat2: SATInfo = getSATInfoForCircle(circle2);
-
-    sat2.axes.push(getVectorBetweenPoints(circle1, circle2));
-
-    return doIntersectSAT(sat1, sat2);
+    return getMagnitude(getVectorBetweenPoints(circle1, circle2)) <= circle1.r + circle2.r;
 }
 
 function getSATInfoForCircle(circle: Circle): SATInfo {
     return {
         axes: [],
         points: [circle],
-        buffer: circle.r,
     }
 }
 
@@ -125,7 +119,6 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     return {
         axes,
         points,
-        buffer: 0,
     }
 }
 
@@ -136,7 +129,7 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
     let maxBox2: number;
     let minBox2: number;
     let axesIndex: number = 0;
-    const axes: Point[] = [...sat1.axes, ...sat2.axes];
+    const axes: Point[] = [...sat1.axes, ...sat2.axes]
         // normalize the axes
         // don't need this until adding minimum translation vector (MTV)
         // .map(axis => normalize(axis));
@@ -154,22 +147,22 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
         sat1.points
             .forEach(pointIn1 => {
                 scalarProjection = getDot(pointIn1, axes[axesIndex]);
-                if (scalarProjection - sat1.buffer < minBox1) {
-                    minBox1 = scalarProjection - sat1.buffer;
+                if (scalarProjection < minBox1) {
+                    minBox1 = scalarProjection;
                 }
-                if (scalarProjection + sat1.buffer > maxBox1) {
-                    maxBox1 = scalarProjection + sat1.buffer;
+                if (scalarProjection > maxBox1) {
+                    maxBox1 = scalarProjection;
                 }
             });
 
         sat2.points
             .forEach(pointIn2 => {
                 scalarProjection = getDot(pointIn2, axes[axesIndex]);
-                if (scalarProjection - sat2.buffer < minBox2) {
-                    minBox2 = scalarProjection - sat2.buffer;
+                if (scalarProjection < minBox2) {
+                    minBox2 = scalarProjection;
                 }
-                if (scalarProjection + sat2.buffer > maxBox2) {
-                    maxBox2 = scalarProjection + sat2.buffer;
+                if (scalarProjection > maxBox2) {
+                    maxBox2 = scalarProjection;
                 }
             });
 
