@@ -54,7 +54,7 @@ function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object:
     // Let's first build the child quadrants
     // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
-    const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
+    const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity, quadTree.useSAT));
     const quadObjects: T[] = [...getQuadTreeData(quadTree), object];
 
     // adjust current quadtree settings
@@ -123,7 +123,7 @@ function queryQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, bounds:
         // if the objects themselves intersect with the query bounds
         return new Set<T>(
             getQuadTreeData(quadTree)
-                .filter(quadObject => doBoundsIntersect(quadObject.getBounds(), bounds)));
+                .filter(quadObject => doBoundsIntersect(quadObject.getBounds(), bounds, quadTree.useSAT)));
     }
 
     // Check the current nodes children
@@ -147,12 +147,13 @@ function getQuadTreeData<T extends CollisionObject>(quadTree: QuadTree<T>): T[] 
  * @param {number} [capacity=3] - The # of collision objects a node can contain before subdividing.
  * @return {QuadTree} The created quadtree "managing" the input bounds.
  */
-export function createQuadTree<T extends CollisionObject>(bounds: BoundingBox, capacity: number = 3): QuadTree<T> {
+export function createQuadTree<T extends CollisionObject>(bounds: BoundingBox, capacity: number = 3, useSAT: boolean = false): QuadTree<T> {
     const quadTree: QuadTree<T> = {
         bounds,
         data: new Map<string, Set<T>>(),
         capacity,
         quadrants: [],
+        useSAT,
         add: (object) => addToQuadTree(quadTree, object),
         remove: (object) => removeFromQuadTree(quadTree, object),
         clear: () => clearQuadTree(quadTree),

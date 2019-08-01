@@ -102,11 +102,6 @@ export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox
     return doIntersectSAT(sat1, sat2);
 }
 
-// This also handles point to point collisions
-export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): boolean {
-    return getMagnitude(getVectorBetweenPoints(circle1, circle2)) <= circle1.r + circle2.r;
-}
-
 function getSATInfoForCircle(circle: Circle): SATInfo {
     return {
         axes: [],
