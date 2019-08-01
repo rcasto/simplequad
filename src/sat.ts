@@ -8,21 +8,23 @@ function getVectorBetweenPoints(point1: Point, point2: Point): Point {
 }
 
 function getPoints(boundingBox: BoundingBox): Point[] {
+    const maxX: number = boundingBox.x + boundingBox.width;
+    const maxY: number = boundingBox.y + boundingBox.height;
     const topLeftPoint: Point = {
         x: boundingBox.x,
         y: boundingBox.y,
     };
     const topRightPoint: Point = {
-        x: boundingBox.x + boundingBox.width,
+        x: maxX,
         y: boundingBox.y,
     };
     const bottomRightPoint: Point = {
-        x: boundingBox.x + boundingBox.width,
-        y: boundingBox.y + boundingBox.height,
+        x: maxX,
+        y: maxY,
     };
     const bottomLeftPoint: Point = {
         x: boundingBox.x,
-        y: boundingBox.y + boundingBox.height,
+        y: maxY,
     };
     return [
         topLeftPoint,
@@ -58,7 +60,7 @@ function getNormal(vector: Point): Point {
 // }
 
 function getDot(vector1: Point, vector2: Point): number {
-    return vector1.x * vector2.x + vector1.y * vector2.y;
+    return (vector1.x * vector2.x) + (vector1.y * vector2.y);
 }
 
 function getMagnitude(vector: Point): number {
@@ -98,6 +100,7 @@ export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox
     return doIntersectSAT(sat1, sat2);
 }
 
+// This also handles point to point collisions
 export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): boolean {
     return getMagnitude(getVectorBetweenPoints(circle1, circle2)) <= circle1.r + circle2.r;
 }
@@ -106,7 +109,7 @@ function getSATInfoForCircle(circle: Circle): SATInfo {
     return {
         axes: [],
         points: [circle],
-    }
+    };
 }
 
 function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
@@ -119,7 +122,7 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     return {
         axes,
         points,
-    }
+    };
 }
 
 export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
