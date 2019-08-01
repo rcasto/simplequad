@@ -39,8 +39,10 @@ function getSideVectors(boundingBox: BoundingBox): Point[] {
     return [
         getVectorBetweenPoints(points[0], points[1]),
         getVectorBetweenPoints(points[1], points[2]),
-        getVectorBetweenPoints(points[2], points[3]),
-        getVectorBetweenPoints(points[3], points[0]),
+        // The below axes are just parallel to the above
+        // this is a quick way to reduce the search space
+        // getVectorBetweenPoints(points[2], points[3]),
+        // getVectorBetweenPoints(points[3], points[0]),
     ];
 }
 
