@@ -133,13 +133,13 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
-    let axesIndex: number = 0;
-    const axes: Point[] = [...sat1.axes, ...sat2.axes]
+    const axes: Point[] = [...sat1.axes, ...sat2.axes];
         // normalize the axes
         // don't need this until adding minimum translation vector (MTV)
         // .map(axis => normalize(axis));
+    const numAxes: number = axes.length;
 
-    while (axesIndex < axes.length) {
+    for (let axesIndex: number = 0; axesIndex < numAxes; axesIndex++) {
         maxBox1 = Number.NEGATIVE_INFINITY;
         minBox1 = Number.POSITIVE_INFINITY;
 
@@ -177,8 +177,6 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
             maxBox2 < minBox1) {
             return false;
         }
-
-        axesIndex++;
     }
 
     return true;
