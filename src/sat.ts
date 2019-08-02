@@ -128,7 +128,7 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
-    const axes: Point[] = [...sat1.axes, ...sat2.axes];
+    const axes: Point[] = sat1.axes.concat(sat2.axes);
         // normalize the axes
         // don't need this until adding minimum translation vector (MTV)
         // .map(axis => normalize(axis));
