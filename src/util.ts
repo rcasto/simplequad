@@ -1,4 +1,5 @@
 import { Bound, BoundingBox, Circle, Point } from './schema';
+import { doIntersectBoundingBoxesSAT, doIntersectBoundingBoxCircleSAT } from './sat';
 
 // The # of combinations between these 3 bounds is as follows:
 // - Circle and Circle
@@ -20,54 +21,24 @@ function isPoint(bound: Bound): bound is Point {
     return !isCircle(bound) && !isBoundingBox(bound);
 }
 
-function doPointsIntersect(point1: Point, point2: Point): boolean {
-    return point1.x === point2.x &&
-           point1.y === point2.y;
-}
-
-function doBoundingBoxPointIntersect(bounds: BoundingBox, point: Point) {
-    return doBoundingBoxesIntersect(bounds, {
-        x: point.x,
-        y: point.y,
-        width: 0,
-        height: 0,
-    });
-}
-
-function doCirclePointIntersect(circle: Circle, point: Point) {
-    return doCirclesIntersect(circle, {
+function toCircleFromPoint(point: Point): Circle {
+    return {
         x: point.x,
         y: point.y,
         r: 0,
-    });
+    };
 }
 
-// https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Axis-Aligned_Bounding_Box
-function doBoundingBoxesIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
-    return (
-        box1.x <= box2.x + box2.width &&
-        box1.x + box1.width >= box2.x &&
-        box1.y <= box2.y + box2.height &&
-        box1.y + box1.height >= box2.y
-    );
-}
-
+// This also handles point to point collisions
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Circle_Collision
-function doCirclesIntersect(circle1: Circle, circle2: Circle): boolean {
+function doIntersectCircles(circle1: Circle, circle2: Circle): boolean {
     const dx: number = circle1.x - circle2.x;
     const dy: number = circle1.y - circle2.y;
     const distance: number = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
     return distance <= circle1.r + circle2.r;
 }
 
-// https://yal.cc/rectangle-circle-intersection-test/
-function doCircleBoundingBoxIntersect(circle: Circle, box: BoundingBox): boolean {
-    const dx: number = circle.x - Math.max(box.x, Math.min(circle.x, box.x + box.width));
-    const dy: number = circle.y - Math.max(box.y, Math.min(circle.y, box.y + box.height));
-    return Math.pow(dx, 2) + Math.pow(dy, 2) <= Math.pow(circle.r, 2);
-}
-
-export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
+export function doBoundsIntersect(bound1: Bound, bound2: Bound): boolean {
     const isBound1Circle: boolean = isCircle(bound1);
     const isBound2Circle: boolean = isCircle(bound2);
 
@@ -79,46 +50,52 @@ export function doBoundsIntersect(bound1: Bound, bound2: Bound) {
 
     // They are both circles
     if (isBound1Circle && isBound2Circle) {
-        return doCirclesIntersect(bound1 as Circle, bound2 as Circle);
+        return doIntersectCircles(bound1 as Circle, bound2 as Circle);
     }
 
     // They are both bounding boxes
     if (isBound1BoundingBox && isBound2BoundingBox) {
-        return doBoundingBoxesIntersect(bound1 as BoundingBox, bound2 as BoundingBox);
+        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox);
     }
 
     // They are both points
     if (isBound1Point && isBound2Point) {
-        return doPointsIntersect(bound1 as Point, bound2 as Point);
+        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+        return doIntersectCircles(point1Circle, point2Circle);
     }
 
     // 1 is circle, 2 is bounding box
     if (isBound1Circle && isBound2BoundingBox) {
-        return doCircleBoundingBoxIntersect(bound1 as Circle, bound2 as BoundingBox);
-    }
-
-    // 1 is circle, 2 is point
-    if (isBound1Circle && isBound2Point) {
-        return doCirclePointIntersect(bound1 as Circle, bound2 as Point);
+        return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, bound1 as Circle);
     }
 
     // 1 is bounding box, 2 is circle
     if (isBound1BoundingBox && isBound2Circle) {
-        return doCircleBoundingBoxIntersect(bound2 as Circle, bound1 as BoundingBox);
+        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle);   
     }
 
-    // 1 is bounding box, 2 is point
-    if (isBound1BoundingBox && isBound2Point) {
-        return doBoundingBoxPointIntersect(bound1 as BoundingBox, bound2 as Point);
+    // 1 is circle, 2 is point
+    if (isBound1Circle && isBound2Point) {
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+        return doIntersectCircles(bound1 as Circle, point2Circle);
     }
 
     // 1 is point, 2 is 2 is circle
     if (isBound1Point && isBound2Circle) {
-        return doCirclePointIntersect(bound2 as Circle, bound1 as Point);
+        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+        return doIntersectCircles(point1Circle, bound2 as Circle);
+    }
+
+    // 1 is bounding box, 2 is point
+    if (isBound1BoundingBox && isBound2Point) {
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, point2Circle);
     }
 
     // 1 is point, 2 is bounding box
-    return doBoundingBoxPointIntersect(bound2 as BoundingBox, bound1 as Point);
+    const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+    return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, point1Circle);
 }
 
 export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
@@ -166,16 +143,9 @@ export function createPointKey(point: Point): string {
 }
 
 export function flattenSets<T>(sets: Set<T>[]): Set<T> {
-    const flattenedSet: Set<T> = new Set<T>();
-
-    (sets || [])
-        .forEach(set => {
-            if (set.size === 0) {
-                return;
-            }
-            set
-                .forEach(setItem => flattenedSet.add(setItem));
-        });
-    
-    return flattenedSet;
+    return sets.reduce((flattenedSet, currSet) => {
+        currSet
+            .forEach(setItem => flattenedSet.add(setItem));
+        return flattenedSet;
+    }, new Set<T>());
 }

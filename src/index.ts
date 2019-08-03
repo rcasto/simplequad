@@ -1,17 +1,21 @@
-import { Bound, BoundingBox, CollisionObject, QuadTree } from './schema';
+import { Bound, BoundingBox, CollisionObject, QuadTree, Point } from './schema';
 import { createPointKey, doBoundsIntersect, divideBoundingBox, flattenSets } from './util';
 
 function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object: T): boolean {
     const objectBound: Bound = object.getBounds();
+    const objectPoint: Point = {
+        x: objectBound.x,
+        y: objectBound.y,
+    };
 
     // Let's first check if the point this object occupies is within
     // the bounds of the bucket
-    if (!doBoundsIntersect(quadTree.bounds, objectBound)) {
+    if (!doBoundsIntersect(quadTree.bounds, objectPoint)) {
         return false;
     }
 
     // Checking children, if this node is a "Container" (No data)
-    if ((quadTree.quadrants || []).length > 0) {
+    if ((quadTree.quadrants || []).length) {
         // Run through all children checking if the object can be added
         // At the first successful add, we can bail out, only needs to be stored once
         const wasAddedToChild: boolean = quadTree.quadrants
@@ -51,7 +55,7 @@ function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object:
     // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
     const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
-    const quadObjects: T[] = [...getQuadTreeData(quadTree), object];
+    const quadObjects: T[] = getQuadTreeData(quadTree).concat(object);
 
     // adjust current quadtree settings
     // May need to adjust these in-place instead of creating new references
@@ -132,7 +136,7 @@ function queryQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, bounds:
 }
 
 function getQuadTreeData<T extends CollisionObject>(quadTree: QuadTree<T>): T[] {
-    return [...flattenSets([...quadTree.data.values()])];
+    return Array.from(flattenSets(Array.from(quadTree.data.values())));
 }
 
 /**

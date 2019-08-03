@@ -93,3 +93,8 @@ export interface QuadTree<T extends CollisionObject = CollisionObject> {
      */
     getData: () => T[];
 }
+
+export interface SATInfo {
+    axes: Point[];
+    points: Point[];
+}

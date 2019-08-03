@@ -41,6 +41,21 @@ test('can find 2 circles intersect', t => {
     t.truthy(doIntersect(object1, object2));
 });
 
+test('can find 2 circles intersect - circle contains circle', t => {
+    const object1: CollisionObject = createMockObject({
+        x: 10,
+        y: 10,
+        r: 5,
+    });
+    const object2: CollisionObject = createMockObject({
+        x: 10,
+        y: 10,
+        r: 2,
+    });
+
+    t.truthy(doIntersect(object1, object2));
+});
+
 test('can find circle intersects with point', t => {
     const object1: CollisionObject = createMockObject({
         x: 10,
@@ -118,7 +133,7 @@ test('can find 2 points intersect', t => {
 
 // This function assumes all objects fit within the default test bounds
 function doIntersect(object1: CollisionObject, object2: CollisionObject): boolean {
-    const quadTree: QuadTree = createQuadTree(bounds, 2);
+    const quadTree: QuadTree = createQuadTree(bounds, 1);
     quadTree.add(object1);
 
     const results: Set<CollisionObject> = quadTree.query(object2.getBounds());
