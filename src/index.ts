@@ -147,7 +147,7 @@ function getQuadTreeData<T extends CollisionObject>(quadTree: QuadTree<T>): T[] 
  * @param {number} [capacity=3] - The # of collision objects a node can contain before subdividing.
  * @return {QuadTree} The created quadtree "managing" the input bounds.
  */
-export function createQuadTree<T extends CollisionObject>(bounds: BoundingBox, capacity: number = 3, useSAT: boolean = false): QuadTree<T> {
+export function createQuadTree<T extends CollisionObject>(bounds: BoundingBox, capacity: number = 3, useSAT: boolean = true): QuadTree<T> {
     const quadTree: QuadTree<T> = {
         bounds,
         data: new Map<string, Set<T>>(),
