@@ -53,13 +53,13 @@ function getNormal(vector: Point): Point {
     };
 }
 
-// function normalize(vector: Point): Point {
-//     const magnitude: number = getMagnitude(vector);
-//     return {
-//         x: vector.x / magnitude,
-//         y: vector.y / magnitude,
-//     };
-// }
+function normalize(vector: Point): Point {
+    const magnitude: number = getMagnitude(vector);
+    return {
+        x: magnitude > 0 ? vector.x / magnitude : 0,
+        y: magnitude > 0 ? vector.y / magnitude : 0,
+    };
+}
 
 function getDot(vector1: Point, vector2: Point): number {
     return (vector1.x * vector2.x) + (vector1.y * vector2.y);
@@ -128,10 +128,8 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
-    const axes: Point[] = sat1.axes.concat(sat2.axes);
-        // normalize the axes
-        // don't need this until adding minimum translation vector (MTV)
-        // .map(axis => normalize(axis));
+    const axes: Point[] = sat1.axes.concat(sat2.axes)
+        .map(axis => normalize(axis));
     const numAxes: number = axes.length;
 
     for (let axesIndex: number = 0; axesIndex < numAxes; axesIndex++) {
