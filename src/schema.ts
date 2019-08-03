@@ -54,18 +54,6 @@ export interface QuadTree<T extends CollisionObject = CollisionObject> {
      * This will be empty for leaf nodes.
      */
     quadrants: QuadTree<T>[];
-    /**
-     * Boolean indicating whether the Separating Axis Theorem (SAT)
-     * should be used for collision detection or not.
-     * 
-     * This also gives you info about the minimum translation vector (MTV)
-     * This method is slightly slower though, especially if there are a lot of
-     * collisions.
-     * 
-     * Note: This will only impact query window collisions. Bucketing uses cheaper
-     * collision or rather intersection tests.
-     */
-    useSAT: boolean;
     // Methods
     /**
      * Adds a collision object to the quadtree.
