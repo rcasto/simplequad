@@ -63,6 +63,13 @@ function getDot(vector1: Point, vector2: Point): number {
     return (vector1.x * vector2.x) + (vector1.y * vector2.y);
 }
 
+function multiply(vector1: Point, vector2: Point): Point {
+    return {
+        x: vector1.x * vector2.x,
+        y: vector1.y * vector2.y,
+    };
+}
+
 function getMagnitude(vector: Point): number {
     return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
 }
@@ -80,6 +87,25 @@ function closestToPoint(targetPoint: Point, points: Point[]): Point {
             }
         });
     return closestPoint;
+}
+
+// This also handles point to point collisions
+// https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Circle_Collision
+function doIntersectCircles(circle1: Circle, circle2: Circle): boolean {
+    const dx: number = circle1.x - circle2.x;
+    const dy: number = circle1.y - circle2.y;
+    const distance: number = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    return distance <= circle1.r + circle2.r;
+}
+
+export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): boolean {
+    const sat1: SATInfo = getSATInfoForCircle(circle1);
+    const sat2: SATInfo = getSATInfoForCircle(circle2);
+
+    const closestPointAxis: Point = normalize(getVectorBetweenPoints(circle1, circle2));
+    sat1.axes.push(closestPointAxis);
+
+    return doIntersectSAT(sat1, sat2);
 }
 
 export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): boolean {
@@ -147,23 +173,15 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
         sat1.points
             .forEach(pointIn1 => {
                 scalarProjection = getDot(pointIn1, axes[axesIndex]);
-                if (scalarProjection < minBox1) {
-                    minBox1 = scalarProjection;
-                }
-                if (scalarProjection > maxBox1) {
-                    maxBox1 = scalarProjection;
-                }
+                minBox1 = Math.min(scalarProjection, minBox1);
+                maxBox1 = Math.max(scalarProjection, maxBox1);
             });
 
         sat2.points
             .forEach(pointIn2 => {
                 scalarProjection = getDot(pointIn2, axes[axesIndex]);
-                if (scalarProjection < minBox2) {
-                    minBox2 = scalarProjection;
-                }
-                if (scalarProjection > maxBox2) {
-                    maxBox2 = scalarProjection;
-                }
+                minBox2 = Math.min(scalarProjection, minBox2);
+                maxBox2 = Math.max(scalarProjection, maxBox2);
             });
 
         // Must intersect (overlap) on all separating axes
@@ -185,6 +203,11 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
             minTranslationDistance = overlap2;
             minTranslationVector = axes[axesIndex];
         }
+
+        console.log(multiply(minTranslationVector as Point, {
+            x: minTranslationDistance,
+            y: minTranslationDistance,
+        }));
     }
 
     return true;
