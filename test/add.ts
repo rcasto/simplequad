@@ -1,16 +1,16 @@
 import test from 'ava';
-import { QuadTree, CollisionObject, createQuadTree, BoundingBox } from '../src';
-import { createMockQuadTree, createMockObject, quadTreeBucketContains } from './helpers/util';
+import { QuadTree, createQuadTree, BoundingBox, Bound, Point } from '../src';
+import { createMockQuadTree, quadTreeBucketContains } from './helpers/util';
 import { createPointKey } from '../src/util';
 
 test('can add an object to quadtree', t => {
     const quadTree: QuadTree = createMockQuadTree();
-    const object: CollisionObject = createMockObject({
+    const object: Bound = {
         x: 0,
         y: 0,
         width: 5,
         height: 5,
-    });
+    };
 
     t.truthy(quadTree.add(object));
     t.is(quadTree.data.size, 1);
@@ -20,18 +20,18 @@ test('can add an object to quadtree', t => {
 
 test('can add an object to quadtree - can add objects up to capacity', t => {
     const quadTree: QuadTree = createMockQuadTree(2);
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = {
         x: 0,
         y: 0,
         width: 5,
         height: 5,
-    });
-    const object2: CollisionObject = createMockObject({
+    };
+    const object2: Bound = {
         x: 100,
         y: 100,
         width: 5,
         height: 5,
-    });
+    };
 
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
@@ -43,18 +43,18 @@ test('can add an object to quadtree - can add objects up to capacity', t => {
 
 test('can add an object to quadtree - bucket overflow and split', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = {
         x: 0,
         y: 0,
         width: 10,
         height: 10,
-    });
-    const object2: CollisionObject = createMockObject({
+    };
+    const object2: Bound = {
         x: 450,
         y: 350,
         width: 5,
         height: 5,
-    });
+    };
 
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
@@ -84,18 +84,18 @@ test('can add an object to quadtree - bucket overflow and split offset bucket', 
         width: 100,
         height: 100,
     }, 1);
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = {
         x: 100,
         y: 150,
         width: 5,
         height: 5,
-    });
-    const object2: CollisionObject = createMockObject({
+    };
+    const object2: Bound = {
         x: 150,
         y: 150,
         width: 5,
         height: 5,
-    });
+    };
 
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
@@ -103,12 +103,12 @@ test('can add an object to quadtree - bucket overflow and split offset bucket', 
 
 test('can handle adding the same object twice', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
-    const object: CollisionObject = createMockObject({
+    const object: Bound = {
         x: 0,
         y: 0,
         width: 10,
         height: 10,
-    });
+    };
 
     quadTree.add(object);
 
@@ -125,15 +125,15 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
         width: 10,
         height: 10,
     };
-    const object1: CollisionObject = createMockObject(bounds);
-    const object2: CollisionObject = createMockObject(bounds);
+    const object1: Bound = Object.assign({}, bounds);
+    const object2: Bound = Object.assign({}, bounds);
 
     quadTree.add(object1);
     
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: Set<CollisionObject> = quadTree.data.get(createPointKey(object1.getBounds())) || new Set<CollisionObject>();
+    const objectsAtPoint: Set<Bound> = quadTree.data.get(createPointKey(object1)) || new Set<Bound>();
     t.is(objectsAtPoint.size, 2);
     t.truthy(objectsAtPoint.has(object1));
     t.truthy(objectsAtPoint.has(object2));
@@ -149,15 +149,15 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
         height: 10,
     };
     const copyBounds: BoundingBox = Object.assign({}, { ...bounds });
-    const object1: CollisionObject = createMockObject(bounds);
-    const object2: CollisionObject = createMockObject(copyBounds);
+    const object1: Bound = Object.assign({}, bounds);
+    const object2: Bound = Object.assign({}, copyBounds);
 
     quadTree.add(object1);
     
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: Set<CollisionObject> = quadTree.data.get(createPointKey(object1.getBounds())) || new Set<CollisionObject>();
+    const objectsAtPoint: Set<Bound> = quadTree.data.get(createPointKey(object1)) || new Set<Bound>();
     t.is(objectsAtPoint.size, 2);
     t.truthy(objectsAtPoint.has(object1));
     t.truthy(objectsAtPoint.has(object2));
@@ -173,8 +173,8 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
         width: 10,
         height: 10,
     };
-    const object1: CollisionObject = createMockObject(bounds);
-    const object2: CollisionObject = createMockObject(bounds);
+    const object1: Bound = Object.assign({}, bounds);
+    const object2: Bound = Object.assign({}, bounds);
 
     quadTree.add(object1);
     
@@ -190,18 +190,18 @@ test('can handle adding object directly on bucket boundary crossing', t => {
         width: 200,
         height: 200,
     }, 1);
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = {
         x: 175,
         y: 175,
         width: 5,
         height: 5,
-    });
-    const object2: CollisionObject = createMockObject({
+    };
+    const object2: Bound = {
         x: 100,
         y: 100,
         width: 5,
         height: 5,
-    });
+    };
 
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));

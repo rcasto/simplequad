@@ -1,4 +1,4 @@
-import { QuadTree, BoundingBox, CollisionObject, Bound } from "../../src/schema";
+import { QuadTree, BoundingBox, Bound } from "../../src/schema";
 import { createQuadTree } from "../../src";
 import { createPointKey } from "../../src/util";
 
@@ -14,16 +14,8 @@ export function createMockQuadTree(capacity?: number): QuadTree {
     return createQuadTree(bounds, capacity);
 }
 
-export function createMockObject(bounds: Bound): CollisionObject {
-    return {
-        getBounds() {
-            return bounds;
-        }
-    };
-}
-
-export function quadTreeBucketContains(quadTree: QuadTree, object: CollisionObject): boolean {
-    const objectPointDataSet = quadTree.data.get(createPointKey(object.getBounds()));
+export function quadTreeBucketContains(quadTree: QuadTree, object: Bound): boolean {
+    const objectPointDataSet = quadTree.data.get(createPointKey(object));
     if (objectPointDataSet) {
         return objectPointDataSet.has(object);
     }
