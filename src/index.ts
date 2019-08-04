@@ -1,11 +1,10 @@
-import { Bound, BoundingBox, CollisionObject, QuadTree, Point } from './schema';
+import { Bound, BoundingBox, QuadTree, Point } from './schema';
 import { createPointKey, doBoundsIntersect, divideBoundingBox, flattenSets } from './util';
 
-function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object: T): boolean {
-    const objectBound: Bound = object.getBounds();
+function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
     const objectPoint: Point = {
-        x: objectBound.x,
-        y: objectBound.y,
+        x: object.x,
+        y: object.y,
     };
 
     // Let's first check if the point this object occupies is within
@@ -26,7 +25,7 @@ function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object:
     }
 
     // Let's get the data already associated with this bucket
-    const objectPointKey: string = createPointKey(objectBound);
+    const objectPointKey: string = createPointKey(objectPoint);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // Let's check if the object is already in the bucket
@@ -68,9 +67,8 @@ function addToQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object:
         .every(quadObject => addToQuadTree(quadTree, quadObject));
 }
 
-function removeFromQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, object: T): boolean {
-    const objectBound: Bound = object.getBounds();
-    const objectPointKey: string = createPointKey(objectBound);
+function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
+    const objectPointKey: string = createPointKey(object);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // If object is found, let's remove it
@@ -105,12 +103,12 @@ function removeFromQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, ob
     return wasRemoved;
 }
 
-function clearQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>): void {
+function clearQuadTree<T extends Bound>(quadTree: QuadTree<T>): void {
     quadTree.data = new Map<string, Set<T>>();
     quadTree.quadrants = [];
 }
 
-function queryQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, bounds: Bound): Set<T> {
+function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): Set<T> {
     // Check first if the query bounds intersect with the bounds
     // of the bucket, if it doesn't we can bail immediately with an empty list
     if (!doBoundsIntersect(quadTree.bounds, bounds)) {
@@ -123,7 +121,7 @@ function queryQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, bounds:
         // if the objects themselves intersect with the query bounds
         return new Set<T>(
             getQuadTreeData(quadTree)
-                .filter(quadObject => doBoundsIntersect(quadObject.getBounds(), bounds)));
+                .filter(quadObject => doBoundsIntersect(quadObject, bounds)));
     }
 
     // Check the current nodes children
@@ -135,7 +133,7 @@ function queryQuadTree<T extends CollisionObject>(quadTree: QuadTree<T>, bounds:
     return childQueryResultSet;
 }
 
-function getQuadTreeData<T extends CollisionObject>(quadTree: QuadTree<T>): T[] {
+function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>): T[] {
     return Array.from(flattenSets(Array.from(quadTree.data.values())));
 }
 
@@ -147,7 +145,7 @@ function getQuadTreeData<T extends CollisionObject>(quadTree: QuadTree<T>): T[] 
  * @param {number} [capacity=3] - The # of collision objects a node can contain before subdividing.
  * @return {QuadTree} The created quadtree "managing" the input bounds.
  */
-export function createQuadTree<T extends CollisionObject>(bounds: BoundingBox, capacity: number = 3): QuadTree<T> {
+export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: number = 3): QuadTree<T> {
     const quadTree: QuadTree<T> = {
         bounds,
         data: new Map<string, Set<T>>(),

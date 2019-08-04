@@ -1,6 +1,5 @@
 import test from 'ava';
-import { BoundingBox, createQuadTree, QuadTree, CollisionObject } from '../src';
-import { createMockObject } from './helpers/util';
+import { BoundingBox, createQuadTree, QuadTree, Bound } from '../src';
 
 /*
     This test file is mainly meant as a means to verify the individual bounds checks
@@ -27,12 +26,12 @@ const bounds: BoundingBox = {
 };
 
 test('can find 2 circles intersect', t => {
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = ({
         x: 10,
         y: 10,
         r: 5,
     });
-    const object2: CollisionObject = createMockObject({
+    const object2: Bound = ({
         x: 5,
         y: 10,
         r: 5,
@@ -42,12 +41,12 @@ test('can find 2 circles intersect', t => {
 });
 
 test('can find 2 circles intersect - circle contains circle', t => {
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = ({
         x: 10,
         y: 10,
         r: 5,
     });
-    const object2: CollisionObject = createMockObject({
+    const object2: Bound = ({
         x: 10,
         y: 10,
         r: 2,
@@ -57,12 +56,12 @@ test('can find 2 circles intersect - circle contains circle', t => {
 });
 
 test('can find circle intersects with point', t => {
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = ({
         x: 10,
         y: 10,
         r: 5,
     });
-    const object2: CollisionObject = createMockObject({
+    const object2: Bound = ({
         x: 11,
         y: 12,
     });
@@ -71,12 +70,12 @@ test('can find circle intersects with point', t => {
 });
 
 test('can find circle intersects with bounding box', t => {
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = ({
         x: 10,
         y: 10,
         r: 5,
     });
-    const object2: CollisionObject = createMockObject({
+    const object2: Bound = ({
         x: 5,
         y: 10,
         width: 5,
@@ -87,13 +86,13 @@ test('can find circle intersects with bounding box', t => {
 });
 
 test('can find 2 bounding boxes intersect', t => {
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = ({
         x: 10,
         y: 10,
         width: 5,
         height: 5,
     });
-    const object2: CollisionObject = createMockObject({
+    const object2: Bound = ({
         x: 5,
         y: 10,
         width: 5,
@@ -104,11 +103,11 @@ test('can find 2 bounding boxes intersect', t => {
 });
 
 test('can find bounding box intersects with Point', t => {
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = ({
         x: 10,
         y: 10,
     });
-    const object2: CollisionObject = createMockObject({
+    const object2: Bound = ({
         x: 5,
         y: 10,
         width: 5,
@@ -119,11 +118,11 @@ test('can find bounding box intersects with Point', t => {
 });
 
 test('can find 2 points intersect', t => {
-    const object1: CollisionObject = createMockObject({
+    const object1: Bound = ({
         x: 10,
         y: 10,
     });
-    const object2: CollisionObject = createMockObject({
+    const object2: Bound = ({
         x: 10,
         y: 10,
     });
@@ -132,10 +131,10 @@ test('can find 2 points intersect', t => {
 });
 
 // This function assumes all objects fit within the default test bounds
-function doIntersect(object1: CollisionObject, object2: CollisionObject): boolean {
+function doIntersect(object1: Bound, object2: Bound): boolean {
     const quadTree: QuadTree = createQuadTree(bounds, 1);
     quadTree.add(object1);
 
-    const results: Set<CollisionObject> = quadTree.query(object2.getBounds());
+    const results: Set<Bound> = quadTree.query(object2);
     return results.size > 0;
 }

@@ -14,14 +14,7 @@ export interface Circle extends Point {
 
 export type Bound = BoundingBox | Circle | Point;
 
-export interface CollisionObject {
-    /**
-     * @return {Bound} Bounds that contain the object. Should be as "tight" as possible to actual object shape.
-     */
-    getBounds: () => Bound;
-}
-
-export interface QuadTree<T extends CollisionObject = CollisionObject> {
+export interface QuadTree<T extends Bound = Bound> {
     // Properties
     /**
      * The bounding box that this quadtree "manages".
