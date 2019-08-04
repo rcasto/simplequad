@@ -97,7 +97,6 @@ console.log("Cleared all monsters...they be gone");
 - simplequad with moving circles
     - [CodePen](https://codepen.io/rcasto/full/wVGGzV)
 - simple with images
-    - [CodePen](https://codepen.io/rcasto/full/PMbXMm)
     - [GitHub Page](https://rcasto.github.io/simplequad-playground/)
 
 ## API
