@@ -15,6 +15,10 @@ test('can query the quad tree with bounds', t => {
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 1);
+    t.deepEqual([...results][0].mtv, {
+        x: 0,
+        y: -5,
+    });
 });
 
 test('can query the quad tree with bounds - multi object 1 point (whole window bounds)', t => {

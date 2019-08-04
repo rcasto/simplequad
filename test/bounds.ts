@@ -37,7 +37,12 @@ test('can find 2 circles intersect', t => {
         r: 5,
     });
 
-    t.truthy(doIntersect(object1, object2));
+    const results = doIntersect(object1, object2);
+    t.truthy(results);
+    t.deepEqual([...results][0].mtv, {
+        x: -5,
+        y: 0,
+    });
 });
 
 test('can find 2 circles intersect - circle contains circle', t => {
@@ -131,10 +136,9 @@ test('can find 2 points intersect', t => {
 });
 
 // This function assumes all objects fit within the default test bounds
-function doIntersect(object1: Bound, object2: Bound): boolean {
+function doIntersect(object1: Bound, object2: Bound): Set<Bound> {
     const quadTree: QuadTree = createQuadTree(bounds, 1);
     quadTree.add(object1);
 
-    const results: Set<Bound> = quadTree.query(object2);
-    return results.size > 0;
+    return quadTree.query(object2);
 }
