@@ -128,6 +128,10 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
+    let overlap1: number;
+    let overlap2: number;
+    let minTranslationDistance: number = Number.POSITIVE_INFINITY;
+    let minTranslationVector: Point | null = null;
     const axes: Point[] = sat1.axes.concat(sat2.axes)
         .map(axis => normalize(axis));
     const numAxes: number = axes.length;
@@ -169,6 +173,19 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
         if (maxBox1 < minBox2 ||
             maxBox2 < minBox1) {
             return false;
+        }
+
+        // compute overlap
+        overlap1 = maxBox1 - minBox2;
+        overlap2 = maxBox2 - minBox1;
+
+        if (overlap1 < minTranslationDistance) {
+            minTranslationDistance = overlap1;
+            minTranslationVector = axes[axesIndex];
+        }
+        if (overlap2 < minTranslationDistance) {
+            minTranslationDistance = overlap2;
+            minTranslationVector = axes[axesIndex];
         }
     }
 
