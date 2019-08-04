@@ -34,15 +34,13 @@ function getPoints(boundingBox: BoundingBox): Point[] {
     ];
 }
 
-function getSideVectors(boundingBox: BoundingBox): Point[] {
+function getNonParallelSideVectors(boundingBox: BoundingBox): Point[] {
     const points: Point[] = getPoints(boundingBox);
     return [
+        // top left -> top right
         getVectorBetweenPoints(points[0], points[1]),
+        // top right -> bottom right
         getVectorBetweenPoints(points[1], points[2]),
-        // The below axes are just parallel to the above
-        // this is a quick way to reduce the search space
-        // getVectorBetweenPoints(points[2], points[3]),
-        // getVectorBetweenPoints(points[3], points[0]),
     ];
 }
 
@@ -53,13 +51,13 @@ function getNormal(vector: Point): Point {
     };
 }
 
-// function normalize(vector: Point): Point {
-//     const magnitude: number = getMagnitude(vector);
-//     return {
-//         x: magnitude > 0 ? vector.x / magnitude : 0,
-//         y: magnitude > 0 ? vector.y / magnitude : 0,
-//     };
-// }
+function normalize(vector: Point): Point {
+    const magnitude: number = getMagnitude(vector);
+    return {
+        x: magnitude > 0 ? vector.x / magnitude : 0,
+        y: magnitude > 0 ? vector.y / magnitude : 0,
+    };
+}
 
 function getDot(vector1: Point, vector2: Point): number {
     return (vector1.x * vector2.x) + (vector1.y * vector2.y);
@@ -111,7 +109,7 @@ function getSATInfoForCircle(circle: Circle): SATInfo {
 
 function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     const points: Point[] = getPoints(box);
-    const sides: Point[] = getSideVectors(box);
+    const sides: Point[] = getNonParallelSideVectors(box);
 
     const axes: Point[] = sides
         .map(side => getNormal(side));
@@ -128,12 +126,12 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
-    // let overlap1: number;
-    // let overlap2: number;
-    // let minTranslationDistance: number = Number.POSITIVE_INFINITY;
-    // let minTranslationVector: Point | null = null;
-    const axes: Point[] = sat1.axes.concat(sat2.axes);
-        // .map(axis => normalize(axis));
+    let overlap1: number;
+    let overlap2: number;
+    let minTranslationDistance: number = Number.POSITIVE_INFINITY;
+    let minTranslationVector: Point | null = null;
+    const axes: Point[] = sat1.axes.concat(sat2.axes)
+        .map(axis => normalize(axis));
     const numAxes: number = axes.length;
 
     for (let axesIndex: number = 0; axesIndex < numAxes; axesIndex++) {
@@ -176,17 +174,17 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
         }
 
         // compute overlap
-        // overlap1 = maxBox1 - minBox2;
-        // overlap2 = maxBox2 - minBox1;
+        overlap1 = maxBox1 - minBox2;
+        overlap2 = maxBox2 - minBox1;
 
-        // if (overlap1 < minTranslationDistance) {
-        //     minTranslationDistance = overlap1;
-        //     minTranslationVector = axes[axesIndex];
-        // }
-        // if (overlap2 < minTranslationDistance) {
-        //     minTranslationDistance = overlap2;
-        //     minTranslationVector = axes[axesIndex];
-        // }
+        if (overlap1 < minTranslationDistance) {
+            minTranslationDistance = overlap1;
+            minTranslationVector = axes[axesIndex];
+        }
+        if (overlap2 < minTranslationDistance) {
+            minTranslationDistance = overlap2;
+            minTranslationVector = axes[axesIndex];
+        }
     }
 
     return true;
