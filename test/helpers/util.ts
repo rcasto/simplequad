@@ -1,6 +1,5 @@
-import { QuadTree, BoundingBox, Bound } from "../../src/schema";
+import { QuadTree, BoundingBox } from "../../src/schema";
 import { createQuadTree } from "../../src";
-import { createPointKey } from "../../src/util";
 
 // Provides tree with pre-defined bounds
 // Those fitting randomized mock objects for sure below

@@ -46,8 +46,8 @@ function getNonParallelSideVectors(boundingBox: BoundingBox): Point[] {
 
 function getNormal(vector: Point): Point {
     return {
-        x: -vector.y,
-        y: vector.x,
+        x: vector.y,
+        y: -vector.x,
     };
 }
 
@@ -201,5 +201,9 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
         }
     }
 
-    return minTranslationVector
+    return minTranslationVector ?
+        multiply(minTranslationVector, {
+            x: minTranslationDistance,
+            y: minTranslationDistance,
+        }) : null;
 }
