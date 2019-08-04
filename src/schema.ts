@@ -1,20 +1,22 @@
-export interface Point {
+export interface CollisionInfo {
+    mtv?: Point;
+}
+
+export interface Point extends CollisionInfo {
     x: number;
     y: number;
 }
 
-export interface BoundingBox extends Point {
+export interface BoundingBox extends Point, CollisionInfo {
     width: number;
     height: number;
 }
 
-export interface Circle extends Point {
+export interface Circle extends Point, CollisionInfo {
     r: number;
 }
 
-export type Bound = (BoundingBox | Circle | Point) & {
-    mtv?: Point;
-};
+export type Bound = BoundingBox | Circle | Point;
 
 export interface QuadTree<T extends Bound = Bound> {
     // Properties
