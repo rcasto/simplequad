@@ -26,8 +26,8 @@ test('can query the quad tree with bounds - multi object 1 point (whole window b
         width: 10,
         height: 10,
     };
-    const object1: Bound = (bounds);
-    const object2: Bound = (bounds);
+    const object1: Bound = Object.assign({}, bounds);
+    const object2: Bound = Object.assign({}, bounds);
     const object3: Bound = ({
         x: 2,
         y: 0,
@@ -167,8 +167,8 @@ test('can query the quad tree with bounds - self bounding box / multi-object', t
         width: 10,
         height: 10,
     };
-    const object1: Bound = (bounds);
-    const object2: Bound = (bounds);
+    const object1: Bound = Object.assign({}, bounds);
+    const object2: Bound = Object.assign({}, bounds);
 
     quadTree.add(object1);
     quadTree.add(object2);
@@ -270,9 +270,9 @@ test('can get data within bucket - same point', t => {
         width: 200,
         height: 200,
     };
-    const object1: Bound = (bounds);
-    const object2: Bound = (bounds);
-    const object3: Bound = (bounds);
+    const object1: Bound = Object.assign({}, bounds);
+    const object2: Bound = Object.assign({}, bounds);
+    const object3: Bound = Object.assign({}, bounds);
     quadTree.add(object1);
     quadTree.add(object2);
     quadTree.add(object3);
