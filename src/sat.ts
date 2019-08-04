@@ -89,7 +89,7 @@ function closestToPoint(targetPoint: Point, points: Point[]): Point {
     return closestPoint;
 }
 
-export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): boolean {
+export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
     const sat1: SATInfo = getSATInfoForCircle(circle1);
     const sat2: SATInfo = getSATInfoForCircle(circle2);
 
@@ -99,7 +99,7 @@ export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): boolean
     return doIntersectSAT(sat1, sat2);
 }
 
-export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): boolean {
+export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Point | null {
     const sat1: SATInfo = getSATInfoForBoundingBox(box);
     const sat2: SATInfo = getSATInfoForCircle(circle);
 
@@ -111,7 +111,7 @@ export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle
     return doIntersectSAT(sat1, sat2);
 }
 
-export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): boolean {
+export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Point | null {
     const sat1: SATInfo = getSATInfoForBoundingBox(box1);
     const sat2: SATInfo = getSATInfoForBoundingBox(box2);
     return doIntersectSAT(sat1, sat2);
@@ -142,7 +142,7 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     };
 }
 
-export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
+export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     let scalarProjection: number;
     let maxBox1: number;
     let minBox1: number;
@@ -184,7 +184,7 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
         // Can bail early, or on the first time not overlapping
         if (maxBox1 < minBox2 ||
             maxBox2 < minBox1) {
-            return false;
+            return null;
         }
 
         // compute overlap
@@ -199,12 +199,7 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
             minTranslationDistance = overlap2;
             minTranslationVector = axes[axesIndex];
         }
-
-        console.log(multiply(minTranslationVector as Point, {
-            x: minTranslationDistance,
-            y: minTranslationDistance,
-        }));
     }
 
-    return true;
+    return minTranslationVector
 }

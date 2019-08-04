@@ -129,9 +129,19 @@ function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): S
     if ((quadTree.quadrants || []).length === 0) {
         // Let's iterate over the data in the bucket to see
         // if the objects themselves intersect with the query bounds
-        return new Set<T>(
-            getQuadTreeData(quadTree)
-                .filter(quadObject => doBoundsIntersect(quadObject, bounds)));
+        const queryResultSet: Set<T> = new Set();
+        getQuadTreeData(quadTree)
+            .forEach(quadObject => {
+                const mtv: Point | null = doBoundsIntersect(quadObject, bounds);
+                if (mtv) {
+                    queryResultSet.add({
+                        ...quadObject,
+                        mtv,
+                    });
+                }
+            });
+
+        return queryResultSet;
     }
 
     // Check the current nodes children

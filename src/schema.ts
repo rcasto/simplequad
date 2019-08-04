@@ -12,7 +12,9 @@ export interface Circle extends Point {
     r: number;
 }
 
-export type Bound = BoundingBox | Circle | Point;
+export type Bound = (BoundingBox | Circle | Point) & {
+    mtv?: Point;
+};
 
 export interface QuadTree<T extends Bound = Bound> {
     // Properties

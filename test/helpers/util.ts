@@ -13,11 +13,3 @@ export function createMockQuadTree(capacity?: number): QuadTree {
     };
     return createQuadTree(bounds, capacity);
 }
-
-export function quadTreeBucketContains(quadTree: QuadTree, object: Bound): boolean {
-    const objectPointDataSet = quadTree.data.get(createPointKey(object));
-    if (objectPointDataSet) {
-        return objectPointDataSet.has(object);
-    }
-    return false;
-}

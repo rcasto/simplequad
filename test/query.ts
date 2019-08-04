@@ -15,7 +15,6 @@ test('can query the quad tree with bounds', t => {
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 1);
-    t.truthy(results.has(object));
 });
 
 test('can query the quad tree with bounds - multi object 1 point (whole window bounds)', t => {
@@ -41,9 +40,6 @@ test('can query the quad tree with bounds - multi object 1 point (whole window b
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 3);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
-    t.truthy(results.has(object3));
 });
 
 test('can query the quad tree with bounds - single quadrant query window', t => {
@@ -72,7 +68,6 @@ test('can query the quad tree with bounds - single quadrant query window', t => 
 
     const results: Set<Bound> = quadTree.query(queryBounds);
     t.is(results.size, 1);
-    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - single quadrant object bounding box overlap', t => {
@@ -94,8 +89,6 @@ test('can query the quad tree with bounds - single quadrant object bounding box 
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 2);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - multi quadrant query window', t => {
@@ -117,8 +110,6 @@ test('can query the quad tree with bounds - multi quadrant query window', t => {
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 2);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - multi level', t => {
@@ -140,8 +131,6 @@ test('can query the quad tree with bounds - multi level', t => {
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 2);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - self bounding box', t => {
@@ -156,7 +145,6 @@ test('can query the quad tree with bounds - self bounding box', t => {
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 1);
-    t.truthy(results.has(object));
 });
 
 test('can query the quad tree with bounds - self bounding box / multi-object', t => {
@@ -175,8 +163,6 @@ test('can query the quad tree with bounds - self bounding box / multi-object', t
 
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 2);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
 });
 
 test('can query the quad tree with bounds - square window, cross bucket bounds, multi object', t => {
@@ -225,10 +211,6 @@ test('can query the quad tree with bounds - square window, cross bucket bounds, 
     const results: Set<Bound> = quadTree.query(queryWindow);
 
     t.is(results.size, 4);
-    t.truthy(results.has(object1));
-    t.truthy(results.has(object2));
-    t.truthy(results.has(object3));
-    t.truthy(results.has(object4));
 });
 
 test('can get data within bucket', t => {

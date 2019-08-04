@@ -29,7 +29,7 @@ function toCircleFromPoint(point: Point): Circle {
     };
 }
 
-export function doBoundsIntersect(bound1: Bound, bound2: Bound): boolean {
+export function doBoundsIntersect(bound1: Bound, bound2: Bound): Point | null {
     const isBound1Circle: boolean = isCircle(bound1);
     const isBound2Circle: boolean = isCircle(bound2);
 

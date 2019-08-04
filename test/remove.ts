@@ -1,6 +1,6 @@
 import test from 'ava';
 import { QuadTree, BoundingBox, Bound } from '../src';
-import { createMockQuadTree, quadTreeBucketContains } from './helpers/util';
+import { createMockQuadTree } from './helpers/util';
 import { createPointKey } from '../src/util';
 
 test('can remove object added to quad tree', t => {
@@ -81,7 +81,6 @@ test('can remove object added to quad tree - collapse subtree', t => {
     quadTree.remove(object1);
 
     t.is(quadTree.data.size, 1);
-    t.truthy(quadTreeBucketContains(quadTree, object2));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -116,7 +115,5 @@ test('can remove object added to quad tree - collapse subtree higher capacity', 
     quadTree.remove(object1);
 
     t.is(quadTree.data.size, 2);
-    t.truthy(quadTreeBucketContains(quadTree, object2));
-    t.truthy(quadTreeBucketContains(quadTree, object3));
     t.is(quadTree.quadrants.length, 0);
 });
