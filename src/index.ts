@@ -68,8 +68,18 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
 }
 
 function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
-    const objectPointKey: string = createPointKey(object);
+    const objectPoint: Point = {
+        x: object.x,
+        y: object.y,
+    };
+    const objectPointKey: string = createPointKey(objectPoint);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
+
+    // Let's first check if the point this object occupies is within
+    // the bounds of the bucket
+    if (!doBoundsIntersect(quadTree.bounds, objectPoint)) {
+        return false;
+    }
 
     // If object is found, let's remove it
     if (objectPointSet.has(object)) {
