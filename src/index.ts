@@ -133,7 +133,7 @@ function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): S
         getQuadTreeData(quadTree)
             .forEach(quadObject => {
                 const mtv: Point | null = doBoundsIntersect(quadObject, bounds);
-                if (mtv) {
+                if (mtv && quadObject !== bounds) {
                     queryResultSet.add({
                         ...quadObject,
                         mtv,

@@ -21,6 +21,38 @@ test('can query the quad tree with bounds', t => {
     });
 });
 
+test('can query the quad tree with bounds - dont include current object in window', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const object: Bound = {
+        x: 0,
+        y: 0,
+        width: 5,
+        height: 5,
+    };
+
+    quadTree.add(object);
+
+    const results: Set<Bound> = quadTree.query(object);
+    t.is(results.size, 0);
+});
+
+test('can query the quad tree with bounds - filter out current object in window', t => {
+    const quadTree: QuadTree = createMockQuadTree(1);
+    const object: Bound = {
+        x: 0,
+        y: 0,
+        width: 5,
+        height: 5,
+    };
+    const copyObject: Bound = Object.assign({}, object);
+
+    quadTree.add(object);
+    quadTree.add(copyObject);
+
+    const results: Set<Bound> = quadTree.query(object);
+    t.is(results.size, 1);
+});
+
 test('can query the quad tree with bounds - multi object 1 point (whole window bounds)', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const bounds: BoundingBox = {
