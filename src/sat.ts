@@ -106,7 +106,7 @@ export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle
     const boxPoints: Point[] = getPoints(box);
     const closestPoint: Point = closestToPoint(circle, boxPoints);
 
-    sat2.axes.push(getVectorBetweenPoints(closestPoint, circle));
+    sat1.axes.push(getVectorBetweenPoints(closestPoint, circle));
 
     return doIntersectSAT(sat1, sat2);
 }
