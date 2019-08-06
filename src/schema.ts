@@ -1,14 +1,18 @@
-export interface Point {
+export interface CollisionInfo {
+    mtv?: Point;
+}
+
+export interface Point extends CollisionInfo {
     x: number;
     y: number;
 }
 
-export interface BoundingBox extends Point {
+export interface BoundingBox extends Point, CollisionInfo {
     width: number;
     height: number;
 }
 
-export interface Circle extends Point {
+export interface Circle extends Point, CollisionInfo {
     r: number;
 }
 
@@ -90,4 +94,5 @@ export interface QuadTree<T extends Bound = Bound> {
 export interface SATInfo {
     axes: Point[];
     points: Point[];
+    buffer: number;
 }

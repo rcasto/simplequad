@@ -34,35 +34,40 @@ function getPoints(boundingBox: BoundingBox): Point[] {
     ];
 }
 
-function getSideVectors(boundingBox: BoundingBox): Point[] {
+function getNonParallelSideVectors(boundingBox: BoundingBox): Point[] {
     const points: Point[] = getPoints(boundingBox);
     return [
+        // top left -> top right
         getVectorBetweenPoints(points[0], points[1]),
+        // top right -> bottom right
         getVectorBetweenPoints(points[1], points[2]),
-        // The below axes are just parallel to the above
-        // this is a quick way to reduce the search space
-        // getVectorBetweenPoints(points[2], points[3]),
-        // getVectorBetweenPoints(points[3], points[0]),
     ];
 }
 
 function getNormal(vector: Point): Point {
     return {
-        x: -vector.y,
-        y: vector.x,
+        x: vector.y,
+        y: -vector.x,
     };
 }
 
-// function normalize(vector: Point): Point {
-//     const magnitude: number = getMagnitude(vector);
-//     return {
-//         x: magnitude > 0 ? vector.x / magnitude : 0,
-//         y: magnitude > 0 ? vector.y / magnitude : 0,
-//     };
-// }
+function normalize(vector: Point): Point {
+    const magnitude: number = getMagnitude(vector);
+    return {
+        x: magnitude > 0 ? vector.x / magnitude : 0,
+        y: magnitude > 0 ? vector.y / magnitude : 0,
+    };
+}
 
 function getDot(vector1: Point, vector2: Point): number {
     return (vector1.x * vector2.x) + (vector1.y * vector2.y);
+}
+
+function multiply(vector1: Point, vector2: Point): Point {
+    return {
+        x: vector1.x * vector2.x,
+        y: vector1.y * vector2.y,
+    };
 }
 
 function getMagnitude(vector: Point): number {
@@ -84,19 +89,29 @@ function closestToPoint(targetPoint: Point, points: Point[]): Point {
     return closestPoint;
 }
 
-export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): boolean {
+export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
+    const sat1: SATInfo = getSATInfoForCircle(circle1);
+    const sat2: SATInfo = getSATInfoForCircle(circle2);
+
+    const centerPointsAxis: Point = getVectorBetweenPoints(circle1, circle2);
+    sat1.axes.push(centerPointsAxis);
+
+    return doIntersectSAT(sat1, sat2);
+}
+
+export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Point | null {
     const sat1: SATInfo = getSATInfoForBoundingBox(box);
     const sat2: SATInfo = getSATInfoForCircle(circle);
 
     const boxPoints: Point[] = getPoints(box);
     const closestPoint: Point = closestToPoint(circle, boxPoints);
 
-    sat2.axes.push(getVectorBetweenPoints(closestPoint, circle));
+    sat1.axes.push(getVectorBetweenPoints(closestPoint, circle));
 
     return doIntersectSAT(sat1, sat2);
 }
 
-export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): boolean {
+export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Point | null {
     const sat1: SATInfo = getSATInfoForBoundingBox(box1);
     const sat2: SATInfo = getSATInfoForBoundingBox(box2);
     return doIntersectSAT(sat1, sat2);
@@ -105,13 +120,17 @@ export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox
 function getSATInfoForCircle(circle: Circle): SATInfo {
     return {
         axes: [],
-        points: [circle],
+        points: [{
+            x: circle.x,
+            y: circle.y,
+        }],
+        buffer: circle.r,
     };
 }
 
 function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     const points: Point[] = getPoints(box);
-    const sides: Point[] = getSideVectors(box);
+    const sides: Point[] = getNonParallelSideVectors(box);
 
     const axes: Point[] = sides
         .map(side => getNormal(side));
@@ -119,21 +138,22 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     return {
         axes,
         points,
+        buffer: 0,
     };
 }
 
-export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
+export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     let scalarProjection: number;
     let maxBox1: number;
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
-    // let overlap1: number;
-    // let overlap2: number;
-    // let minTranslationDistance: number = Number.POSITIVE_INFINITY;
-    // let minTranslationVector: Point | null = null;
-    const axes: Point[] = sat1.axes.concat(sat2.axes);
-        // .map(axis => normalize(axis));
+    let overlap1: number;
+    let overlap2: number;
+    let minTranslationDistance: number = Number.POSITIVE_INFINITY;
+    let minTranslationVector: Point | null = null;
+    const axes: Point[] = sat1.axes.concat(sat2.axes)
+        .map(axis => normalize(axis));
     const numAxes: number = axes.length;
 
     for (let axesIndex: number = 0; axesIndex < numAxes; axesIndex++) {
@@ -149,45 +169,41 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): boolean {
         sat1.points
             .forEach(pointIn1 => {
                 scalarProjection = getDot(pointIn1, axes[axesIndex]);
-                if (scalarProjection < minBox1) {
-                    minBox1 = scalarProjection;
-                }
-                if (scalarProjection > maxBox1) {
-                    maxBox1 = scalarProjection;
-                }
+                minBox1 = Math.min(scalarProjection - sat1.buffer, minBox1);
+                maxBox1 = Math.max(scalarProjection + sat1.buffer, maxBox1);
             });
 
         sat2.points
             .forEach(pointIn2 => {
                 scalarProjection = getDot(pointIn2, axes[axesIndex]);
-                if (scalarProjection < minBox2) {
-                    minBox2 = scalarProjection;
-                }
-                if (scalarProjection > maxBox2) {
-                    maxBox2 = scalarProjection;
-                }
+                minBox2 = Math.min(scalarProjection - sat2.buffer, minBox2);
+                maxBox2 = Math.max(scalarProjection + sat2.buffer, maxBox2);
             });
 
         // Must intersect (overlap) on all separating axes
         // Can bail early, or on the first time not overlapping
         if (maxBox1 < minBox2 ||
             maxBox2 < minBox1) {
-            return false;
+            return null;
         }
 
         // compute overlap
-        // overlap1 = maxBox1 - minBox2;
-        // overlap2 = maxBox2 - minBox1;
+        overlap1 = maxBox1 - minBox2;
+        overlap2 = maxBox2 - minBox1;
 
-        // if (overlap1 < minTranslationDistance) {
-        //     minTranslationDistance = overlap1;
-        //     minTranslationVector = axes[axesIndex];
-        // }
-        // if (overlap2 < minTranslationDistance) {
-        //     minTranslationDistance = overlap2;
-        //     minTranslationVector = axes[axesIndex];
-        // }
+        if (overlap1 < minTranslationDistance) {
+            minTranslationDistance = overlap1;
+            minTranslationVector = axes[axesIndex];
+        }
+        if (overlap2 < minTranslationDistance) {
+            minTranslationDistance = overlap2;
+            minTranslationVector = axes[axesIndex];
+        }
     }
 
-    return true;
+    return minTranslationVector ?
+        multiply(minTranslationVector, {
+            x: minTranslationDistance,
+            y: minTranslationDistance,
+        }) : null;
 }
