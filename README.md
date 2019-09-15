@@ -45,14 +45,17 @@ const nodeCapacity: number = 5;
 const quadTree: QuadTree = createQuadTree(bounds, nodeCapacity);
 
 // Create a monster object
-const monster: Monster = {
-    // Requirement is that objects added to the QuadTree
-    // have properties forming a Bound, at minimum
-    // only a x and y coordinate, forming a point.
+const monsterBounds: BoundingBox = {
     x: 0,
     y: 0,
     width: 200,
     height: 200,
+};
+const monster: Monster = {
+    // Requirement is that objects added to the QuadTree
+    // have properties forming a Bound, at minimum
+    // only a x and y coordinate, forming a point.
+    ...monsterBounds,
     hp: 100,
     attack: 50,
     favoriteFood: 'tacos',
@@ -60,7 +63,7 @@ const monster: Monster = {
 
 // Let's first check for the monster
 // He shouldn't be there
-let monsterResultSet = quadTree.query(monster);
+let monsterResultSet = quadTree.query(monsterBounds);
 console.log(`# of monsters found: ${monsterResultSet.size}`);
 
 // Now let's add the monster object to the QuadTree
@@ -69,8 +72,8 @@ console.log("Added the monster");
 
 // Now lets make sure the monster is there
 // Let's hope he didn't run off
-monsterResultSet = quadTree.query(monster);
-console.log(`# of monsters found: ${monsterResultSet.size}`);
+monsterResultSet = quadTree.query(monsterBounds);
+console.log("# of monsters found: " + monsterResultSet.size);
 
 // Remove the monster from the QuadTree
 // No one likes monsters...geesh
@@ -79,7 +82,7 @@ console.log("Removed the monster");
 
 // Let's just make sure we actually
 // got rid of the monster
-monsterResultSet = quadTree.query(monster);
+monsterResultSet = quadTree.query(monsterBounds);
 console.log(`# of monsters found: ${monsterResultSet.size}`);
 
 // Remove all objects from the QuadTree
@@ -189,7 +192,7 @@ export interface QuadTree<T extends Bound = Bound> {
      * Queries the quadtree, finding what collision objects intersect with the input
      * query bound.
      * @param {Bound} bounds - The query window bounds, or "lens" into the quadtree to find intersections.
-     * @return {Set<T>} The set of objects the query window bounds intersect with. If empty, there are no intersections.
+     * @return {Set<T>} The set of objects the query window bounds intersect with. The query window object input will not be included in the returned set. If empty, there are no intersections.
      */
     query: (bounds: Bound) => Set<T>;
     /**
@@ -231,6 +234,17 @@ export interface Circle extends Point {
     r: number;
 }
 ```
+
+## Additional Functionality (beta)
+This functionality hasn't been fully vetted yet with an example and extensive testing, but currently, results returned from query operations, should return a MTV.  
+MTV being minimum translation vector. This can be utilized when resolving collisions.
+
+More details can be found at the following link:
+https://gamedev.stackexchange.com/questions/32545/what-is-the-mtv-minimum-translation-vector-in-sat-seperation-of-axis/32550
+
+Each type of `Bound` also extends the `CollisionInfo` interface which adds a `mtv` property containing this info.
+
+Go ahead and give it a try, but know there may be some bugs with it. If there are, go ahead and open an issue.
 
 ## Testing
 Tests can be ran by simply executing:

@@ -77,7 +77,7 @@ export interface QuadTree<T extends Bound = Bound> {
      * Queries the quadtree, finding what collision objects intersect with the input
      * query bound.
      * @param {Bound} bounds - The query window bounds, or "lens" into the quadtree to find intersections.
-     * @return {Set<T>} The set of objects the query window bounds intersect with. If empty, there are no intersections.
+     * @return {Set<T>} The set of objects the query window bounds intersect with. The query window object input will not be included in the returned set. If empty, there are no intersections.
      */
     query: (bounds: Bound) => Set<T>;
     /**
