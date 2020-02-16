@@ -57,6 +57,8 @@
     "src/"
   ],
   "ava": {
+    "verbose": true,
+    "timeout": "1m",
     "files": [
       "test/**/*",
       "!test/helpers/*.ts"
