@@ -134,9 +134,8 @@ export function createPointKey(point: Point): string {
 }
 
 export function flattenSets<T>(sets: Set<T>[]): Set<T> {
-    return sets.reduce((flattenedSet, currSet) => {
-        currSet
-            .forEach(setItem => flattenedSet.add(setItem));
-        return flattenedSet;
-    }, new Set<T>());
+    const flattenedSet = new Set<T>();
+    sets.forEach(set =>
+        set.forEach(setItem => flattenedSet.add(setItem)));
+    return flattenedSet;
 }
