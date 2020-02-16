@@ -14,15 +14,20 @@ test('can add an object to quadtree', t => {
     const numObjectsToAdd: number = 1000000;
     const quadTree: QuadTree = createMockQuadTree();
 
-    const startTime = performance.now();
+    let startTime: number = performance.now();
+    let duration: number;
 
     for (let i = 0; i < numObjectsToAdd; i++) {
         quadTree.add(createRandomBound(quadTree.bounds));
     }
 
-    const duration = (performance.now() - startTime) / 1000; // in seconds
+    duration = (performance.now() - startTime) / 1000; // in seconds
     t.log(`Took ${duration} seconds to add ${numObjectsToAdd} objects`);
 
+    startTime = performance.now();
     const results = quadTree.query(quadTree.bounds);
+    duration = (performance.now() - startTime) / 1000; // in seconds
+    t.log(`Took ${duration} seconds to query for objects`);
+
     t.is(results.size, numObjectsToAdd);
 });
