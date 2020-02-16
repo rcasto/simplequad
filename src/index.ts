@@ -162,10 +162,10 @@ function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>): T[] {
  * 
  * All collision objects should intersect or be contained within these "managed" bounds.
  * @param {BoundingBox} bounds - The bounding box with which the quadtree "manages".
- * @param {number} [capacity=3] - The # of collision objects a node can contain before subdividing.
+ * @param {number} [capacity=5] - The # of collision objects a node can contain before subdividing.
  * @return {QuadTree} The created quadtree "managing" the input bounds.
  */
-export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: number = 3): QuadTree<T> {
+export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: number = 5): QuadTree<T> {
     const quadTree: QuadTree<T> = {
         bounds,
         data: new Map<string, Set<T>>(),
