@@ -10,6 +10,12 @@ import { createMockQuadTree, createRandomBound } from './helpers/util';
     - Querying the quad tree
 */
 
+// These bounds are a little generous and the goal is to improve
+// If it starts failing, it should be a sign that something
+// horrible has happened to performance via a change made
+const addThresholdInSeconds: number = 60;
+const queryThresholdInSeconds: number = 20;
+
 test('can add an object to quadtree', t => {
     const numObjectsToAdd: number = 1000000;
     const quadTree: QuadTree = createMockQuadTree();
@@ -23,6 +29,7 @@ test('can add an object to quadtree', t => {
 
     duration = (performance.now() - startTime) / 1000; // in seconds
     t.log(`Took ${duration} seconds to add ${numObjectsToAdd} objects`);
+    t.assert(duration < addThresholdInSeconds);
 
     startTime = performance.now();
     const results = quadTree.query(quadTree.bounds);
@@ -30,4 +37,5 @@ test('can add an object to quadtree', t => {
     t.log(`Took ${duration} seconds to query for objects`);
 
     t.is(results.size, numObjectsToAdd);
+    t.assert(duration < queryThresholdInSeconds);
 });
