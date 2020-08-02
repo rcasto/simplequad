@@ -1,0 +1,92 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="/dist/simplequad.umd.js"></script>
+    <script>
+        const randomBoundGenerators = [
+            createRandomCircle,
+            createRandomPoint,
+            createRandomBoundingBox,
+        ];
+        const maxCircleRadius = 15;
+        const minCircleRadius = 5;
+        const maxBoundingBoxDimension = 15;
+        const minBoundingBoxDimension = 5;
+
+        function createRandomBound(bounds) {
+            const randomBoundGeneratorIndex = Math.floor(Math.random() * randomBoundGenerators.length);
+            return randomBoundGenerators[randomBoundGeneratorIndex](bounds);
+        }
+
+        function createRandomCircle(bounds) {
+            const r = Math.max(maxCircleRadius * Math.random(), minCircleRadius);
+            const x = (bounds.x + bounds.width - r) * Math.random() + bounds.x + r;
+            const y = (bounds.y + bounds.height - r) * Math.random() + bounds.y + r;
+            return {
+                x,
+                y,
+                r,
+            };
+        }
+
+        function createRandomPoint(bounds) {
+            const x = (bounds.x + bounds.width) * Math.random() + bounds.x;
+            const y = (bounds.y + bounds.height) * Math.random() + bounds.y;
+            return {
+                x,
+                y,
+            };
+        }
+
+        function createRandomBoundingBox(bounds) {
+            const width = Math.max(maxBoundingBoxDimension * Math.random(), minBoundingBoxDimension);
+            const height = Math.max(maxBoundingBoxDimension * Math.random(), minBoundingBoxDimension);
+            const x = (bounds.x + bounds.width - width) * Math.random() + bounds.x;
+            const y = (bounds.y + bounds.height - height) * Math.random() + bounds.y;
+            return {
+                x,
+                y,
+                width,
+                height,
+            };
+        }
+
+        function init() {
+            const numObjectsToAdd = 10000;
+            const capacity = 5;
+            const bounds = {
+                x: 0,
+                y: 0,
+                width: 800,
+                height: 600,
+            };
+            const quadTree = SimpleQuad.createQuadTree(bounds, capacity);
+
+            let startTime = performance.now();
+            let duration;
+
+            for (let i = 0; i < numObjectsToAdd; i++) {
+                quadTree.add(createRandomBound(quadTree.bounds));
+            }
+
+            duration = (performance.now() - startTime) / 1000; // in seconds
+            console.log(`Took ${duration} seconds to add ${numObjectsToAdd} objects`);
+
+            startTime = performance.now();
+            const results = quadTree.query(quadTree.bounds);
+            duration = (performance.now() - startTime) / 1000; // in seconds
+
+            console.log(`Took ${duration} seconds to query for objects`);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
