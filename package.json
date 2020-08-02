@@ -14,7 +14,7 @@
     "test:coverage": "nyc ava",
     "clean": "rimraf dist",
     "clean:all": "rimraf dist node_modules",
-    "prepublish": "npm-run-all test build",
+    "prepublishOnly": "npm-run-all test build",
     "perf-client": "http-server -p 8080 ./"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
