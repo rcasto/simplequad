@@ -8,24 +8,29 @@ function getVectorBetweenPoints(point1: Point, point2: Point): Point {
 }
 
 function getPoints(boundingBox: BoundingBox): Point[] {
-    const maxX: number = boundingBox.x + boundingBox.width;
-    const maxY: number = boundingBox.y + boundingBox.height;
+    const x = boundingBox.x;
+    const y = boundingBox.y;
+
+    const maxX: number = x + boundingBox.width;
+    const maxY: number = y + boundingBox.height;
+
     const topLeftPoint: Point = {
-        x: boundingBox.x,
-        y: boundingBox.y,
+        x,
+        y,
     };
     const topRightPoint: Point = {
         x: maxX,
-        y: boundingBox.y,
+        y,
     };
     const bottomRightPoint: Point = {
         x: maxX,
         y: maxY,
     };
     const bottomLeftPoint: Point = {
-        x: boundingBox.x,
+        x,
         y: maxY,
     };
+
     return [
         topLeftPoint,
         topRightPoint,
@@ -143,6 +148,8 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
 }
 
 export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
+    Array.prototype.push.apply(sat1.axes, sat2.axes);
+
     let scalarProjection: number;
     let maxBox1: number;
     let minBox1: number;
@@ -152,9 +159,11 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     let overlap2: number;
     let minTranslationDistance: number = Number.POSITIVE_INFINITY;
     let minTranslationVector: Point | null = null;
-    const axes: Point[] = sat1.axes.concat(sat2.axes)
+    const axes: Point[] = sat1.axes
         .map(axis => normalize(axis));
     const numAxes: number = axes.length;
+    const sat1Buffer: number = sat1.buffer;
+    const sat2Buffer: number = sat2.buffer;
 
     for (let axesIndex: number = 0; axesIndex < numAxes; axesIndex++) {
         maxBox1 = Number.NEGATIVE_INFINITY;
@@ -169,15 +178,15 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
         sat1.points
             .forEach(pointIn1 => {
                 scalarProjection = getDot(pointIn1, axes[axesIndex]);
-                minBox1 = Math.min(scalarProjection - sat1.buffer, minBox1);
-                maxBox1 = Math.max(scalarProjection + sat1.buffer, maxBox1);
+                minBox1 = Math.min(scalarProjection - sat1Buffer, minBox1);
+                maxBox1 = Math.max(scalarProjection + sat1Buffer, maxBox1);
             });
 
         sat2.points
             .forEach(pointIn2 => {
                 scalarProjection = getDot(pointIn2, axes[axesIndex]);
-                minBox2 = Math.min(scalarProjection - sat2.buffer, minBox2);
-                maxBox2 = Math.max(scalarProjection + sat2.buffer, maxBox2);
+                minBox2 = Math.min(scalarProjection - sat2Buffer, minBox2);
+                maxBox2 = Math.max(scalarProjection + sat2Buffer, maxBox2);
             });
 
         // Must intersect (overlap) on all separating axes

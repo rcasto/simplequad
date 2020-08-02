@@ -54,7 +54,8 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
     // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
     const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
-    const quadObjects: T[] = getQuadTreeData(quadTree).concat(object);
+    const quadObjects: T[] = getQuadTreeData(quadTree);
+    quadObjects.push(object);
 
     // adjust current quadtree settings
     // May need to adjust these in-place instead of creating new references
