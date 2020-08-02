@@ -25,7 +25,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
     }
 
     // Let's get the data already associated with this bucket
-    const objectPointKey: string = createPointKey(objectPoint);
+    const objectPointKey: string = object._key || createPointKey(object);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // Let's check if the object is already in the bucket
@@ -73,7 +73,7 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
         x: object.x,
         y: object.y,
     };
-    const objectPointKey: string = createPointKey(objectPoint);
+    const objectPointKey: string = object._key || createPointKey(object);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // Let's first check if the point this object occupies is within

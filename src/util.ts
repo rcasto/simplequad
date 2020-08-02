@@ -129,8 +129,11 @@ export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
     ];
 }
 
-export function createPointKey(point: Point): string {
-    return `(${point.x},${point.y})`;
+export function createPointKey(bound: Bound): string {
+    if (typeof bound._key !== 'string') {
+        bound._key = `(${bound.x},${bound.y})`;
+    }
+    return bound._key;
 }
 
 export function flattenSets<T>(sets: Set<T>[]): Set<T> {

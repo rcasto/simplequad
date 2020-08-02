@@ -1,5 +1,8 @@
 export interface CollisionInfo {
     mtv?: Point;
+
+    // Internal - likely would want to move to another interface, keeping here for now
+    _key?: string;
 }
 
 export interface Point extends CollisionInfo {
