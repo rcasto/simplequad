@@ -1,7 +1,7 @@
-import commonjs from 'rollup-plugin-commonjs';
-import resolve from 'rollup-plugin-node-resolve';
-import babel from 'rollup-plugin-babel';
-import { uglify } from "rollup-plugin-uglify";
+import commonjs from '@rollup/plugin-commonjs';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { babel } from '@rollup/plugin-babel';
+import { terser } from "rollup-plugin-terser";
 
 const extensions = [
   '.js',
@@ -10,7 +10,7 @@ const extensions = [
 const name = 'SimpleQuad';
 const plugins = [
   // Allows node_modules resolution
-  resolve({ extensions }),
+  nodeResolve({ extensions }),
   // Allow bundling cjs modules. Rollup doesn't understand cjs
   commonjs(),
   // Compile TypeScript/JavaScript files
@@ -20,7 +20,7 @@ const outputs = [];
 
 // Need to add minifier plugin if called with minify flag
 if (shouldMinify(process.argv)) {
-    plugins.push(uglify());
+    plugins.push(terser());
     outputs.push({
       file: getFileName('umd.min'),
       format: 'umd',
