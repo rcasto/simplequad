@@ -1,5 +1,5 @@
 import { Bound, BoundingBox, QuadTree, Point } from './schema';
-import { createPointKey, doBoundsIntersect, divideBoundingBox, flattenSets } from './util';
+import { createPointKey, doBoundsIntersect, divideBoundingBox, doPointAndBoxIntersect } from './util';
 
 function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
     const objectPoint: Point = {
@@ -9,7 +9,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
 
     // Let's first check if the point this object occupies is within
     // the bounds of the bucket
-    if (!doBoundsIntersect(quadTree.bounds, objectPoint)) {
+    if (!doPointAndBoxIntersect(objectPoint, quadTree.bounds)) {
         return false;
     }
 
@@ -25,7 +25,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
     }
 
     // Let's get the data already associated with this bucket
-    const objectPointKey: string = object._key || createPointKey(object);
+    const objectPointKey: string = createPointKey(object);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // Let's check if the object is already in the bucket
@@ -78,7 +78,7 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
 
     // Let's first check if the point this object occupies is within
     // the bounds of the bucket
-    if (!doBoundsIntersect(quadTree.bounds, objectPoint)) {
+    if (!doPointAndBoxIntersect(objectPoint, quadTree.bounds)) {
         return false;
     }
 
@@ -148,14 +148,23 @@ function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): S
     // Check the current nodes children
     // querying them for the same info and collecting
     // the results
-    const childQueryResultSet: Set<T> = flattenSets(quadTree.quadrants
-        .map(quadrant => queryQuadTree(quadrant, bounds)));
+    const childQueryResultSet: Set<T> = quadTree.quadrants
+        .reduce((resultSet, quadrant) => {
+            queryQuadTree(quadrant, bounds)
+                .forEach(result => resultSet.add(result));
+            return resultSet;
+        }, new Set<T>());
 
     return childQueryResultSet;
 }
 
 function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>): T[] {
-    return Array.from(flattenSets(Array.from(quadTree.data.values())));
+    const quadTreeDataList: T[] = [];
+    const quadTreeSetIterator: IterableIterator<Set<T>> = quadTree.data.values();
+    for (const quadTreeSet of quadTreeSetIterator) {
+        quadTreeSet.forEach(quadTreeSetItem => quadTreeDataList.push(quadTreeSetItem));
+    }
+    return quadTreeDataList;
 }
 
 /**

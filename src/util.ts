@@ -136,9 +136,18 @@ export function createPointKey(bound: Bound): string {
     return bound._key;
 }
 
-export function flattenSets<T>(sets: Set<T>[]): Set<T> {
-    const flattenedSet = new Set<T>();
-    sets.forEach(set =>
-        set.forEach(setItem => flattenedSet.add(setItem)));
-    return flattenedSet;
+/**
+ * Quicker/much cheaper check for intersection between box and point for add/remove scenarios
+ * where we don't necessarily need to use SAT.
+ * 
+ * @param point Object point or rather point to check intersection with input box
+ * @param box Box to check for intersection with input point
+ */
+export function doPointAndBoxIntersect(point: Point, box: BoundingBox) {
+    const maxX = box.x + box.width;
+    const maxY = box.y + box.height;
+    return (
+        point.x >= box.x && point.x <= maxX &&
+        point.y >= box.y && point.y <= maxY
+    );
 }
