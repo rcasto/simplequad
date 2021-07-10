@@ -3,7 +3,6 @@ import { performance } from 'perf_hooks';
 import { QuadTree } from '../src';
 import { createMockQuadTree, createRandomBound } from './helpers/util';
 
-
 /*
     From a performance point of view, the main focus is on speeding up
     - Adding objects to the quad tree

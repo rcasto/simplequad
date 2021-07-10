@@ -73,7 +73,7 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
         x: object.x,
         y: object.y,
     };
-    const objectPointKey: string = object._key || createPointKey(object);
+    const objectPointKey: string = createPointKey(object);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // Let's first check if the point this object occupies is within
