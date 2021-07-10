@@ -115,7 +115,7 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
 }
 
 function clearQuadTree<T extends Bound>(quadTree: QuadTree<T>): void {
-    quadTree.data = new Map<string, Set<T>>();
+    quadTree.data.clear();
     quadTree.quadrants = [];
 }
 
