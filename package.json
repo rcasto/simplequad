@@ -1,6 +1,6 @@
 {
   "name": "simplequad",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "A simple quadtree implementation useful for 2D collision detection and more.",
   "main": "dist/simplequad.umd.js",
   "module": "dist/simplequad.esm.js",
