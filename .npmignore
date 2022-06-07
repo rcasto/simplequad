@@ -1,0 +1,5 @@
+# Ignore everything
+/*
+
+# Dont ignore these
+!dist/
