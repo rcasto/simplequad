@@ -301,3 +301,45 @@ test('can get data within bucket - same point', t => {
     t.truthy(results.includes(object2));
     t.truthy(results.includes(object3));
 });
+
+/**
+ * Debating on adjusting this behavior, but will keep for now.
+ * Not sure that touching should be considered a collision, but it has been being flagged
+ * right now and the mtv can be used to detect this scenario.
+ */
+test('can query getting touching, but non-overlapping objects', t => {
+    const quadTree: QuadTree = createMockQuadTree(5);
+    const object1: Bound = ({
+        x: 0,
+        y: 0,
+        width: 50,
+        height: 50,
+    });
+    const object2: Bound = ({
+        x: 50,
+        y: 0,
+        width: 50,
+        height: 50,
+    });
+    const object3: Bound = ({
+        x: 0,
+        y: 50,
+        width: 50,
+        height: 50,
+    });
+    quadTree.add(object1);
+    quadTree.add(object2);
+    quadTree.add(object3);
+
+    const results: Set<Bound> = quadTree.query(object1);
+
+    t.is(results.size, 2);
+    t.deepEqual([...results][0].mtv, {
+        x: 0,
+        y: 0,
+    });
+    t.deepEqual([...results][0].mtv, {
+        x: 0,
+        y: 0,
+    });
+});

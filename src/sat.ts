@@ -39,22 +39,6 @@ function getPoints(boundingBox: BoundingBox): Point[] {
     ];
 }
 
-function getNonParallelSideVectors(boxPoints: Point[]): Point[] {
-    return [
-        // top left -> top right
-        getVectorBetweenPoints(boxPoints[0], boxPoints[1]),
-        // top right -> bottom right
-        getVectorBetweenPoints(boxPoints[1], boxPoints[2]),
-    ];
-}
-
-function getNormal(vector: Point): Point {
-    return {
-        x: vector.y,
-        y: -vector.x,
-    };
-}
-
 function normalize(vector: Point): Point {
     const magnitude: number = getMagnitude(vector);
     return {
@@ -76,7 +60,7 @@ function multiply(vector1: Point, vector2: Point): Point {
 
 function getMagnitude(vector: Point, trueMagnitude = true): number {
     const underRootMagnitude = (vector.x * vector.x) + (vector.y * vector.y);
-    if (!trueMagnitude) {
+    if (!trueMagnitude || underRootMagnitude === 1) {
         return underRootMagnitude;
     }
     return Math.sqrt(underRootMagnitude);
@@ -122,6 +106,12 @@ export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle
 export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Point | null {
     const sat1: SATInfo = getSATInfoForBoundingBox(box1);
     const sat2: SATInfo = getSATInfoForBoundingBox(box2);
+
+    // Bounding boxes share same orientation or rotation (none)
+    // Thus don't also need to include normals for the second box
+    // Only 2 axes total need to be checked
+    sat2.axes = [];
+
     return doIntersectSAT(sat1, sat2);
 }
 
@@ -136,15 +126,22 @@ function getSATInfoForCircle(circle: Circle): SATInfo {
     };
 }
 
+const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
+    {
+        x: 0,
+        y: -1,
+    },
+    {
+        x: 1,
+        y: 0,
+    },
+];
+
 function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     const points: Point[] = getPoints(box);
-    const sides: Point[] = getNonParallelSideVectors(points);
-
-    const axes: Point[] = sides
-        .map(side => getNormal(side));
 
     return {
-        axes,
+        axes: [...NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES],
         points,
         buffer: 0,
     };
@@ -158,8 +155,6 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     let minBox1: number;
     let maxBox2: number;
     let minBox2: number;
-    let overlap1: number;
-    let overlap2: number;
     let minTranslationDistance: number = Number.POSITIVE_INFINITY;
     let minTranslationVector: Point | null = null;
     const numAxes: number = allAxes.length;
@@ -199,16 +194,12 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
             return null;
         }
 
-        // compute overlap
-        overlap1 = maxBox1 - minBox2;
-        overlap2 = maxBox2 - minBox1;
+        const minBox = Math.max(minBox1, minBox2);
+        const maxBox = Math.min(maxBox1, maxBox2);
+        const overlap = maxBox - minBox;
 
-        if (overlap1 < minTranslationDistance) {
-            minTranslationDistance = overlap1;
-            minTranslationVector = normalizedAxis;
-        }
-        if (overlap2 < minTranslationDistance) {
-            minTranslationDistance = overlap2;
+        if (overlap < minTranslationDistance) {
+            minTranslationDistance = overlap;
             minTranslationVector = normalizedAxis;
         }
     }
