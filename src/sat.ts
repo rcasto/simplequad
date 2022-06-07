@@ -75,7 +75,7 @@ function multiply(vector1: Point, vector2: Point): Point {
 }
 
 function getMagnitude(vector: Point, trueMagnitude = true): number {
-    const underRootMagnitude = Math.pow(vector.x, 2) + Math.pow(vector.y, 2);
+    const underRootMagnitude = (vector.x * vector.x) + (vector.y * vector.y);
     if (!trueMagnitude) {
         return underRootMagnitude;
     }
@@ -162,13 +162,13 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     let overlap2: number;
     let minTranslationDistance: number = Number.POSITIVE_INFINITY;
     let minTranslationVector: Point | null = null;
-    const axes: Point[] = allAxes
-        .map(axis => normalize(axis));
-    const numAxes: number = axes.length;
+    const numAxes: number = allAxes.length;
     const sat1Buffer: number = sat1.buffer;
     const sat2Buffer: number = sat2.buffer;
 
     for (let axesIndex: number = 0; axesIndex < numAxes; axesIndex++) {
+        const normalizedAxis = normalize(allAxes[axesIndex]);
+
         maxBox1 = Number.NEGATIVE_INFINITY;
         minBox1 = Number.POSITIVE_INFINITY;
 
@@ -180,14 +180,14 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
         // This will be done for both boxes
         sat1.points
             .forEach(pointIn1 => {
-                scalarProjection = getDot(pointIn1, axes[axesIndex]);
+                scalarProjection = getDot(pointIn1, normalizedAxis);
                 minBox1 = Math.min(scalarProjection - sat1Buffer, minBox1);
                 maxBox1 = Math.max(scalarProjection + sat1Buffer, maxBox1);
             });
 
         sat2.points
             .forEach(pointIn2 => {
-                scalarProjection = getDot(pointIn2, axes[axesIndex]);
+                scalarProjection = getDot(pointIn2, normalizedAxis);
                 minBox2 = Math.min(scalarProjection - sat2Buffer, minBox2);
                 maxBox2 = Math.max(scalarProjection + sat2Buffer, maxBox2);
             });
@@ -205,11 +205,11 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
 
         if (overlap1 < minTranslationDistance) {
             minTranslationDistance = overlap1;
-            minTranslationVector = axes[axesIndex];
+            minTranslationVector = normalizedAxis;
         }
         if (overlap2 < minTranslationDistance) {
             minTranslationDistance = overlap2;
-            minTranslationVector = axes[axesIndex];
+            minTranslationVector = normalizedAxis;
         }
     }
 
