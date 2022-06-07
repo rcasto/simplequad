@@ -39,13 +39,12 @@ function getPoints(boundingBox: BoundingBox): Point[] {
     ];
 }
 
-function getNonParallelSideVectors(boundingBox: BoundingBox): Point[] {
-    const points: Point[] = getPoints(boundingBox);
+function getNonParallelSideVectors(boxPoints: Point[]): Point[] {
     return [
         // top left -> top right
-        getVectorBetweenPoints(points[0], points[1]),
+        getVectorBetweenPoints(boxPoints[0], boxPoints[1]),
         // top right -> bottom right
-        getVectorBetweenPoints(points[1], points[2]),
+        getVectorBetweenPoints(boxPoints[1], boxPoints[2]),
     ];
 }
 
@@ -75,8 +74,12 @@ function multiply(vector1: Point, vector2: Point): Point {
     };
 }
 
-function getMagnitude(vector: Point): number {
-    return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
+function getMagnitude(vector: Point, trueMagnitude = true): number {
+    const underRootMagnitude = Math.pow(vector.x, 2) + Math.pow(vector.y, 2);
+    if (!trueMagnitude) {
+        return underRootMagnitude;
+    }
+    return Math.sqrt(underRootMagnitude);
 }
 
 function closestToPoint(targetPoint: Point, points: Point[]): Point {
@@ -85,7 +88,7 @@ function closestToPoint(targetPoint: Point, points: Point[]): Point {
     let currentDistance: number;
     points
         .forEach(point => {
-            currentDistance = getMagnitude(getVectorBetweenPoints(targetPoint, point));
+            currentDistance = getMagnitude(getVectorBetweenPoints(targetPoint, point), false);
             if (currentDistance < closestDistance) {
                 closestDistance = currentDistance;
                 closestPoint = point;
@@ -135,7 +138,7 @@ function getSATInfoForCircle(circle: Circle): SATInfo {
 
 function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     const points: Point[] = getPoints(box);
-    const sides: Point[] = getNonParallelSideVectors(box);
+    const sides: Point[] = getNonParallelSideVectors(points);
 
     const axes: Point[] = sides
         .map(side => getNormal(side));
@@ -148,7 +151,7 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
 }
 
 export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
-    Array.prototype.push.apply(sat1.axes, sat2.axes);
+    const allAxes: Point[] = sat1.axes.concat(sat2.axes);
 
     let scalarProjection: number;
     let maxBox1: number;
@@ -159,7 +162,7 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     let overlap2: number;
     let minTranslationDistance: number = Number.POSITIVE_INFINITY;
     let minTranslationVector: Point | null = null;
-    const axes: Point[] = sat1.axes
+    const axes: Point[] = allAxes
         .map(axis => normalize(axis));
     const numAxes: number = axes.length;
     const sat1Buffer: number = sat1.buffer;
