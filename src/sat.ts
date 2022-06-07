@@ -86,7 +86,7 @@ export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point |
     const sat2: SATInfo = getSATInfoForCircle(circle2);
 
     const centerPointsAxis: Point = getVectorBetweenPoints(circle1, circle2);
-    sat1.axes.push(centerPointsAxis);
+    sat1.axes.push(normalize(centerPointsAxis));
 
     return doIntersectSAT(sat1, sat2);
 }
@@ -98,7 +98,7 @@ export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle
     const boxPoints: Point[] = getPoints(box);
     const closestPoint: Point = closestToPoint(circle, boxPoints);
 
-    sat1.axes.push(getVectorBetweenPoints(closestPoint, circle));
+    sat1.axes.push(normalize(getVectorBetweenPoints(closestPoint, circle)));
 
     return doIntersectSAT(sat1, sat2);
 }
@@ -162,7 +162,7 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     const sat2Buffer: number = sat2.buffer;
 
     for (let axesIndex: number = 0; axesIndex < numAxes; axesIndex++) {
-        const normalizedAxis = normalize(allAxes[axesIndex]);
+        const normalizedAxis = allAxes[axesIndex];
 
         maxBox1 = Number.NEGATIVE_INFINITY;
         minBox1 = Number.POSITIVE_INFINITY;
