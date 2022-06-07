@@ -12,29 +12,46 @@ import { createMockQuadTree, createRandomBound } from './helpers/util';
 // These bounds are a little generous and the goal is to improve
 // If it starts failing, it should be a sign that something
 // horrible has happened to performance via a change made
-const addThresholdInSeconds: number = 15;
-const queryThresholdInSeconds: number = 8;
+const addThresholdInSeconds: number = 5;
+const queryThresholdInSeconds: number = 5;
 
 test('can add an object to quadtree', t => {
+    const numSimulations: number = 5;
     const numObjectsToAdd: number = 1000000;
-    const quadTree: QuadTree = createMockQuadTree();
+    const quadTree: QuadTree = createMockQuadTree(Math.floor(numObjectsToAdd * .01)); // 1% of objects capacity per node
 
-    let startTime: number = performance.now();
-    let duration: number;
+    const addDurations = [];
+    const queryDurations = [];
 
-    for (let i = 0; i < numObjectsToAdd; i++) {
-        quadTree.add(createRandomBound(quadTree.bounds));
+    for (let i = 0; i < numSimulations; i++) {
+        let startTime: number = performance.now();
+        let duration: number;
+
+        for (let j = 0; j < numObjectsToAdd; j++) {
+            const randomBound = createRandomBound(quadTree.bounds);
+            quadTree.add(randomBound);
+        }
+
+        duration = (performance.now() - startTime) / 1000; // in seconds
+        addDurations.push(duration);
+        t.log(`Took ${duration} seconds to add ${numObjectsToAdd} objects. Average time per object: ${(duration / numObjectsToAdd) * 1000} ms`);
+        t.assert(duration < addThresholdInSeconds);
+
+        startTime = performance.now();
+        const results = quadTree.query(quadTree.bounds);
+        duration = (performance.now() - startTime) / 1000; // in seconds
+        queryDurations.push(duration);
+        t.log(`Took ${duration} seconds to query for ${numObjectsToAdd} objects`);
+
+        t.is(results.size, numObjectsToAdd);
+        t.assert(duration < queryThresholdInSeconds);
+
+        quadTree.clear();
     }
 
-    duration = (performance.now() - startTime) / 1000; // in seconds
-    t.log(`Took ${duration} seconds to add ${numObjectsToAdd} objects`);
-    t.assert(duration < addThresholdInSeconds);
+    const averageAddDuration = addDurations.reduce((totalDuration, currAddDuration) => totalDuration + currAddDuration, 0) / numSimulations;
+    const averageQueryDuration = queryDurations.reduce((totalDuration, currQueryDuration) => totalDuration + currQueryDuration, 0) / numSimulations;
 
-    startTime = performance.now();
-    const results = quadTree.query(quadTree.bounds);
-    duration = (performance.now() - startTime) / 1000; // in seconds
-    t.log(`Took ${duration} seconds to query for objects`);
-
-    t.is(results.size, numObjectsToAdd);
-    t.assert(duration < queryThresholdInSeconds);
+    t.log(`Took ${averageAddDuration} seconds on average to add ${numObjectsToAdd} objects`);
+    t.log(`Took ${averageQueryDuration} seconds on average to query ${numObjectsToAdd} objects`);
 });

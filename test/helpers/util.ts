@@ -1,4 +1,4 @@
-import { QuadTree, BoundingBox, Circle, Point } from "../../src/schema";
+import { QuadTree, BoundingBox, Circle, Point, Bound } from "../../src/schema";
 import { createQuadTree } from "../../src";
 
 // Provides tree with pre-defined bounds
@@ -18,7 +18,7 @@ const randomBoundGenerators = [
     createRandomPoint,
     createRandomBoundingBox,
 ];
-export function createRandomBound(bounds: BoundingBox) {
+export function createRandomBound(bounds: BoundingBox): Bound {
     const randomBoundGeneratorIndex: number = Math.floor(Math.random() * randomBoundGenerators.length);
     return randomBoundGenerators[randomBoundGeneratorIndex](bounds);
 }
