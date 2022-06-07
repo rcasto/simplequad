@@ -16,7 +16,7 @@ const addThresholdInSeconds: number = 10;
 const queryThresholdInSeconds: number = 8;
 
 test('can add an object to quadtree', t => {
-    const numSimulations: number = 5;
+    const numSimulations: number = 3;
     const numObjectsToAdd: number = 1000000;
     const quadTree: QuadTree = createMockQuadTree(Math.floor(numObjectsToAdd * .01)); // 1% of objects capacity per node
 
