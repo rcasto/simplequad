@@ -338,8 +338,8 @@ test('can query getting touching, but non-overlapping objects', t => {
         x: 0,
         y: 0,
     });
-    t.deepEqual([...results][0].mtv, {
+    t.deepEqual([...results][1].mtv, {
         x: 0,
-        y: 0,
+        y: -0,
     });
 });
