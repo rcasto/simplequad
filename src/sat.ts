@@ -1,6 +1,12 @@
 import { BoundingBox, Point, Circle, SATInfo } from './schema';
 
-function getVectorBetweenPoints(point1: Point, point2: Point): Point {
+/**
+ * Resultant vector points in direction from point1 to point2
+ * @param point1 First point or vector
+ * @param point2 Second point or vector
+ * @returns Vector pointing from vector/point 1 to vector/point 2
+ */
+function subtract(point1: Point, point2: Point): Point {
     return {
         x: point2.x - point1.x,
         y: point2.y - point1.y,
@@ -51,10 +57,10 @@ function getDot(vector1: Point, vector2: Point): number {
     return (vector1.x * vector2.x) + (vector1.y * vector2.y);
 }
 
-function multiply(vector1: Point, vector2: Point): Point {
+function scalarMultiply(vector: Point, scalar: number): Point {
     return {
-        x: vector1.x * vector2.x,
-        y: vector1.y * vector2.y,
+        x: vector.x * scalar,
+        y: vector.y * scalar,
     };
 }
 
@@ -66,27 +72,31 @@ function getMagnitude(vector: Point, trueMagnitude = true): number {
     return Math.sqrt(underRootMagnitude);
 }
 
-function closestToPoint(targetPoint: Point, points: Point[]): Point {
+function closestPointToTargetPoint(targetPoint: Point, points: Point[]): {
+    closestPoint: Point;
+} {
     let closestPoint: Point = points[0];
     let closestDistance: number = Number.POSITIVE_INFINITY;
     let currentDistance: number;
     points
         .forEach(point => {
-            currentDistance = getMagnitude(getVectorBetweenPoints(targetPoint, point), false);
+            currentDistance = getMagnitude(subtract(targetPoint, point), false);
             if (currentDistance < closestDistance) {
                 closestDistance = currentDistance;
                 closestPoint = point;
             }
         });
-    return closestPoint;
+    return {
+        closestPoint,
+    };
 }
 
 export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
     const sat1: SATInfo = getSATInfoForCircle(circle1);
     const sat2: SATInfo = getSATInfoForCircle(circle2);
 
-    const centerPointsAxis: Point = getVectorBetweenPoints(circle1, circle2);
-    sat1.axes.push(normalize(centerPointsAxis));
+    const normalizedCenterPointsAxis: Point = normalize(subtract(circle1, circle2));
+    sat1.axes.push(normalizedCenterPointsAxis);
 
     return doIntersectSAT(sat1, sat2);
 }
@@ -94,11 +104,10 @@ export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point |
 export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Point | null {
     const sat1: SATInfo = getSATInfoForBoundingBox(box);
     const sat2: SATInfo = getSATInfoForCircle(circle);
+    const { closestPoint: closestBoundingBoxPoint } = closestPointToTargetPoint(circle, sat1.points);
 
-    const boxPoints: Point[] = getPoints(box);
-    const closestPoint: Point = closestToPoint(circle, boxPoints);
-
-    sat1.axes.push(normalize(getVectorBetweenPoints(closestPoint, circle)));
+    const normalizedCenterPointsAxis: Point = normalize(subtract(circle, closestBoundingBoxPoint));
+    sat2.axes.push(normalizedCenterPointsAxis);
 
     return doIntersectSAT(sat1, sat2);
 }
@@ -204,9 +213,9 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
         }
     }
 
-    return minTranslationVector ?
-        multiply(minTranslationVector, {
-            x: minTranslationDistance,
-            y: minTranslationDistance,
-        }) : null;
+    if (minTranslationVector) {
+        return scalarMultiply(minTranslationVector, minTranslationDistance);
+    }
+
+    return null;
 }
