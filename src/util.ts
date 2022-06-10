@@ -151,3 +151,35 @@ export function doPointAndBoxIntersect(point: Point, box: BoundingBox) {
         point.y >= box.y && point.y <= maxY
     );
 }
+
+// https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Axis-Aligned_Bounding_Box
+export function doBoxAndBoxIntersect(box1: BoundingBox, box2: BoundingBox) {
+    return (
+        box1.x <= box2.x + box2.width &&
+        box1.x + box1.width >= box2.x &&
+        box1.y <= box2.y + box2.height &&
+        box1.y + box1.height >= box2.y
+    );
+}
+
+export function toBoundingBox(bound: Bound): BoundingBox {
+    if (isCircle(bound)) {
+        return {
+            x: bound.x,
+            y: bound.y,
+            width: bound.r,
+            height: bound.r,
+        };
+    }
+
+    if (isPoint(bound)) {
+        return {
+            x: bound.x,
+            y: bound.y,
+            width: 0,
+            height: 0,
+        };
+    }
+
+    return bound;
+}

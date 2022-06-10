@@ -1,5 +1,5 @@
 import { Bound, BoundingBox, QuadTree, Point } from './schema';
-import { createPointKey, doBoundsIntersect, divideBoundingBox, doPointAndBoxIntersect } from './util';
+import { createPointKey, doBoundsIntersect, divideBoundingBox, doPointAndBoxIntersect, doBoxAndBoxIntersect, toBoundingBox } from './util';
 
 function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
     const objectPoint: Point = {
@@ -120,9 +120,9 @@ function clearQuadTree<T extends Bound>(quadTree: QuadTree<T>): void {
 }
 
 function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): Set<T> {
-    // Check first if the query bounds intersect with the bounds
+    // Check first if the query bounds (bounding box) intersect with the bounds
     // of the bucket, if it doesn't we can bail immediately with an empty list
-    if (!doBoundsIntersect(quadTree.bounds, bounds)) {
+    if (!doBoxAndBoxIntersect(quadTree.bounds, toBoundingBox(bounds))) {
         return new Set<T>();
     }
 
