@@ -1,4 +1,5 @@
 import { BoundingBox, Point, Circle, SATInfo } from './schema';
+import { doBoxAndBoxIntersect, doBoxAndCircleIntersect, doCircleAndCircleIntersect } from './util';
 
 /**
  * Resultant vector points in direction from point1 to point2
@@ -92,6 +93,10 @@ function closestPointToTargetPoint(targetPoint: Point, points: Point[]): {
 }
 
 export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
+    if (!doCircleAndCircleIntersect(circle1, circle2)) {
+        return null;
+    }
+
     const sat1: SATInfo = getSATInfoForCircle(circle1);
     const sat2: SATInfo = getSATInfoForCircle(circle2);
 
@@ -102,6 +107,10 @@ export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point |
 }
 
 export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Point | null {
+    if (!doBoxAndCircleIntersect(box, circle)) {
+        return null;
+    }
+
     const sat1: SATInfo = getSATInfoForBoundingBox(box);
     const sat2: SATInfo = getSATInfoForCircle(circle);
     const { closestPoint: closestBoundingBoxPoint } = closestPointToTargetPoint(circle, sat1.points);
@@ -113,6 +122,10 @@ export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle
 }
 
 export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Point | null {
+    if (!doBoxAndBoxIntersect(box1, box2)) {
+        return null;
+    }
+
     const sat1: SATInfo = getSATInfoForBoundingBox(box1);
     const sat2: SATInfo = getSATInfoForBoundingBox(box2);
 
