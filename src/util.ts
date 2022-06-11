@@ -29,6 +29,15 @@ function toCircleFromPoint(point: Point): Circle {
     };
 }
 
+function toBoundingBoxFromPoint(point: Point): BoundingBox {
+    return {
+        x: point.x,
+        y: point.y,
+        width: 0,
+        height: 0,
+    };
+}
+
 export function doBoundsIntersect(bound1: Bound, bound2: Bound): Point | null {
     const isBound1Circle: boolean = isCircle(bound1);
     const isBound2Circle: boolean = isCircle(bound2);
@@ -80,13 +89,13 @@ export function doBoundsIntersect(bound1: Bound, bound2: Bound): Point | null {
 
     // 1 is bounding box, 2 is point
     if (isBound1BoundingBox && isBound2Point) {
-        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
-        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, point2Circle);
+        const point2Box: BoundingBox = toBoundingBoxFromPoint(bound2 as Point);
+        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, point2Box);
     }
 
     // 1 is point, 2 is bounding box
-    const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
-    return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, point1Circle);
+    const point1Box: BoundingBox = toBoundingBoxFromPoint(bound1 as Point);
+    return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox);
 }
 
 export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
@@ -143,7 +152,7 @@ export function createPointKey(bound: Bound): string {
  * @param point Object point or rather point to check intersection with input box
  * @param box Box to check for intersection with input point
  */
-export function doPointAndBoxIntersect(point: Point, box: BoundingBox) {
+export function doPointAndBoxIntersect(point: Point, box: BoundingBox): boolean {
     const maxX = box.x + box.width;
     const maxY = box.y + box.height;
     return (
@@ -153,7 +162,7 @@ export function doPointAndBoxIntersect(point: Point, box: BoundingBox) {
 }
 
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Axis-Aligned_Bounding_Box
-export function doBoxAndBoxIntersect(box1: BoundingBox, box2: BoundingBox) {
+export function doBoxAndBoxIntersect(box1: BoundingBox, box2: BoundingBox): boolean {
     return (
         box1.x <= box2.x + box2.width &&
         box1.x + box1.width >= box2.x &&
@@ -162,24 +171,20 @@ export function doBoxAndBoxIntersect(box1: BoundingBox, box2: BoundingBox) {
     );
 }
 
-export function toBoundingBox(bound: Bound): BoundingBox {
-    if (isCircle(bound)) {
-        return {
-            x: bound.x,
-            y: bound.y,
-            width: bound.r,
-            height: bound.r,
-        };
-    }
+// https://yal.cc/rectangle-circle-intersection-test/
+export function doBoxAndCircleIntersect(box: BoundingBox, circle: Circle): boolean {
+    const dx: number = circle.x - Math.max(box.x, Math.min(circle.x, box.x + box.width));
+    const dy: number = circle.y - Math.max(box.y, Math.min(circle.y, box.y + box.height));
+    const distance: number = (dx * dx) + (dy * dy);
+    return distance <= (circle.r * circle.r);
+}
 
-    if (isPoint(bound)) {
-        return {
-            x: bound.x,
-            y: bound.y,
-            width: 0,
-            height: 0,
-        };
-    }
-
-    return bound;
+// This also handles point to point collisions
+// https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection#Circle_Collision
+export function doCircleAndCircleIntersect(circle1: Circle, circle2: Circle): boolean {
+    const dx: number = circle1.x - circle2.x;
+    const dy: number = circle1.y - circle2.y;
+    const distance: number = (dx * dx) + (dy * dy);
+    const combinedRadius: number = circle1.r + circle2.r;
+    return distance <= (combinedRadius * combinedRadius);
 }
