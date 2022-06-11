@@ -343,3 +343,99 @@ test('can query getting touching, but non-overlapping objects', t => {
         y: -0,
     });
 });
+
+// test('can get mtv for circle and bounding box collision', t => {
+//     const quadTree: QuadTree = createMockQuadTree(5);
+//     const object1: Bound = ({
+//         x: 10,
+//         y: 10,
+//         r: 10,
+//     });
+//     const object2: Bound = ({
+//         x: 0,
+//         y: 0,
+//         width: 10,
+//         height: 10,
+//     });
+//     quadTree.add(object2);
+
+//     const results: Set<Bound> = quadTree.query(object1);
+
+//     t.is(results.size, 1);
+//     t.deepEqual([...results][0].mtv, {
+//         x: 5,
+//         y: -0,
+//     });
+// });
+
+// test('can get another mtv for circle and bounding box collision', t => {
+//     const quadTree: QuadTree = createMockQuadTree(5);
+//     const object1: Bound = ({
+//         x: 8,
+//         y: 2,
+//         r: 2,
+//     });
+//     const object2: Bound = ({
+//         x: 0,
+//         y: 0,
+//         width: 10,
+//         height: 10,
+//     });
+//     quadTree.add(object2);
+
+//     const results: Set<Bound> = quadTree.query(object1);
+
+//     t.is(results.size, 1);
+//     t.deepEqual([...results][0].mtv, {
+//         x: 5,
+//         y: -0,
+//     });
+// });
+
+// test('can get mtv for bounding box collision', t => {
+//     const quadTree: QuadTree = createMockQuadTree(5);
+//     const object1: Bound = ({
+//         x: 1,
+//         y: 0,
+//         width: 5,
+//         height: 5,
+//     });
+//     const object2: Bound = ({
+//         x: 0,
+//         y: 0,
+//         width: 5,
+//         height: 5,
+//     });
+//     quadTree.add(object1);
+
+//     const results: Set<Bound> = quadTree.query(object2);
+
+//     t.is(results.size, 1);
+//     t.deepEqual([...results][0].mtv, {
+//         x: 5,
+//         y: -0,
+//     });
+// });
+
+// test('can get mtv for circle collision', t => {
+//     const quadTree: QuadTree = createMockQuadTree(5);
+//     const object1: Bound = ({
+//         x: 5,
+//         y: 5,
+//         r: 10,
+//     });
+//     const object2: Bound = ({
+//         x: 15,
+//         y: 5,
+//         r: 10,
+//     });
+//     quadTree.add(object1);
+
+//     const results: Set<Bound> = quadTree.query(object2);
+
+//     t.is(results.size, 1);
+//     t.deepEqual([...results][0].mtv, {
+//         x: 5,
+//         y: -0,
+//     });
+// });
