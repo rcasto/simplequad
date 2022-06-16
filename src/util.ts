@@ -1,5 +1,4 @@
 import { Bound, BoundingBox, Circle, Point } from './schema';
-import { doIntersectBoundingBoxesSAT, doIntersectBoundingBoxCircleSAT, doIntersectCirclesSAT } from './sat';
 
 // The # of combinations between these 3 bounds is as follows:
 // - Circle and Circle
@@ -9,19 +8,19 @@ import { doIntersectBoundingBoxesSAT, doIntersectBoundingBoxCircleSAT, doInterse
 // - BoundingBox and Point
 // - Point and Point
 
-function isCircle(bound: Bound): bound is Circle {
+export function isCircle(bound: Bound): bound is Circle {
     return (bound as Circle).r !== undefined;
 }
 
-function isBoundingBox(bound: Bound): bound is BoundingBox {
+export function isBoundingBox(bound: Bound): bound is BoundingBox {
     return (bound as BoundingBox).width !== undefined;
 }
 
-function isPoint(bound: Bound): bound is Point {
+export function isPoint(bound: Bound): bound is Point {
     return !isCircle(bound) && !isBoundingBox(bound);
 }
 
-function toCircleFromPoint(point: Point): Circle {
+export function toCircleFromPoint(point: Point): Circle {
     return {
         x: point.x,
         y: point.y,
@@ -29,7 +28,7 @@ function toCircleFromPoint(point: Point): Circle {
     };
 }
 
-function toBoundingBoxFromPoint(point: Point): BoundingBox {
+export function toBoundingBoxFromPoint(point: Point): BoundingBox {
     return {
         x: point.x,
         y: point.y,
@@ -39,69 +38,94 @@ function toBoundingBoxFromPoint(point: Point): BoundingBox {
 }
 
 /**
- * 
- * @param bound1 First bound, from usage this will always be a quad tree node bound or another object bound in the quad tree
- * @param bound2 Second bound, from usage this will always be the passed in user bound used for querying
- * @returns {Point | null} MTV (minimum translation vector) pointing towards the user passed in bound or null, if there is no collision/overlap with an object in the quad tree
+ * Resultant vector points in direction from point1 to point2
+ * @param point1 First point or vector
+ * @param point2 Second point or vector
+ * @returns Vector pointing from vector/point 1 to vector/point 2
  */
-export function doBoundsIntersect(bound1: Bound, bound2: Bound): Point | null {
-    const isBound1Circle: boolean = isCircle(bound1);
-    const isBound2Circle: boolean = isCircle(bound2);
+export function subtract(point1: Point, point2: Point): Point {
+    return {
+        x: point2.x - point1.x,
+        y: point2.y - point1.y,
+    };
+}
 
-    const isBound1BoundingBox: boolean = isBoundingBox(bound1);
-    const isBound2BoundingBox: boolean = isBoundingBox(bound2);
+export function getPoints(boundingBox: BoundingBox): Point[] {
+    const x = boundingBox.x;
+    const y = boundingBox.y;
 
-    const isBound1Point: boolean = isPoint(bound1);
-    const isBound2Point: boolean = isPoint(bound2);
+    const maxX: number = x + boundingBox.width;
+    const maxY: number = y + boundingBox.height;
 
-    // They are both circles
-    if (isBound1Circle && isBound2Circle) {
-        return doIntersectCirclesSAT(bound1 as Circle, bound2 as Circle);
+    const topLeftPoint: Point = {
+        x,
+        y,
+    };
+    const topRightPoint: Point = {
+        x: maxX,
+        y,
+    };
+    const bottomRightPoint: Point = {
+        x: maxX,
+        y: maxY,
+    };
+    const bottomLeftPoint: Point = {
+        x,
+        y: maxY,
+    };
+
+    return [
+        topLeftPoint,
+        topRightPoint,
+        bottomRightPoint,
+        bottomLeftPoint,
+    ];
+}
+
+export function normalize(vector: Point): Point {
+    const magnitude: number = getMagnitude(vector);
+    return {
+        x: magnitude > 0 ? vector.x / magnitude : 0,
+        y: magnitude > 0 ? vector.y / magnitude : 0,
+    };
+}
+
+export function getDot(vector1: Point, vector2: Point): number {
+    return (vector1.x * vector2.x) + (vector1.y * vector2.y);
+}
+
+export function scalarMultiply(vector: Point, scalar: number): Point {
+    return {
+        x: vector.x * scalar,
+        y: vector.y * scalar,
+    };
+}
+
+export function getMagnitude(vector: Point, trueMagnitude = true): number {
+    const underRootMagnitude = (vector.x * vector.x) + (vector.y * vector.y);
+    if (!trueMagnitude || underRootMagnitude === 1) {
+        return underRootMagnitude;
     }
+    return Math.sqrt(underRootMagnitude);
+}
 
-    // They are both bounding boxes
-    if (isBound1BoundingBox && isBound2BoundingBox) {
-        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox);
-    }
-
-    // They are both points
-    if (isBound1Point && isBound2Point) {
-        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
-        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
-        return doIntersectCirclesSAT(point1Circle, point2Circle);
-    }
-
-    // 1 is circle, 2 is bounding box
-    if (isBound1Circle && isBound2BoundingBox) {
-        return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, bound1 as Circle);
-    }
-
-    // 1 is bounding box, 2 is circle
-    if (isBound1BoundingBox && isBound2Circle) {
-        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle);   
-    }
-
-    // 1 is circle, 2 is point
-    if (isBound1Circle && isBound2Point) {
-        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
-        return doIntersectCirclesSAT(bound1 as Circle, point2Circle);
-    }
-
-    // 1 is point, 2 is 2 is circle
-    if (isBound1Point && isBound2Circle) {
-        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
-        return doIntersectCirclesSAT(point1Circle, bound2 as Circle);
-    }
-
-    // 1 is bounding box, 2 is point
-    if (isBound1BoundingBox && isBound2Point) {
-        const point2Box: BoundingBox = toBoundingBoxFromPoint(bound2 as Point);
-        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, point2Box);
-    }
-
-    // 1 is point, 2 is bounding box
-    const point1Box: BoundingBox = toBoundingBoxFromPoint(bound1 as Point);
-    return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox);
+export function closestPointToTargetPoint(targetPoint: Point, points: Point[]): {
+    closestPoint: Point;
+} {
+    let closestPoint: Point = points[0];
+    let closestDistance: number = Number.POSITIVE_INFINITY;
+    let currentDistance: number;
+    points
+        .forEach(point => {
+            currentDistance = getMagnitude(subtract(targetPoint, point), false);
+            if (currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closestPoint = point;
+            }
+        });
+    return {
+        closestPoint,
+    };
 }
 
 export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {

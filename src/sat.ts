@@ -1,98 +1,99 @@
-import { BoundingBox, Point, Circle, SATInfo } from './schema';
-import { doBoxAndBoxIntersect, doBoxAndCircleIntersect, doCircleAndCircleIntersect } from './util';
+import { BoundingBox, Point, Circle, SATInfo, Bound } from './schema';
+import {
+    closestPointToTargetPoint,
+    doBoxAndBoxIntersect,
+    doBoxAndCircleIntersect,
+    doCircleAndCircleIntersect,
+    getDot,
+    getPoints,
+    isBoundingBox,
+    isCircle,
+    isPoint,
+    normalize,
+    scalarMultiply,
+    subtract,
+    toBoundingBoxFromPoint,
+    toCircleFromPoint,
+} from './util';
+
+const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
+    {
+        x: 0,
+        y: -1,
+    },
+    {
+        x: 1,
+        y: 0,
+    },
+];
 
 /**
- * Resultant vector points in direction from point1 to point2
- * @param point1 First point or vector
- * @param point2 Second point or vector
- * @returns Vector pointing from vector/point 1 to vector/point 2
+ * 
+ * @param bound1 First bound, from usage this will always be a quad tree node bound or another object bound in the quad tree
+ * @param bound2 Second bound, from usage this will always be the passed in user bound used for querying
+ * @returns {Point | null} MTV (minimum translation vector) pointing towards the user passed in bound or null, if there is no collision/overlap with an object in the quad tree
  */
-function subtract(point1: Point, point2: Point): Point {
-    return {
-        x: point2.x - point1.x,
-        y: point2.y - point1.y,
-    };
-}
+ export function doBoundsIntersect(bound1: Bound, bound2: Bound): Point | null {
+    const isBound1Circle: boolean = isCircle(bound1);
+    const isBound2Circle: boolean = isCircle(bound2);
 
-function getPoints(boundingBox: BoundingBox): Point[] {
-    const x = boundingBox.x;
-    const y = boundingBox.y;
+    const isBound1BoundingBox: boolean = isBoundingBox(bound1);
+    const isBound2BoundingBox: boolean = isBoundingBox(bound2);
 
-    const maxX: number = x + boundingBox.width;
-    const maxY: number = y + boundingBox.height;
+    const isBound1Point: boolean = isPoint(bound1);
+    const isBound2Point: boolean = isPoint(bound2);
 
-    const topLeftPoint: Point = {
-        x,
-        y,
-    };
-    const topRightPoint: Point = {
-        x: maxX,
-        y,
-    };
-    const bottomRightPoint: Point = {
-        x: maxX,
-        y: maxY,
-    };
-    const bottomLeftPoint: Point = {
-        x,
-        y: maxY,
-    };
-
-    return [
-        topLeftPoint,
-        topRightPoint,
-        bottomRightPoint,
-        bottomLeftPoint,
-    ];
-}
-
-function normalize(vector: Point): Point {
-    const magnitude: number = getMagnitude(vector);
-    return {
-        x: magnitude > 0 ? vector.x / magnitude : 0,
-        y: magnitude > 0 ? vector.y / magnitude : 0,
-    };
-}
-
-function getDot(vector1: Point, vector2: Point): number {
-    return (vector1.x * vector2.x) + (vector1.y * vector2.y);
-}
-
-function scalarMultiply(vector: Point, scalar: number): Point {
-    return {
-        x: vector.x * scalar,
-        y: vector.y * scalar,
-    };
-}
-
-function getMagnitude(vector: Point, trueMagnitude = true): number {
-    const underRootMagnitude = (vector.x * vector.x) + (vector.y * vector.y);
-    if (!trueMagnitude || underRootMagnitude === 1) {
-        return underRootMagnitude;
+    // They are both circles
+    if (isBound1Circle && isBound2Circle) {
+        return doIntersectCirclesSAT(bound1 as Circle, bound2 as Circle);
     }
-    return Math.sqrt(underRootMagnitude);
+
+    // They are both bounding boxes
+    if (isBound1BoundingBox && isBound2BoundingBox) {
+        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox);
+    }
+
+    // They are both points
+    if (isBound1Point && isBound2Point) {
+        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+        return doIntersectCirclesSAT(point1Circle, point2Circle);
+    }
+
+    // 1 is circle, 2 is bounding box
+    if (isBound1Circle && isBound2BoundingBox) {
+        return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, bound1 as Circle);
+    }
+
+    // 1 is bounding box, 2 is circle
+    if (isBound1BoundingBox && isBound2Circle) {
+        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle);   
+    }
+
+    // 1 is circle, 2 is point
+    if (isBound1Circle && isBound2Point) {
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+        return doIntersectCirclesSAT(bound1 as Circle, point2Circle);
+    }
+
+    // 1 is point, 2 is 2 is circle
+    if (isBound1Point && isBound2Circle) {
+        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+        return doIntersectCirclesSAT(point1Circle, bound2 as Circle);
+    }
+
+    // 1 is bounding box, 2 is point
+    if (isBound1BoundingBox && isBound2Point) {
+        const point2Box: BoundingBox = toBoundingBoxFromPoint(bound2 as Point);
+        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, point2Box);
+    }
+
+    // 1 is point, 2 is bounding box
+    const point1Box: BoundingBox = toBoundingBoxFromPoint(bound1 as Point);
+    return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox);
 }
 
-function closestPointToTargetPoint(targetPoint: Point, points: Point[]): {
-    closestPoint: Point;
-} {
-    let closestPoint: Point = points[0];
-    let closestDistance: number = Number.POSITIVE_INFINITY;
-    let currentDistance: number;
-    points
-        .forEach(point => {
-            currentDistance = getMagnitude(subtract(targetPoint, point), false);
-            if (currentDistance < closestDistance) {
-                closestDistance = currentDistance;
-                closestPoint = point;
-            }
-        });
-    return {
-        closestPoint,
-    };
-}
-
-export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
+function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
     if (!doCircleAndCircleIntersect(circle1, circle2)) {
         return null;
     }
@@ -106,7 +107,7 @@ export function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point |
     return doIntersectSAT(sat1, sat2);
 }
 
-export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Point | null {
+function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Point | null {
     if (!doBoxAndCircleIntersect(box, circle)) {
         return null;
     }
@@ -121,7 +122,7 @@ export function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle
     return doIntersectSAT(sat1, sat2);
 }
 
-export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Point | null {
+function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Point | null {
     if (!doBoxAndBoxIntersect(box1, box2)) {
         return null;
     }
@@ -135,46 +136,6 @@ export function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox
     sat2.axes = [];
 
     return doIntersectSAT(sat1, sat2);
-}
-
-function getSATInfoForCircle(circle: Circle): SATInfo {
-    return {
-        axes: [],
-        points: [{
-            x: circle.x,
-            y: circle.y,
-        }],
-        center: {
-            x: circle.x,
-            y: circle.y,
-        },
-        buffer: circle.r,
-    };
-}
-
-const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
-    {
-        x: 0,
-        y: -1,
-    },
-    {
-        x: 1,
-        y: 0,
-    },
-];
-
-function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
-    const points: Point[] = getPoints(box);
-
-    return {
-        axes: [...NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES],
-        points,
-        center: {
-            x: box.x + box.width / 2,
-            y: box.y + box.height / 2,
-        },
-        buffer: 0,
-    };
 }
 
 /**
@@ -245,4 +206,33 @@ function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     }
 
     return scalarMultiply(minTranslationVector, minTranslationDistance);
+}
+
+function getSATInfoForCircle(circle: Circle): SATInfo {
+    return {
+        axes: [],
+        points: [{
+            x: circle.x,
+            y: circle.y,
+        }],
+        center: {
+            x: circle.x,
+            y: circle.y,
+        },
+        buffer: circle.r,
+    };
+}
+
+function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
+    const points: Point[] = getPoints(box);
+
+    return {
+        axes: [...NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES],
+        points,
+        center: {
+            x: box.x + box.width / 2,
+            y: box.y + box.height / 2,
+        },
+        buffer: 0,
+    };
 }

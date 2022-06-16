@@ -1,5 +1,6 @@
+import { doBoundsIntersect } from './sat';
 import { Bound, BoundingBox, QuadTree, Point } from './schema';
-import { createPointKey, doBoundsIntersect, divideBoundingBox, doPointAndBoxIntersect } from './util';
+import { createPointKey, divideBoundingBox, doPointAndBoxIntersect } from './util';
 
 function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
     const objectPoint: Point = {
