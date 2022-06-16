@@ -1,4 +1,4 @@
-import { BoundingBox, Point, Circle, SATInfo, Bound } from './schema';
+import { BoundingBox, Point, Circle, SATInfo, Bound, MinimumTranslationVectorInfo } from './schema';
 import {
     closestPointToTargetPoint,
     doBoxAndBoxIntersect,
@@ -33,7 +33,7 @@ const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
  * @param bound2 Second bound, from usage this will always be the passed in user bound used for querying
  * @returns {Point | null} MTV (minimum translation vector) pointing towards the user passed in bound or null, if there is no collision/overlap with an object in the quad tree
  */
- export function doBoundsIntersect(bound1: Bound, bound2: Bound): Point | null {
+ export function doBoundsIntersect(bound1: Bound, bound2: Bound): MinimumTranslationVectorInfo | null {
     const isBound1Circle: boolean = isCircle(bound1);
     const isBound2Circle: boolean = isCircle(bound2);
 
@@ -93,7 +93,7 @@ const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
     return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox, false);
 }
 
-function doIntersectCirclesSAT(circle1: Circle, circle2: Circle, shouldFlipMtvDirection: boolean): Point | null {
+function doIntersectCirclesSAT(circle1: Circle, circle2: Circle, shouldFlipMtvDirection: boolean): MinimumTranslationVectorInfo | null {
     if (!doCircleAndCircleIntersect(circle1, circle2)) {
         return null;
     }
@@ -107,7 +107,7 @@ function doIntersectCirclesSAT(circle1: Circle, circle2: Circle, shouldFlipMtvDi
     return doIntersectSAT(sat1, sat2, shouldFlipMtvDirection);
 }
 
-function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle, shouldFlipMtvDirection: boolean): Point | null {
+function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle, shouldFlipMtvDirection: boolean): MinimumTranslationVectorInfo | null {
     if (!doBoxAndCircleIntersect(box, circle)) {
         return null;
     }
@@ -122,7 +122,7 @@ function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle, shoul
     return doIntersectSAT(sat1, sat2, shouldFlipMtvDirection);
 }
 
-function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox, shouldFlipMtvDirection: boolean): Point | null {
+function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox, shouldFlipMtvDirection: boolean): MinimumTranslationVectorInfo | null {
     if (!doBoxAndBoxIntersect(box1, box2)) {
         return null;
     }
@@ -145,7 +145,7 @@ function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox, shoul
  * @param shouldFlipMtvDirection Whether the mtv returned should have its direction flipped or not (normally pointing towards sat2 bound)
  * @returns {Point | null} If non-null, Point returned represents MTV (minimum translation vector) pointing in direction of sat2 bound (unless directed to flip direction)
  */
-function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: boolean): Point | null {
+function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: boolean): MinimumTranslationVectorInfo | null {
     const allAxes: Point[] = sat1.axes.concat(sat2.axes);
 
     let scalarProjection: number;
@@ -210,10 +210,14 @@ function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: bo
     const isMtvPointingTowardsSat2Center = getDot(minTranslationVector, vectorFromSat1CenterToSat2Center) > 0;
 
     if (!isMtvPointingTowardsSat2Center && !shouldFlipMtvDirection) {
-        return scalarMultiply(minTranslationVector, -minTranslationDistance);
+        minTranslationVector = scalarMultiply(minTranslationVector, -1);
     }
 
-    return scalarMultiply(minTranslationVector, minTranslationDistance);
+    return {
+        vector: scalarMultiply(minTranslationVector, minTranslationDistance),
+        direction: minTranslationVector,
+        magnitude: minTranslationDistance,
+    };
 }
 
 function getSATInfoForCircle(circle: Circle): SATInfo {

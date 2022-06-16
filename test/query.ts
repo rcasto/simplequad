@@ -16,8 +16,15 @@ test('can query the quad tree with bounds', t => {
     const results: Set<Bound> = quadTree.query(quadTree.bounds);
     t.is(results.size, 1);
     t.deepEqual([...results][0].mtv, {
-        x: 0,
-        y: -5,
+        vector: {
+            x: -0,
+            y: 5,
+        },
+        direction: {
+            x: -0,
+            y: 1,
+        },
+        magnitude: 5,
     });
 });
 
@@ -335,12 +342,26 @@ test('can query getting touching, but non-overlapping objects', t => {
 
     t.is(results.size, 2);
     t.deepEqual([...results][0].mtv, {
-        x: 0,
-        y: 0,
+        vector: {
+            x: -0,
+            y: -0,
+        },
+        direction: {
+            x: -1,
+            y: -0,
+        },
+        magnitude: 0,
     });
     t.deepEqual([...results][1].mtv, {
-        x: 0,
-        y: -0,
+        vector: {
+            x: 0,
+            y: -0,
+        },
+        direction: {
+            x: 0,
+            y: -1,
+        },
+        magnitude: 0,
     });
 });
 

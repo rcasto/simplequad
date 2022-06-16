@@ -40,8 +40,15 @@ test('can find 2 circles intersect', t => {
     const results = doIntersect(object1, object2);
     t.truthy(results);
     t.deepEqual([...results][0].mtv, {
-        x: -5,
-        y: 0,
+        vector: {
+            x: -5,
+            y: 0,
+        },
+        direction: {
+            x: -1,
+            y: 0,
+        },
+        magnitude: 5,
     });
 });
 

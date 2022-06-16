@@ -1,5 +1,5 @@
 import { doBoundsIntersect } from './sat';
-import { Bound, BoundingBox, QuadTree, Point } from './schema';
+import { Bound, BoundingBox, QuadTree, Point, MinimumTranslationVectorInfo } from './schema';
 import { createPointKey, divideBoundingBox, doPointAndBoxIntersect } from './util';
 
 function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
@@ -134,7 +134,7 @@ function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): S
         const queryResultSet: Set<T> = new Set();
         getQuadTreeData(quadTree)
             .forEach(quadObject => {
-                const mtv: Point | null = doBoundsIntersect(quadObject, bounds);
+                const mtv: MinimumTranslationVectorInfo | null = doBoundsIntersect(quadObject, bounds);
                 if (mtv && quadObject !== bounds) {
                     queryResultSet.add({
                         ...quadObject,

@@ -1,5 +1,11 @@
+export interface MinimumTranslationVectorInfo {
+    vector: Point;
+    direction: Point;
+    magnitude: number;
+}
+
 export interface CollisionInfo {
-    mtv?: Point;
+    mtv?: MinimumTranslationVectorInfo;
 
     // Internal - likely would want to move to another interface, keeping here for now
     _key?: string;
