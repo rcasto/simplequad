@@ -38,6 +38,12 @@ function toBoundingBoxFromPoint(point: Point): BoundingBox {
     };
 }
 
+/**
+ * 
+ * @param bound1 First bound, from usage this will always be a quad tree node bound or another object bound in the quad tree
+ * @param bound2 Second bound, from usage this will always be the passed in user bound used for querying
+ * @returns {Point | null} MTV (minimum translation vector) pointing towards the user passed in bound or null, if there is no collision/overlap with an object in the quad tree
+ */
 export function doBoundsIntersect(bound1: Bound, bound2: Bound): Point | null {
     const isBound1Circle: boolean = isCircle(bound1);
     const isBound2Circle: boolean = isCircle(bound2);

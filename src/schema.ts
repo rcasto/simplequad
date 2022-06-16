@@ -97,5 +97,6 @@ export interface QuadTree<T extends Bound = Bound> {
 export interface SATInfo {
     axes: Point[];
     points: Point[];
+    center: Point;
     buffer: number;
 }

@@ -144,6 +144,10 @@ function getSATInfoForCircle(circle: Circle): SATInfo {
             x: circle.x,
             y: circle.y,
         }],
+        center: {
+            x: circle.x,
+            y: circle.y,
+        },
         buffer: circle.r,
     };
 }
@@ -165,11 +169,21 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
     return {
         axes: [...NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES],
         points,
+        center: {
+            x: box.x + box.width / 2,
+            y: box.y + box.height / 2,
+        },
         buffer: 0,
     };
 }
 
-export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
+/**
+ * 
+ * @param sat1 SAT information for first bound
+ * @param sat2 SAT information for second bound
+ * @returns {Point | null} If non-null, Point returned represents MTV (minimum translation vector) pointing in direction from sat1 bound to sat2 bound (unless directed to flip direction)
+ */
+function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
     const allAxes: Point[] = sat1.axes.concat(sat2.axes);
 
     let scalarProjection: number;
@@ -226,9 +240,9 @@ export function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
         }
     }
 
-    if (minTranslationVector) {
-        return scalarMultiply(minTranslationVector, minTranslationDistance);
+    if (!minTranslationVector) {
+        return null;
     }
 
-    return null;
+    return scalarMultiply(minTranslationVector, minTranslationDistance);
 }
