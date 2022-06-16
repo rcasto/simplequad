@@ -45,55 +45,55 @@ const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
 
     // They are both circles
     if (isBound1Circle && isBound2Circle) {
-        return doIntersectCirclesSAT(bound1 as Circle, bound2 as Circle);
+        return doIntersectCirclesSAT(bound1 as Circle, bound2 as Circle, false);
     }
 
     // They are both bounding boxes
     if (isBound1BoundingBox && isBound2BoundingBox) {
-        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox);
+        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox, false);
     }
 
     // They are both points
     if (isBound1Point && isBound2Point) {
         const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
         const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
-        return doIntersectCirclesSAT(point1Circle, point2Circle);
+        return doIntersectCirclesSAT(point1Circle, point2Circle, false);
     }
 
     // 1 is circle, 2 is bounding box
     if (isBound1Circle && isBound2BoundingBox) {
-        return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, bound1 as Circle);
+        return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, bound1 as Circle, true);
     }
 
     // 1 is bounding box, 2 is circle
     if (isBound1BoundingBox && isBound2Circle) {
-        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle);   
+        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle, false);   
     }
 
     // 1 is circle, 2 is point
     if (isBound1Circle && isBound2Point) {
         const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
-        return doIntersectCirclesSAT(bound1 as Circle, point2Circle);
+        return doIntersectCirclesSAT(bound1 as Circle, point2Circle, false);
     }
 
     // 1 is point, 2 is 2 is circle
     if (isBound1Point && isBound2Circle) {
         const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
-        return doIntersectCirclesSAT(point1Circle, bound2 as Circle);
+        return doIntersectCirclesSAT(point1Circle, bound2 as Circle, false);
     }
 
     // 1 is bounding box, 2 is point
     if (isBound1BoundingBox && isBound2Point) {
         const point2Box: BoundingBox = toBoundingBoxFromPoint(bound2 as Point);
-        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, point2Box);
+        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, point2Box, false);
     }
 
     // 1 is point, 2 is bounding box
     const point1Box: BoundingBox = toBoundingBoxFromPoint(bound1 as Point);
-    return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox);
+    return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox, false);
 }
 
-function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
+function doIntersectCirclesSAT(circle1: Circle, circle2: Circle, shouldFlipMtvDirection: boolean): Point | null {
     if (!doCircleAndCircleIntersect(circle1, circle2)) {
         return null;
     }
@@ -104,10 +104,10 @@ function doIntersectCirclesSAT(circle1: Circle, circle2: Circle): Point | null {
     const normalizedCenterPointsAxis: Point = normalize(subtract(circle1, circle2));
     sat1.axes.push(normalizedCenterPointsAxis);
 
-    return doIntersectSAT(sat1, sat2);
+    return doIntersectSAT(sat1, sat2, shouldFlipMtvDirection);
 }
 
-function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Point | null {
+function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle, shouldFlipMtvDirection: boolean): Point | null {
     if (!doBoxAndCircleIntersect(box, circle)) {
         return null;
     }
@@ -119,10 +119,10 @@ function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle): Poin
     const normalizedCenterPointsAxis: Point = normalize(subtract(circle, closestBoundingBoxPoint));
     sat2.axes.push(normalizedCenterPointsAxis);
 
-    return doIntersectSAT(sat1, sat2);
+    return doIntersectSAT(sat1, sat2, shouldFlipMtvDirection);
 }
 
-function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Point | null {
+function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox, shouldFlipMtvDirection: boolean): Point | null {
     if (!doBoxAndBoxIntersect(box1, box2)) {
         return null;
     }
@@ -135,16 +135,17 @@ function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox): Poin
     // Only 2 axes total need to be checked
     sat2.axes = [];
 
-    return doIntersectSAT(sat1, sat2);
+    return doIntersectSAT(sat1, sat2, shouldFlipMtvDirection);
 }
 
 /**
  * 
  * @param sat1 SAT information for first bound
  * @param sat2 SAT information for second bound
- * @returns {Point | null} If non-null, Point returned represents MTV (minimum translation vector) pointing in direction from sat1 bound to sat2 bound (unless directed to flip direction)
+ * @param shouldFlipMtvDirection Whether the mtv returned should have its direction flipped or not (normally pointing towards sat2 bound)
+ * @returns {Point | null} If non-null, Point returned represents MTV (minimum translation vector) pointing in direction of sat2 bound (unless directed to flip direction)
  */
-function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
+function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: boolean): Point | null {
     const allAxes: Point[] = sat1.axes.concat(sat2.axes);
 
     let scalarProjection: number;
@@ -203,6 +204,13 @@ function doIntersectSAT(sat1: SATInfo, sat2: SATInfo): Point | null {
 
     if (!minTranslationVector) {
         return null;
+    }
+
+    const vectorFromSat1CenterToSat2Center = subtract(sat1.center, sat2.center);
+    const isMtvPointingTowardsSat2Center = getDot(minTranslationVector, vectorFromSat1CenterToSat2Center) > 0;
+
+    if (!isMtvPointingTowardsSat2Center && !shouldFlipMtvDirection) {
+        return scalarMultiply(minTranslationVector, -minTranslationDistance);
     }
 
     return scalarMultiply(minTranslationVector, minTranslationDistance);
