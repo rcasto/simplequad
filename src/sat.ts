@@ -116,8 +116,12 @@ function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle, shoul
     const sat2: SATInfo = getSATInfoForCircle(circle);
     const { closestPoint: closestBoundingBoxPoint } = closestPointToTargetPoint(circle, sat1.points);
 
-    const normalizedCenterPointsAxis: Point = normalize(subtract(circle, closestBoundingBoxPoint));
-    sat2.axes.push(normalizedCenterPointsAxis);
+    // Only add the circle center to closest polygon point normal if the closest point is not the center
+    // of the circle itself (could essentially short circuit upon this finding, but will let it run the usual course)
+    if (closestBoundingBoxPoint.x !== circle.x || closestBoundingBoxPoint.y !== circle.y) {
+        const normalizedCenterPointsAxis: Point = normalize(subtract(circle, closestBoundingBoxPoint));
+        sat2.axes.push(normalizedCenterPointsAxis);
+    }
 
     return doIntersectSAT(sat1, sat2, shouldFlipMtvDirection);
 }
@@ -209,7 +213,10 @@ function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: bo
     const vectorFromSat1CenterToSat2Center = subtract(sat1.center, sat2.center);
     const isMtvPointingTowardsSat2Center = getDot(minTranslationVector, vectorFromSat1CenterToSat2Center) > 0;
 
-    if (!isMtvPointingTowardsSat2Center && !shouldFlipMtvDirection) {
+    if (
+        !isMtvPointingTowardsSat2Center && !shouldFlipMtvDirection ||
+        isMtvPointingTowardsSat2Center && shouldFlipMtvDirection
+    ) {
         minTranslationVector = scalarMultiply(minTranslationVector, -1);
     }
 
@@ -242,8 +249,8 @@ function getSATInfoForBoundingBox(box: BoundingBox): SATInfo {
         axes: [...NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES],
         points,
         center: {
-            x: box.x + box.width / 2,
-            y: box.y + box.height / 2,
+            x: box.x + (box.width / 2),
+            y: box.y + (box.height / 2),
         },
         buffer: 0,
     };
