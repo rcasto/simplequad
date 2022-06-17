@@ -27,6 +27,9 @@ export interface MinimumTranslationVectorInfo {
 
 export interface QueryResult<T> {
     mtv: MinimumTranslationVectorInfo;
+    /**
+     * The object or bounds intersecting with the passed in query bounds or object
+     */
     object: T;
 }
 

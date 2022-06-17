@@ -209,9 +209,26 @@ export interface QuadTree<T extends Bound = Bound> {
 
 ### MinimumTranslationVectorInfo
 ```typescript
+/**
+ * The minimum translation vector returned will point towards the bound
+ * used to query. The represents then the amount the bound must be moved away.
+ * 
+ * The x and y components of the vector itself, assume a coordinate space where
+ * x gets larger running left to right, and y gets larger running top to bottom.
+ */
 export interface MinimumTranslationVectorInfo {
+    /**
+     * The actual minimum translation vector, composes both
+     * magnitude and direction
+     */
     vector: Point;
+    /**
+     * A unit vector representing the directionality of the minimum translation vector
+     */
     direction: Point;
+    /**
+     * The magnitude or size of the minimum translation vector in the direction it is headed
+     */
     magnitude: number;
 }
 ```
@@ -220,6 +237,9 @@ export interface MinimumTranslationVectorInfo {
 ```typescript
 export interface QueryResult<T> {
     mtv: MinimumTranslationVectorInfo;
+    /**
+     * The object or bounds intersecting with the passed in query bounds or object
+     */
     object: T;
 }
 ```
