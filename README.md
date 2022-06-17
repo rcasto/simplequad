@@ -55,6 +55,10 @@ const monster: Monster = {
     // Requirement is that objects added to the QuadTree
     // have properties forming a Bound, at minimum
     // only a x and y coordinate, forming a point.
+    // 
+    // Aside from having these directly on the object itself
+    // you can provide a separate representation of the bounds
+    // a getBounds() helper or such
     ...monsterBounds,
     hp: 100,
     attack: 50,
