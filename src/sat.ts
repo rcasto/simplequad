@@ -1,4 +1,4 @@
-import { BoundingBox, Point, Circle, SATInfo, Bound, MinimumTranslationVectorInfo } from './schema';
+import { BoundingBox, Point, Circle, Bound, MinimumTranslationVectorInfo } from './schema';
 import {
     closestPointToTargetPoint,
     doBoxAndBoxIntersect,
@@ -15,6 +15,16 @@ import {
     toBoundingBoxFromPoint,
     toCircleFromPoint,
 } from './util';
+
+/**
+ * Internal interface utilized to group info needed for SAT (separating axis theorem)
+ */
+interface SATInfo {
+    axes: Point[];
+    points: Point[];
+    center: Point;
+    buffer: number;
+}
 
 const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
     {

@@ -192,9 +192,9 @@ export interface QuadTree<T extends Bound = Bound> {
      * Queries the quadtree, finding what collision objects intersect with the input
      * query bound.
      * @param {Bound} bounds - The query window bounds, or "lens" into the quadtree to find intersections.
-     * @return {Set<T>} The set of objects the query window bounds intersect with. The query window object input will not be included in the returned set. If empty, there are no intersections.
+     * @return {Array<QueryResult<T>>} The list of results for which the query window bounds intersect with. The query window object input will not be included in the returned list. If empty, there are no intersections.
      */
-    query: (bounds: Bound) => Set<T>;
+    query: (bounds: Bound) => Array<QueryResult<T>>;
     /**
      * Convenience method offered to get the data for a node in an easier manner
      * Will take a flatten the map of data to a collection.
@@ -216,10 +216,11 @@ export interface MinimumTranslationVectorInfo {
 }
 ```
 
-### CollisionInfo
+### QueryResult
 ```typescript
-export interface CollisionInfo {
-    mtv?: MinimumTranslationVectorInfo;
+export interface QueryResult<T> {
+    mtv: MinimumTranslationVectorInfo;
+    object: T;
 }
 ```
 
@@ -230,7 +231,7 @@ export type Bound = BoundingBox | Circle | Point;
 
 #### Point
 ```typescript
-export interface Point extends CollisionInfo {
+export interface Point {
     x: number;
     y: number;
 }
@@ -238,7 +239,7 @@ export interface Point extends CollisionInfo {
 
 #### BoundingBox
 ```typescript
-export interface BoundingBox extends Point, CollisionInfo {
+export interface BoundingBox extends Point {
     width: number;
     height: number;
 }
@@ -246,21 +247,10 @@ export interface BoundingBox extends Point, CollisionInfo {
 
 #### Circle
 ```typescript
-export interface Circle extends Point, CollisionInfo {
+export interface Circle extends Point {
     r: number;
 }
 ```
-
-## Additional Functionality (beta)
-This functionality hasn't been fully vetted yet with an example and extensive testing, but currently, results returned from query operations, should return a MTV.  
-MTV being minimum translation vector. This can be utilized when resolving collisions.
-
-More details can be found at the following link:
-https://gamedev.stackexchange.com/questions/32545/what-is-the-mtv-minimum-translation-vector-in-sat-seperation-of-axis/32550
-
-Each type of `Bound` also extends the `CollisionInfo` interface which adds a `mtv` property containing this info.
-
-Go ahead and give it a try, but know there may be some bugs with it. If there are, go ahead and open an issue.
 
 ## Testing
 Tests can be ran by simply executing:

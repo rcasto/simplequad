@@ -1,3 +1,7 @@
+interface InternalMeta {
+    _key?: string;
+}
+
 /**
  * The minimum translation vector returned will point towards the bound
  * used to query. The represents then the amount the bound must be moved away.
@@ -24,10 +28,6 @@ export interface MinimumTranslationVectorInfo {
 export interface QueryResult<T> {
     mtv: MinimumTranslationVectorInfo;
     object: T;
-}
-
-export interface InternalMeta {
-    _key?: string;
 }
 
 export interface Point extends InternalMeta {
@@ -105,7 +105,7 @@ export interface QuadTree<T extends Bound = Bound> {
      * Queries the quadtree, finding what collision objects intersect with the input
      * query bound.
      * @param {Bound} bounds - The query window bounds, or "lens" into the quadtree to find intersections.
-     * @return {Set<T>} The set of objects the query window bounds intersect with. The query window object input will not be included in the returned set. If empty, there are no intersections.
+     * @return {Array<QueryResult<T>>} The list of results for which the query window bounds intersect with. The query window object input will not be included in the returned list. If empty, there are no intersections.
      */
     query: (bounds: Bound) => Array<QueryResult<T>>;
     /**
@@ -117,11 +117,4 @@ export interface QuadTree<T extends Bound = Bound> {
      * @return {T[]} The list of collision objects that this "bucket" holds
      */
     getData: () => T[];
-}
-
-export interface SATInfo {
-    axes: Point[];
-    points: Point[];
-    center: Point;
-    buffer: number;
 }
