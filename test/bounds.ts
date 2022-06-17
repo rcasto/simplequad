@@ -128,6 +128,56 @@ test('can find circle intersects with bounding box', t => {
     });
 });
 
+test('can find circle intersects with bounding box - center of circle to closest bounding box point normal', t => {
+    const circle: Circle = ({
+        x: 10,
+        y: 10,
+        r: 5,
+    });
+    const box: BoundingBox = ({
+        x: 12,
+        y: 12,
+        width: 5,
+        height: 5,
+    });
+    
+    const squareRootOfOneHalf = 0.7071067811865475;     // Math.sqrt(0.5)
+    const expectedMagnitude = 2.171572875253812;        // 5 - 4 * squareRootOfOneHalf
+    const expectedVectorComponent = 1.5355339059327389; // squareRootOfOneHalf * expectedMagnitude
+
+    // query as box
+    const resultsQueryAsBox = doIntersect(circle, box);
+
+    // query as circle
+    const resultsQueryAsCircle = doIntersect(box, circle);
+
+    t.truthy(resultsQueryAsBox);
+    t.deepEqual([...resultsQueryAsBox][0].mtv, {
+        vector: {
+            x: expectedVectorComponent,
+            y: expectedVectorComponent
+        },
+        direction: {
+            x: squareRootOfOneHalf,
+            y: squareRootOfOneHalf,
+        },
+        magnitude: expectedMagnitude,
+    });
+
+    t.truthy(resultsQueryAsCircle);
+    t.deepEqual([...resultsQueryAsCircle][0].mtv, {
+        vector: {
+            x: -expectedVectorComponent,
+            y: -expectedVectorComponent,
+        },
+        direction: {
+            x: -squareRootOfOneHalf,
+            y: -squareRootOfOneHalf,
+        },
+        magnitude: expectedMagnitude,
+    });
+});
+
 test('can find 2 bounding boxes intersect', t => {
     const object1: Bound = ({
         x: 10,
