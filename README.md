@@ -207,10 +207,19 @@ export interface QuadTree<T extends Bound = Bound> {
 }
 ```
 
+### MinimumTranslationVectorInfo
+```typescript
+export interface MinimumTranslationVectorInfo {
+    vector: Point;
+    direction: Point;
+    magnitude: number;
+}
+```
+
 ### CollisionInfo
 ```typescript
 export interface CollisionInfo {
-    mtv?: Point;
+    mtv?: MinimumTranslationVectorInfo;
 }
 ```
 
