@@ -1,5 +1,5 @@
 import { doBoundsIntersect } from './sat';
-import { Bound, BoundingBox, QuadTree, Point, MinimumTranslationVectorInfo } from './schema';
+import { Bound, BoundingBox, QuadTree, Point, MinimumTranslationVectorInfo, QueryResult } from './schema';
 import { createPointKey, divideBoundingBox, doPointAndBoxIntersect } from './util';
 
 function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
@@ -105,10 +105,10 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
     // can collapse or consume our children. Meaning the child subtree
     // contains less elements than our individual bucket capacity.
     if (wasRemoved) {
-        const childObjectSet: Set<T> = queryQuadTree(quadTree, quadTree.bounds);
-        if (childObjectSet.size <= quadTree.capacity) {
+        const childObjectResults: Array<QueryResult<T>> = queryQuadTree(quadTree, quadTree.bounds);
+        if (childObjectResults.length <= quadTree.capacity) {
             clearQuadTree(quadTree);
-            childObjectSet.forEach(childObject => addToQuadTree(quadTree, childObject));
+            childObjectResults.forEach(childObjectResult => addToQuadTree(quadTree, childObjectResult.object));
         }
     }
 
@@ -120,43 +120,44 @@ function clearQuadTree<T extends Bound>(quadTree: QuadTree<T>): void {
     quadTree.quadrants.length = 0;
 }
 
-function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): Set<T> {
+function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): Array<QueryResult<T>> {
     // Check first if the query bounds intersect with the bounds
     // of the bucket, if it doesn't we can bail immediately with an empty list
     if (!doBoundsIntersect(quadTree.bounds, bounds)) {
-        return new Set<T>();
+        return [];
     }
 
     // Check if current node has children
     if ((quadTree.quadrants || []).length === 0) {
         // Let's iterate over the data in the bucket to see
         // if the objects themselves intersect with the query bounds
-        const queryResultSet: Set<T> = new Set();
+        const queryResults: Array<QueryResult<T>> = [];
         getQuadTreeData(quadTree)
             .forEach(quadObject => {
                 const mtv: MinimumTranslationVectorInfo | null = doBoundsIntersect(quadObject, bounds);
                 if (mtv && quadObject !== bounds) {
-                    queryResultSet.add({
-                        ...quadObject,
+                    queryResults.push({
                         mtv,
+                        object: quadObject,
                     });
                 }
             });
 
-        return queryResultSet;
+        return queryResults;
     }
 
     // Check the current nodes children
     // querying them for the same info and collecting
     // the results
-    const childQueryResultSet: Set<T> = quadTree.quadrants
-        .reduce((resultSet, quadrant) => {
-            queryQuadTree(quadrant, bounds)
-                .forEach(result => resultSet.add(result));
-            return resultSet;
-        }, new Set<T>());
+    const childQueryResults: Array<QueryResult<T>> = [];
+    quadTree.quadrants
+        .forEach(quadrant => {
+            const currentChildQueryResults = queryQuadTree(quadrant, bounds);
+            currentChildQueryResults
+                .forEach(currentChildQueryResult => childQueryResults.push(currentChildQueryResult));
+        });
 
-    return childQueryResultSet;
+    return childQueryResults;
 }
 
 function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>): T[] {

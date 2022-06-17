@@ -1,5 +1,5 @@
 import test from 'ava';
-import { QuadTree, BoundingBox, createQuadTree, Bound } from '../src';
+import { QuadTree, BoundingBox, createQuadTree, Bound, QueryResult } from '../src';
 import { createMockQuadTree } from './helpers/util';
 
 test('can query the quad tree with bounds', t => {
@@ -13,8 +13,8 @@ test('can query the quad tree with bounds', t => {
 
     quadTree.add(object);
 
-    const results: Set<Bound> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 1);
+    const results: Array<QueryResult<Bound>> = quadTree.query(quadTree.bounds);
+    t.is(results.length, 1);
     t.deepEqual([...results][0].mtv, {
         vector: {
             x: -0,
@@ -39,8 +39,8 @@ test('can query the quad tree with bounds - dont include current object in windo
 
     quadTree.add(object);
 
-    const results: Set<Bound> = quadTree.query(object);
-    t.is(results.size, 0);
+    const results: Array<QueryResult<Bound>> = quadTree.query(object);
+    t.is(results.length, 0);
 });
 
 test('can query the quad tree with bounds - filter out current object in window', t => {
@@ -56,8 +56,8 @@ test('can query the quad tree with bounds - filter out current object in window'
     quadTree.add(object);
     quadTree.add(copyObject);
 
-    const results: Set<Bound> = quadTree.query(object);
-    t.is(results.size, 1);
+    const results: Array<QueryResult<Bound>> = quadTree.query(object);
+    t.is(results.length, 1);
 });
 
 test('can query the quad tree with bounds - multi object 1 point (whole window bounds)', t => {
@@ -81,8 +81,8 @@ test('can query the quad tree with bounds - multi object 1 point (whole window b
     quadTree.add(object2);
     quadTree.add(object3);
 
-    const results: Set<Bound> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 3);
+    const results: Array<QueryResult<Bound>> = quadTree.query(quadTree.bounds);
+    t.is(results.length, 3);
 });
 
 test('can query the quad tree with bounds - single quadrant query window', t => {
@@ -109,8 +109,8 @@ test('can query the quad tree with bounds - single quadrant query window', t => 
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<Bound> = quadTree.query(queryBounds);
-    t.is(results.size, 1);
+    const results: Array<QueryResult<Bound>> = quadTree.query(queryBounds);
+    t.is(results.length, 1);
 });
 
 test('can query the quad tree with bounds - single quadrant object bounding box overlap', t => {
@@ -130,8 +130,8 @@ test('can query the quad tree with bounds - single quadrant object bounding box 
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<Bound> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 2);
+    const results: Array<QueryResult<Bound>> = quadTree.query(quadTree.bounds);
+    t.is(results.length, 2);
 });
 
 test('can query the quad tree with bounds - multi quadrant query window', t => {
@@ -151,8 +151,8 @@ test('can query the quad tree with bounds - multi quadrant query window', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<Bound> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 2);
+    const results: Array<QueryResult<Bound>> = quadTree.query(quadTree.bounds);
+    t.is(results.length, 2);
 });
 
 test('can query the quad tree with bounds - multi level', t => {
@@ -172,8 +172,8 @@ test('can query the quad tree with bounds - multi level', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<Bound> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 2);
+    const results: Array<QueryResult<Bound>> = quadTree.query(quadTree.bounds);
+    t.is(results.length, 2);
 });
 
 test('can query the quad tree with bounds - self bounding box', t => {
@@ -186,8 +186,8 @@ test('can query the quad tree with bounds - self bounding box', t => {
     });
     quadTree.add(object);
 
-    const results: Set<Bound> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 1);
+    const results: Array<QueryResult<Bound>> = quadTree.query(quadTree.bounds);
+    t.is(results.length, 1);
 });
 
 test('can query the quad tree with bounds - self bounding box / multi-object', t => {
@@ -204,8 +204,8 @@ test('can query the quad tree with bounds - self bounding box / multi-object', t
     quadTree.add(object1);
     quadTree.add(object2);
 
-    const results: Set<Bound> = quadTree.query(quadTree.bounds);
-    t.is(results.size, 2);
+    const results: Array<QueryResult<Bound>> = quadTree.query(quadTree.bounds);
+    t.is(results.length, 2);
 });
 
 test('can query the quad tree with bounds - square window, cross bucket bounds, multi object', t => {
@@ -251,9 +251,9 @@ test('can query the quad tree with bounds - square window, cross bucket bounds, 
     t.truthy(quadTree.add(object3));
     t.truthy(quadTree.add(object4));
 
-    const results: Set<Bound> = quadTree.query(queryWindow);
+    const results: Array<QueryResult<Bound>> = quadTree.query(queryWindow);
 
-    t.is(results.size, 4);
+    t.is(results.length, 4);
 });
 
 test('can get data within bucket', t => {
@@ -338,9 +338,9 @@ test('can query getting touching, but non-overlapping objects', t => {
     quadTree.add(object2);
     quadTree.add(object3);
 
-    const results: Set<Bound> = quadTree.query(object1);
+    const results: Array<QueryResult<Bound>> = quadTree.query(object1);
 
-    t.is(results.size, 2);
+    t.is(results.length, 2);
     t.deepEqual([...results][0].mtv, {
         vector: {
             x: -0,
@@ -364,99 +364,3 @@ test('can query getting touching, but non-overlapping objects', t => {
         magnitude: 0,
     });
 });
-
-// test('can get mtv for circle and bounding box collision', t => {
-//     const quadTree: QuadTree = createMockQuadTree(5);
-//     const object1: Bound = ({
-//         x: 10,
-//         y: 10,
-//         r: 10,
-//     });
-//     const object2: Bound = ({
-//         x: 0,
-//         y: 0,
-//         width: 10,
-//         height: 10,
-//     });
-//     quadTree.add(object2);
-
-//     const results: Set<Bound> = quadTree.query(object1);
-
-//     t.is(results.size, 1);
-//     t.deepEqual([...results][0].mtv, {
-//         x: 5,
-//         y: -0,
-//     });
-// });
-
-// test('can get another mtv for circle and bounding box collision', t => {
-//     const quadTree: QuadTree = createMockQuadTree(5);
-//     const object1: Bound = ({
-//         x: 8,
-//         y: 2,
-//         r: 2,
-//     });
-//     const object2: Bound = ({
-//         x: 0,
-//         y: 0,
-//         width: 10,
-//         height: 10,
-//     });
-//     quadTree.add(object2);
-
-//     const results: Set<Bound> = quadTree.query(object1);
-
-//     t.is(results.size, 1);
-//     t.deepEqual([...results][0].mtv, {
-//         x: 5,
-//         y: -0,
-//     });
-// });
-
-// test('can get mtv for bounding box collision', t => {
-//     const quadTree: QuadTree = createMockQuadTree(5);
-//     const object1: Bound = ({
-//         x: 1,
-//         y: 0,
-//         width: 5,
-//         height: 5,
-//     });
-//     const object2: Bound = ({
-//         x: 0,
-//         y: 0,
-//         width: 5,
-//         height: 5,
-//     });
-//     quadTree.add(object1);
-
-//     const results: Set<Bound> = quadTree.query(object2);
-
-//     t.is(results.size, 1);
-//     t.deepEqual([...results][0].mtv, {
-//         x: 5,
-//         y: -0,
-//     });
-// });
-
-// test('can get mtv for circle collision', t => {
-//     const quadTree: QuadTree = createMockQuadTree(5);
-//     const object1: Bound = ({
-//         x: 5,
-//         y: 5,
-//         r: 10,
-//     });
-//     const object2: Bound = ({
-//         x: 15,
-//         y: 5,
-//         r: 10,
-//     });
-//     quadTree.add(object1);
-
-//     const results: Set<Bound> = quadTree.query(object2);
-
-//     t.is(results.size, 1);
-//     t.deepEqual([...results][0].mtv, {
-//         x: 5,
-//         y: -0,
-//     });
-// });

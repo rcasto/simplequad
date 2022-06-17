@@ -57,7 +57,7 @@ test('can add an object to quadtree - bucket overflow and split', t => {
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 0);
     t.is(quadTree.quadrants.length, 4);
-    t.is(quadTree.query(quadTree.bounds).size, 2);
+    t.is(quadTree.query(quadTree.bounds).length, 2);
     // NW quadrant
     t.is(quadTree.quadrants[0].data.size, 1);
     t.is(quadTree.quadrants[0].quadrants.length, 0);
@@ -202,5 +202,5 @@ test('can handle adding object directly on bucket boundary crossing', t => {
 
     const results = quadTree.query(quadTree.bounds);
 
-    t.is(results.size, 2);
+    t.is(results.length, 2);
 });

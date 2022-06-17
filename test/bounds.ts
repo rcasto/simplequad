@@ -1,5 +1,5 @@
 import test from 'ava';
-import { BoundingBox, createQuadTree, QuadTree, Bound, Circle } from '../src';
+import { BoundingBox, createQuadTree, QuadTree, Bound, Circle, QueryResult } from '../src';
 
 /*
     This test file is mainly meant as a means to verify the individual bounds checks
@@ -243,7 +243,7 @@ test('can find 2 points intersect', t => {
  * @param object2 Bound to query tree with
  * @returns query results using object or bound 2
  */
-function doIntersect(object1: Bound, object2: Bound): Set<Bound> {
+function doIntersect(object1: Bound, object2: Bound): Array<QueryResult<Bound>> {
     const quadTree: QuadTree = createQuadTree(bounds, 1);
     quadTree.add(object1);
     return quadTree.query(object2);

@@ -42,7 +42,7 @@ test('can add an object to quadtree', t => {
         queryDurations.push(duration);
         t.log(`Took ${duration} seconds to query for ${numObjectsToAdd} objects`);
 
-        t.is(results.size, numObjectsToAdd);
+        t.is(results.length, numObjectsToAdd);
 
         quadTree.clear();
     }

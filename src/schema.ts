@@ -21,24 +21,26 @@ export interface MinimumTranslationVectorInfo {
     magnitude: number;
 }
 
-export interface CollisionInfo {
-    mtv?: MinimumTranslationVectorInfo;
+export interface QueryResult<T> {
+    mtv: MinimumTranslationVectorInfo;
+    object: T;
+}
 
-    // Internal - likely would want to move to another interface, keeping here for now
+export interface InternalMeta {
     _key?: string;
 }
 
-export interface Point extends CollisionInfo {
+export interface Point extends InternalMeta {
     x: number;
     y: number;
 }
 
-export interface BoundingBox extends Point, CollisionInfo {
+export interface BoundingBox extends Point, InternalMeta {
     width: number;
     height: number;
 }
 
-export interface Circle extends Point, CollisionInfo {
+export interface Circle extends Point, InternalMeta {
     r: number;
 }
 
@@ -105,7 +107,7 @@ export interface QuadTree<T extends Bound = Bound> {
      * @param {Bound} bounds - The query window bounds, or "lens" into the quadtree to find intersections.
      * @return {Set<T>} The set of objects the query window bounds intersect with. The query window object input will not be included in the returned set. If empty, there are no intersections.
      */
-    query: (bounds: Bound) => Set<T>;
+    query: (bounds: Bound) => Array<QueryResult<T>>;
     /**
      * Convenience method offered to get the data for a node in an easier manner
      * Will take a flatten the map of data to a collection.
