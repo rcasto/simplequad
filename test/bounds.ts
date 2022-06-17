@@ -1,5 +1,5 @@
 import test from 'ava';
-import { BoundingBox, createQuadTree, QuadTree, Bound } from '../src';
+import { BoundingBox, createQuadTree, QuadTree, Bound, Circle } from '../src';
 
 /*
     This test file is mainly meant as a means to verify the individual bounds checks
@@ -38,6 +38,7 @@ test('can find 2 circles intersect', t => {
     });
 
     const results = doIntersect(object1, object2);
+
     t.truthy(results);
     t.deepEqual([...results][0].mtv, {
         vector: {
@@ -82,19 +83,49 @@ test('can find circle intersects with point', t => {
 });
 
 test('can find circle intersects with bounding box', t => {
-    const object1: Bound = ({
+    const circle: Circle = ({
         x: 10,
         y: 10,
         r: 5,
     });
-    const object2: Bound = ({
+    const box: BoundingBox = ({
         x: 5,
         y: 10,
         width: 5,
         height: 5,
     });
 
-    t.truthy(doIntersect(object1, object2));
+    // query as box
+    const resultsQueryAsBox = doIntersect(circle, box);
+
+    // query as circle
+    const resultsQueryAsCircle = doIntersect(box, circle);
+
+    t.truthy(resultsQueryAsBox);
+    t.deepEqual([...resultsQueryAsBox][0].mtv, {
+        vector: {
+            x: -0,
+            y: 5,
+        },
+        direction: {
+            x: -0,
+            y: 1,
+        },
+        magnitude: 5,
+    });
+
+    t.truthy(resultsQueryAsCircle);
+    t.deepEqual([...resultsQueryAsCircle][0].mtv, {
+        vector: {
+            x: 0,
+            y: -5,
+        },
+        direction: {
+            x: 0,
+            y: -1,
+        },
+        magnitude: 5,
+    });
 });
 
 test('can find 2 bounding boxes intersect', t => {
@@ -111,7 +142,20 @@ test('can find 2 bounding boxes intersect', t => {
         height: 5,
     });
 
-    t.truthy(doIntersect(object1, object2));
+    const results = doIntersect(object1, object2);
+
+    t.truthy(results);
+    t.deepEqual([...results][0].mtv, {
+        vector: {
+            x: -0,
+            y: -0,
+        },
+        direction: {
+            x: -1,
+            y: -0,
+        },
+        magnitude: 0,
+    });
 });
 
 test('can find bounding box intersects with Point', t => {
@@ -142,10 +186,15 @@ test('can find 2 points intersect', t => {
     t.truthy(doIntersect(object1, object2));
 });
 
-// This function assumes all objects fit within the default test bounds
+/**
+ * This function assumes all objects fit within the default test bounds
+ * 
+ * @param object1 Bound to add to tree
+ * @param object2 Bound to query tree with
+ * @returns query results using object or bound 2
+ */
 function doIntersect(object1: Bound, object2: Bound): Set<Bound> {
     const quadTree: QuadTree = createQuadTree(bounds, 1);
     quadTree.add(object1);
-
     return quadTree.query(object2);
 }
