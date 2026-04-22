@@ -99,46 +99,28 @@ function clearQuadTree<T extends Bound>(quadTree: QuadTree<T>): void {
     quadTree.quadrants.length = 0;
 }
 
-function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): Array<QueryResult<T>> {
-    // Check first if the query bounds intersect with the bounds
-    // of the bucket, if it doesn't we can bail immediately with an empty list
+function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound, seen: Set<T>, results: Array<QueryResult<T>>): void {
     if (!doesBoundIntersectBox(bounds, quadTree.bounds)) {
-        return [];
+        return;
     }
 
-    // Check if current node has children
     if ((quadTree.quadrants || []).length === 0) {
-        // Let's iterate over the data in the bucket to see
-        // if the objects themselves intersect with the query bounds
-        const queryResults: Array<QueryResult<T>> = [];
-        getQuadTreeData(quadTree)
-            .forEach(quadObject => {
+        for (const objectSet of quadTree.data.values()) {
+            for (const quadObject of objectSet) {
+                if (quadObject === bounds || seen.has(quadObject)) continue;
                 const mtv: MinimumTranslationVectorInfo | null = doBoundsIntersect(quadObject, bounds);
-                if (mtv && quadObject !== bounds) {
-                    queryResults.push({
-                        mtv,
-                        object: quadObject,
-                    });
+                if (mtv) {
+                    seen.add(quadObject);
+                    results.push({ mtv, object: quadObject });
                 }
-            });
-
-        return queryResults;
+            }
+        }
+        return;
     }
 
-    // Collect results across all children, deduplicating by object reference
-    // so a spanning object stored in multiple quadrants is returned only once
-    const seen = new Set<T>();
-    const childQueryResults: Array<QueryResult<T>> = [];
-    quadTree.quadrants.forEach(quadrant => {
-        queryQuadTree(quadrant, bounds).forEach(result => {
-            if (!seen.has(result.object)) {
-                seen.add(result.object);
-                childQueryResults.push(result);
-            }
-        });
-    });
-
-    return childQueryResults;
+    for (const quadrant of quadTree.quadrants) {
+        queryQuadTree(quadrant, bounds, seen, results);
+    }
 }
 
 function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>, seen: Set<T> = new Set()): T[] {
@@ -172,7 +154,12 @@ export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: n
         add: (object) => addToQuadTree(quadTree, object, 0),
         remove: (object) => removeFromQuadTree(quadTree, object),
         clear: () => clearQuadTree(quadTree),
-        query: (bounds) => queryQuadTree(quadTree, bounds),
+        query: (bounds) => {
+            const seen = new Set<T>();
+            const results: Array<QueryResult<T>> = [];
+            queryQuadTree(quadTree, bounds, seen, results);
+            return results;
+        },
         getData: () => getQuadTreeData(quadTree),
     };
     return quadTree;

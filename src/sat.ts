@@ -185,19 +185,17 @@ function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: bo
         // project all sides of box1 onto normal (separating axis)
         // We want to record the minimum and maximum scalar projections
         // This will be done for both boxes
-        sat1.points
-            .forEach(pointIn1 => {
-                scalarProjection = getDot(pointIn1, normalizedAxis);
-                minBox1 = Math.min(scalarProjection - sat1Buffer, minBox1);
-                maxBox1 = Math.max(scalarProjection + sat1Buffer, maxBox1);
-            });
+        for (const pointIn1 of sat1.points) {
+            scalarProjection = getDot(pointIn1, normalizedAxis);
+            minBox1 = Math.min(scalarProjection - sat1Buffer, minBox1);
+            maxBox1 = Math.max(scalarProjection + sat1Buffer, maxBox1);
+        }
 
-        sat2.points
-            .forEach(pointIn2 => {
-                scalarProjection = getDot(pointIn2, normalizedAxis);
-                minBox2 = Math.min(scalarProjection - sat2Buffer, minBox2);
-                maxBox2 = Math.max(scalarProjection + sat2Buffer, maxBox2);
-            });
+        for (const pointIn2 of sat2.points) {
+            scalarProjection = getDot(pointIn2, normalizedAxis);
+            minBox2 = Math.min(scalarProjection - sat2Buffer, minBox2);
+            maxBox2 = Math.max(scalarProjection + sat2Buffer, maxBox2);
+        }
 
         // Must intersect (overlap) on all separating axes
         // Can bail early, or on the first time not overlapping
