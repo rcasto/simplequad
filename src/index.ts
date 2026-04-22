@@ -91,18 +91,6 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
         }
     }
 
-    // If one of the children contained the object we just removed
-    // Let's query the bounding box of us (the parent) to see if we 
-    // can collapse or consume our children. Meaning the child subtree
-    // contains less elements than our individual bucket capacity.
-    if (wasRemoved) {
-        const childObjectResults: Array<QueryResult<T>> = queryQuadTree(quadTree, quadTree.bounds);
-        if (childObjectResults.length <= quadTree.capacity) {
-            clearQuadTree(quadTree);
-            childObjectResults.forEach(childObjectResult => addToQuadTree(quadTree, childObjectResult.object));
-        }
-    }
-
     return wasRemoved;
 }
 

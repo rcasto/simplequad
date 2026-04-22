@@ -56,7 +56,7 @@ test('can remove object at point with multiple objects', t => {
     t.is(objectsAtPoint.size, 0);
 });
 
-test('can remove object added to quad tree - collapse subtree', t => {
+test('can remove object added to quad tree - no collapse after remove', t => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object1: Bound = {
         x: 0,
@@ -79,11 +79,14 @@ test('can remove object added to quad tree - collapse subtree', t => {
 
     quadTree.remove(object1);
 
-    t.is(quadTree.data.size, 1);
-    t.is(quadTree.quadrants.length, 0);
+    // Tree stays subdivided — no collapse. Remaining object still findable.
+    t.is(quadTree.quadrants.length, 4);
+    const remaining = quadTree.getData();
+    t.is(remaining.length, 1);
+    t.true(remaining.includes(object2));
 });
 
-test('can remove object added to quad tree - collapse subtree higher capacity', t => {
+test('can remove object added to quad tree - no collapse after remove, higher capacity', t => {
     const quadTree: QuadTree = createMockQuadTree(2);
     const object1: Bound = {
         x: 0,
@@ -113,6 +116,10 @@ test('can remove object added to quad tree - collapse subtree higher capacity', 
 
     quadTree.remove(object1);
 
-    t.is(quadTree.data.size, 2);
-    t.is(quadTree.quadrants.length, 0);
+    // Tree stays subdivided — no collapse. Remaining objects still findable.
+    t.is(quadTree.quadrants.length, 4);
+    const remaining = quadTree.getData();
+    t.is(remaining.length, 2);
+    t.true(remaining.includes(object2));
+    t.true(remaining.includes(object3));
 });
