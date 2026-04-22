@@ -3,3 +3,4 @@ dist
 simplequad-*.tgz
 .nyc_output
 coverage
+benchmarks/results/

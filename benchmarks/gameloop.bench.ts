@@ -10,7 +10,7 @@ export function runGameloopBenchmarks(): void {
     printHeader('GAME LOOP — simulated frame: clear → add all → query each object');
 
     printSectionHeader('Full frame cost at varying object counts');
-    for (const n of [25, 50, 100, 200, 400]) {
+    for (const n of [25, 50, 100, 200, 400, 750, 1000]) {
         const objects = makeRandomBoxes(n);
         const tree = createQuadTree(TREE_BOUNDS, 5);
 
@@ -26,7 +26,7 @@ export function runGameloopBenchmarks(): void {
     // Print which object counts stay within a 16.7ms budget
     const budgetMs = 16.7;
     console.log(`\n  Target: <${budgetMs}ms per frame for 60fps`);
-    for (const n of [25, 50, 100, 150, 200, 300, 400, 500]) {
+    for (const n of [25, 50, 100, 150, 200, 300, 400, 500, 750, 1000]) {
         const objects = makeRandomBoxes(n);
         const tree = createQuadTree(TREE_BOUNDS, 5);
 

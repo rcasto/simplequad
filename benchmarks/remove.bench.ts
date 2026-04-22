@@ -9,7 +9,7 @@ function buildTree(objects: Bound[], capacity = 5): QuadTree {
 }
 
 export function runRemoveBenchmarks(): void {
-    printHeader('REMOVE — per-remove cost, exposing the O(n) collapse scan');
+    printHeader('REMOVE — per-remove cost at varying tree sizes');
 
     printSectionHeader('Remove all objects one by one — cost per remove vs tree size');
     // Each iteration removes ONE object from a pre-built tree of size n.

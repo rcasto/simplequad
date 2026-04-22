@@ -15,7 +15,8 @@
     "clean": "rimraf dist",
     "clean:all": "rimraf dist node_modules",
     "prepublishOnly": "npm-run-all test build",
-    "perf-client": "http-server -p 8080 ./"
+    "perf-client": "http-server -p 8080 ./",
+    "benchmark": "ts-node benchmarks/index.ts"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
   "homepage": "https://github.com/rcasto/simplequad#readme",
