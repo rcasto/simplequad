@@ -1,0 +1,166 @@
+
+simplequad benchmark suite
+  2026-04-22T03:28:12.247Z
+
+──────────────────────────────────────────────────────────────────────────────────────────
+  INSERT — throughput at varying population sizes and capacities
+──────────────────────────────────────────────────────────────────────────────────────────
+
+  AABB objects, default capacity (5)
+  ····························································
+  add 50 AABB objects                                           12,717 ops/s   avg 78.64μs
+  add 200 AABB objects                                           6,765 ops/s   avg 147.83μs
+  add 500 AABB objects                                           2,485 ops/s   avg 402.48μs
+  add 1000 AABB objects                                            900 ops/s   avg 1.111ms
+  add 2000 AABB objects                                            327 ops/s   avg 3.059ms
+
+  AABB objects — capacity comparison at n=500
+  ····························································
+  add 500 objects, capacity=1                                      704 ops/s   avg 1.420ms
+  add 500 objects, capacity=2                                    1,565 ops/s   avg 638.97μs
+  add 500 objects, capacity=5                                    2,534 ops/s   avg 394.67μs
+  add 500 objects, capacity=10                                   2,969 ops/s   avg 336.77μs
+  add 500 objects, capacity=25                                   3,029 ops/s   avg 330.17μs
+  add 500 objects, capacity=50                                   4,529 ops/s   avg 220.81μs
+
+  Mixed shapes (AABB + Circle + Point), n=500, capacity=5
+  ····························································
+  add 500 mixed-shape objects                                    2,212 ops/s   avg 452.01μs
+
+──────────────────────────────────────────────────────────────────────────────────────────
+  QUERY — time per query call at varying population and window sizes
+──────────────────────────────────────────────────────────────────────────────────────────
+
+  Single object query vs tree population (small query window ~1% of area)
+  ····························································
+  query n=50, small window                                   1,988,862 ops/s   avg 0.50μs
+  query n=200, small window                                  2,023,200 ops/s   avg 0.49μs
+  query n=500, small window                                  2,472,494 ops/s   avg 0.40μs
+  query n=1000, small window                                 2,600,498 ops/s   avg 0.38μs
+  query n=2000, small window                                   618,844 ops/s   avg 1.62μs
+
+  Query window size comparison at n=500
+  ····························································
+  query n=500, tiny (0.5% area)                              3,720,698 ops/s   avg 0.27μs
+  query n=500, small (5% area)                                 982,962 ops/s   avg 1.02μs
+  query n=500, medium (25% area)                                37,745 ops/s   avg 26.49μs
+  query n=500, large (50% area)                                  9,925 ops/s   avg 100.76μs
+  query n=500, full bounds                                       2,973 ops/s   avg 336.36μs
+
+  Query all objects against themselves (per-object query pattern)
+  ····························································
+  query-each-against-tree n=50                                  31,143 ops/s   avg 32.11μs
+  query-each-against-tree n=100                                 12,638 ops/s   avg 79.13μs
+  query-each-against-tree n=200                                  5,529 ops/s   avg 180.85μs
+
+  Mixed shapes vs AABB-only at n=500
+  ····························································
+  query AABB-only tree, medium window                           38,639 ops/s   avg 25.88μs
+  query mixed-shape tree, medium window                          9,660 ops/s   avg 103.52μs
+
+──────────────────────────────────────────────────────────────────────────────────────────
+  REMOVE — per-remove cost, exposing the O(n) collapse scan
+──────────────────────────────────────────────────────────────────────────────────────────
+
+  Remove all objects one by one — cost per remove vs tree size
+  ····························································
+  remove 1 object from n=50 tree                                10,435 ops/s   avg 95.83μs
+  remove 1 object from n=200 tree                                2,219 ops/s   avg 450.75μs
+  remove 1 object from n=500 tree                                  746 ops/s   avg 1.340ms
+  remove 1 object from n=1000 tree                                 285 ops/s   avg 3.514ms
+
+  Remove all n objects sequentially — total cost scales with n²
+  ····························································
+  drain n=50 objects from tree                                     493 ops/s   avg 2.029ms
+  drain n=100 objects from tree                                    101 ops/s   avg 9.932ms
+  drain n=200 objects from tree                                     23 ops/s   avg 43.269ms
+  drain n=500 objects from tree                                      4 ops/s   avg 281.648ms
+
+  Remove cost vs capacity (affects collapse frequency)
+  ····························································
+  remove 1 from n=200, capacity=1                                1,137 ops/s   avg 879.19μs
+  remove 1 from n=200, capacity=5                                3,602 ops/s   avg 277.60μs
+  remove 1 from n=200, capacity=10                               3,818 ops/s   avg 261.89μs
+  remove 1 from n=200, capacity=50                               5,315 ops/s   avg 188.16μs
+
+──────────────────────────────────────────────────────────────────────────────────────────
+  GAME LOOP — simulated frame: clear → add all → query each object
+──────────────────────────────────────────────────────────────────────────────────────────
+
+  Full frame cost at varying object counts
+  ····························································
+  frame with n=25 AABB objects                                  33,677 ops/s   avg 29.69μs
+  frame with n=50 AABB objects                                  17,271 ops/s   avg 57.90μs
+  frame with n=100 AABB objects                                  6,940 ops/s   avg 144.09μs
+  frame with n=200 AABB objects                                  3,005 ops/s   avg 332.82μs
+  frame with n=400 AABB objects                                  1,238 ops/s   avg 807.49μs
+
+  Frame budget check — can we hit 60fps (16.7ms/frame)?
+  ····························································
+
+  Target: <16.7ms per frame for 60fps
+  ✓  n=25    avg 0.029ms   (0.2% of 16.7ms frame budget)
+  ✓  n=50    avg 0.066ms   (0.4% of 16.7ms frame budget)
+  ✓  n=100   avg 0.143ms   (0.9% of 16.7ms frame budget)
+  ✓  n=150   avg 0.220ms   (1.3% of 16.7ms frame budget)
+  ✓  n=200   avg 0.345ms   (2.1% of 16.7ms frame budget)
+  ✓  n=300   avg 0.546ms   (3.3% of 16.7ms frame budget)
+  ✓  n=400   avg 0.854ms   (5.1% of 16.7ms frame budget)
+  ✓  n=500   avg 1.149ms   (6.9% of 16.7ms frame budget)
+
+  Capacity effect on frame cost at n=100
+  ····························································
+  frame n=100, capacity=1                                        3,377 ops/s   avg 296.10μs
+  frame n=100, capacity=2                                        5,732 ops/s   avg 174.45μs
+  frame n=100, capacity=5                                        6,782 ops/s   avg 147.46μs
+  frame n=100, capacity=10                                       6,937 ops/s   avg 144.16μs
+  frame n=100, capacity=25                                       5,754 ops/s   avg 173.81μs
+
+  Rebuild-from-scratch vs clear+re-add at n=100
+  ····························································
+  clear + re-add 100 objects                                    17,066 ops/s   avg 58.60μs
+  create new tree + add 100 objects                             16,794 ops/s   avg 59.54μs
+
+──────────────────────────────────────────────────────────────────────────────────────────
+  STRESS — pathological inputs and edge cases
+──────────────────────────────────────────────────────────────────────────────────────────
+
+  All objects at same point (x=100, y=100) — no subdivision, but O(n) query
+  ····························································
+  query n=50 co-located objects                                 71,134 ops/s   avg 14.06μs
+  query n=200 co-located objects                                17,602 ops/s   avg 56.81μs
+  query n=500 co-located objects                                 7,216 ops/s   avg 138.59μs
+  query n=1000 co-located objects                                3,619 ops/s   avg 276.33μs
+
+  Dense cluster in center (5% of area, 200 objects) — deep tree
+  ····························································
+  query inside dense cluster (200 objects)                       1,776 ops/s   avg 563.11μs
+  add 200 clustered objects (forces deep tree)                   2,355 ops/s   avg 424.67μs
+
+  Capacity=1 (maximum tree depth) vs capacity=5 at n=200
+  ····························································
+  add 200 objects, capacity=1                                    2,268 ops/s   avg 440.84μs
+  add 200 objects, capacity=5                                    7,049 ops/s   avg 141.87μs
+
+  Objects straddling quadrant boundaries (x=400 or y=300 in 800x600 tree)
+  ····························································
+
+  Boundary objects added: 4/4
+  Objects found via full-bounds query: 4/4
+  Note: any shortfall here exposes the origin-point placement bug.
+  Objects found in NE quadrant only: 3
+  Objects found in SE quadrant only: 2
+
+  SAT overhead: box-vs-box vs circle-vs-box query
+  ····························································
+  query 100 AABB objects (box-vs-box SAT)                       67,832 ops/s   avg 14.74μs
+  query 100 Circle objects (box-vs-circle SAT)                  18,794 ops/s   avg 53.21μs
+
+  Remove-all cost scaling — O(n²) expected due to collapse scan
+  ····························································
+  remove-all n=25     total avg 0.17ms   per-remove 6.8μs
+  remove-all n=50     total avg 0.73ms   per-remove 14.6μs
+  remove-all n=100    total avg 3.23ms   per-remove 32.3μs
+  remove-all n=200    total avg 13.90ms   per-remove 69.5μs
+
+

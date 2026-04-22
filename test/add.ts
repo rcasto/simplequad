@@ -1,7 +1,6 @@
 import test from 'ava';
 import { QuadTree, createQuadTree, BoundingBox, Bound } from '../src';
 import { createMockQuadTree } from './helpers/util';
-import { createPointKey } from '../src/util';
 
 test('can add an object to quadtree', t => {
     const quadTree: QuadTree = createMockQuadTree();
@@ -128,7 +127,7 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: Set<Bound> = quadTree.data.get(createPointKey(object1)) || new Set<Bound>();
+    const objectsAtPoint: Set<Bound> = quadTree.data.get(`(${object1.x},${object1.y})`) || new Set<Bound>();
     t.is(objectsAtPoint.size, 2);
     t.is(quadTree.quadrants.length, 0);
 });
@@ -150,7 +149,7 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     t.truthy(quadTree.add(object2));
     t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: Set<Bound> = quadTree.data.get(createPointKey(object1)) || new Set<Bound>();
+    const objectsAtPoint: Set<Bound> = quadTree.data.get(`(${object1.x},${object1.y})`) || new Set<Bound>();
     t.is(objectsAtPoint.size, 2);
     t.is(quadTree.quadrants.length, 0);
 });

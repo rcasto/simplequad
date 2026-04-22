@@ -168,13 +168,6 @@ export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
     ];
 }
 
-export function createPointKey(bound: Bound): string {
-    if (typeof bound._key !== 'string') {
-        bound._key = `(${bound.x},${bound.y})`;
-    }
-    return bound._key;
-}
-
 /**
  * Cheap boolean-only intersection test between any Bound and a BoundingBox.
  * Used for add/remove routing where no MTV is needed.

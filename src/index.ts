@@ -1,6 +1,6 @@
 import { doBoundsIntersect } from './sat';
 import { Bound, BoundingBox, QuadTree, MinimumTranslationVectorInfo, QueryResult } from './schema';
-import { createPointKey, divideBoundingBox, doesBoundIntersectBox } from './util';
+import { divideBoundingBox, doesBoundIntersectBox } from './util';
 
 function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth: number = 0): boolean {
     // Check if the object's full bounds intersect with this node's bounds
@@ -22,7 +22,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth:
     }
 
     // Let's get the data already associated with this bucket
-    const objectPointKey: string = createPointKey(object);
+    const objectPointKey: string = `(${object.x},${object.y})`;
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // Let's check if the object is already in the bucket
@@ -62,7 +62,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth:
 }
 
 function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
-    const objectPointKey: string = createPointKey(object);
+    const objectPointKey: string = `(${object.x},${object.y})`;
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
     // Check if the object's full bounds intersect with this node's bounds

@@ -1,7 +1,3 @@
-interface InternalMeta {
-    _key?: string;
-}
-
 /**
  * The minimum translation vector returned will point towards the bound
  * used to query. The represents then the amount the bound must be moved away.
@@ -33,17 +29,17 @@ export interface QueryResult<T> {
     object: T;
 }
 
-export interface Point extends InternalMeta {
+export interface Point {
     x: number;
     y: number;
 }
 
-export interface BoundingBox extends Point, InternalMeta {
+export interface BoundingBox extends Point {
     width: number;
     height: number;
 }
 
-export interface Circle extends Point, InternalMeta {
+export interface Circle extends Point {
     r: number;
 }
 
