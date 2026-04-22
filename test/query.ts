@@ -309,6 +309,29 @@ test('can get data within bucket - same point', t => {
     t.truthy(results.includes(object3));
 });
 
+test('can get data within bucket - subdivided tree', t => {
+    // capacity=1 forces subdivision after the first object
+    const quadTree: QuadTree = createQuadTree({
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 200,
+    }, 1);
+    const object1: Bound = { x: 10, y: 10, width: 5, height: 5 };  // NW quadrant
+    const object2: Bound = { x: 150, y: 10, width: 5, height: 5 }; // NE quadrant
+    const object3: Bound = { x: 10, y: 150, width: 5, height: 5 }; // SW quadrant
+
+    quadTree.add(object1);
+    quadTree.add(object2);
+    quadTree.add(object3);
+
+    const results: Bound[] = quadTree.getData();
+    t.is(results.length, 3);
+    t.truthy(results.includes(object1));
+    t.truthy(results.includes(object2));
+    t.truthy(results.includes(object3));
+});
+
 /**
  * Debating on adjusting this behavior, but will keep for now.
  * Not sure that touching should be considered a collision, but it has been being flagged

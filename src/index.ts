@@ -153,13 +153,16 @@ function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): A
     return childQueryResults;
 }
 
-function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>): T[] {
-    const quadTreeDataList: T[] = [];
-    const quadTreeSetIterator: IterableIterator<Set<T>> = quadTree.data.values();
-    for (const quadTreeSet of quadTreeSetIterator) {
-        quadTreeSet.forEach(quadTreeSetItem => quadTreeDataList.push(quadTreeSetItem));
+function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>, seen: Set<T> = new Set()): T[] {
+    for (const quadTreeSet of quadTree.data.values()) {
+        for (const item of quadTreeSet) {
+            seen.add(item);
+        }
     }
-    return quadTreeDataList;
+    for (const quadrant of quadTree.quadrants) {
+        getQuadTreeData(quadrant, seen);
+    }
+    return [...seen];
 }
 
 /**
