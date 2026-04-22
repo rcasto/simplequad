@@ -1,27 +1,23 @@
 import { doBoundsIntersect } from './sat';
-import { Bound, BoundingBox, QuadTree, Point, MinimumTranslationVectorInfo, QueryResult } from './schema';
-import { createPointKey, divideBoundingBox, doPointAndBoxIntersect } from './util';
+import { Bound, BoundingBox, QuadTree, MinimumTranslationVectorInfo, QueryResult } from './schema';
+import { createPointKey, divideBoundingBox, doesBoundIntersectBox } from './util';
 
-function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
-    const objectPoint: Point = {
-        x: object.x,
-        y: object.y,
-    };
-
-    // Let's first check if the point this object occupies is within
-    // the bounds of the bucket
-    if (!doPointAndBoxIntersect(objectPoint, quadTree.bounds)) {
+function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth: number = 0): boolean {
+    // Check if the object's full bounds intersect with this node's bounds
+    if (!doesBoundIntersectBox(object, quadTree.bounds)) {
         return false;
     }
 
     // Checking children, if this node is a "Container" (No data)
     if ((quadTree.quadrants || []).length) {
-        // Run through all children checking if the object can be added
-        // At the first successful add, we can bail out, only needs to be stored once
-        const wasAddedToChild: boolean = quadTree.quadrants
-            .some((quadrant: QuadTree<T>) => addToQuadTree(quadrant, object));
-        // Only leaf nodes should have data (We are a "Container node")
-        // If it didn't intersect with any child, it won't intersect with us
+        // Add to every child whose bounds intersect the object's bounds —
+        // a large object spanning a quadrant boundary belongs in multiple children
+        let wasAddedToChild = false;
+        for (const quadrant of quadTree.quadrants) {
+            if (addToQuadTree(quadrant, object, depth + 1)) {
+                wasAddedToChild = true;
+            }
+        }
         return wasAddedToChild;
     }
 
@@ -34,13 +30,9 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
         return false;
     }
 
-    // Let's see if this quadrant has any capacity
-    // If it does, we can go ahead and store the current object
-    //
-    // We also wanna go ahead and add, if this point (x, y) has already
-    // had an object added, we'll chain it on to the list of objects 
-    // associated with this point
-    if (objectPointSet.size > 0 ||
+    // At max depth, store here regardless of capacity to prevent unbounded subdivision
+    if (depth >= quadTree.maxDepth ||
+        objectPointSet.size > 0 ||
         quadTree.data.size + 1 <= quadTree.capacity) {
         objectPointSet.add(object);
         quadTree.data.set(objectPointKey, objectPointSet);
@@ -54,7 +46,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
     // Let's first build the child quadrants
     // Let's create the child QuadTree's from the divided quadrant bounds
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
-    const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity));
+    const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity, quadTree.maxDepth));
     const quadObjects: T[] = getQuadTreeData(quadTree);
     quadObjects.push(object);
 
@@ -66,20 +58,15 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boole
     // add objects from this quad node back to it's own subtree
     // children will be attempted to be added to first
     return quadObjects
-        .every(quadObject => addToQuadTree(quadTree, quadObject));
+        .every(quadObject => addToQuadTree(quadTree, quadObject, depth));
 }
 
 function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
-    const objectPoint: Point = {
-        x: object.x,
-        y: object.y,
-    };
     const objectPointKey: string = createPointKey(object);
     const objectPointSet: Set<T> = quadTree.data.get(objectPointKey) || new Set<T>();
 
-    // Let's first check if the point this object occupies is within
-    // the bounds of the bucket
-    if (!doPointAndBoxIntersect(objectPoint, quadTree.bounds)) {
+    // Check if the object's full bounds intersect with this node's bounds
+    if (!doesBoundIntersectBox(object, quadTree.bounds)) {
         return false;
     }
 
@@ -96,9 +83,13 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
         return true;
     }
 
-    // Check children to find object and remove if found
-    const wasRemoved: boolean = quadTree.quadrants
-        .some(quadrant => removeFromQuadTree(quadrant, object));
+    // Check all children — a spanning object may live in multiple quadrants
+    let wasRemoved = false;
+    for (const quadrant of quadTree.quadrants) {
+        if (removeFromQuadTree(quadrant, object)) {
+            wasRemoved = true;
+        }
+    }
 
     // If one of the children contained the object we just removed
     // Let's query the bounding box of us (the parent) to see if we 
@@ -123,7 +114,7 @@ function clearQuadTree<T extends Bound>(quadTree: QuadTree<T>): void {
 function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): Array<QueryResult<T>> {
     // Check first if the query bounds intersect with the bounds
     // of the bucket, if it doesn't we can bail immediately with an empty list
-    if (!doBoundsIntersect(quadTree.bounds, bounds)) {
+    if (!doesBoundIntersectBox(bounds, quadTree.bounds)) {
         return [];
     }
 
@@ -146,16 +137,18 @@ function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound): A
         return queryResults;
     }
 
-    // Check the current nodes children
-    // querying them for the same info and collecting
-    // the results
+    // Collect results across all children, deduplicating by object reference
+    // so a spanning object stored in multiple quadrants is returned only once
+    const seen = new Set<T>();
     const childQueryResults: Array<QueryResult<T>> = [];
-    quadTree.quadrants
-        .forEach(quadrant => {
-            const currentChildQueryResults = queryQuadTree(quadrant, bounds);
-            currentChildQueryResults
-                .forEach(currentChildQueryResult => childQueryResults.push(currentChildQueryResult));
+    quadTree.quadrants.forEach(quadrant => {
+        queryQuadTree(quadrant, bounds).forEach(result => {
+            if (!seen.has(result.object)) {
+                seen.add(result.object);
+                childQueryResults.push(result);
+            }
         });
+    });
 
     return childQueryResults;
 }
@@ -171,19 +164,21 @@ function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>): T[] {
 
 /**
  * Creates a quadtree "managing" the input bounds with input node capacity.
- * 
+ *
  * All collision objects should intersect or be contained within these "managed" bounds.
  * @param {BoundingBox} bounds - The bounding box with which the quadtree "manages".
  * @param {number} [capacity=5] - The # of collision objects a node can contain before subdividing.
+ * @param {number} [maxDepth=8] - Maximum subdivision depth. Nodes at this depth store objects regardless of capacity.
  * @return {QuadTree} The created quadtree "managing" the input bounds.
  */
-export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: number = 5): QuadTree<T> {
+export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: number = 5, maxDepth: number = 8): QuadTree<T> {
     const quadTree: QuadTree<T> = {
         bounds,
         data: new Map<string, Set<T>>(),
         capacity,
+        maxDepth,
         quadrants: [],
-        add: (object) => addToQuadTree(quadTree, object),
+        add: (object) => addToQuadTree(quadTree, object, 0),
         remove: (object) => removeFromQuadTree(quadTree, object),
         clear: () => clearQuadTree(quadTree),
         query: (bounds) => queryQuadTree(quadTree, bounds),

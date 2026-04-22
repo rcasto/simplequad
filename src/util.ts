@@ -176,9 +176,19 @@ export function createPointKey(bound: Bound): string {
 }
 
 /**
+ * Cheap boolean-only intersection test between any Bound and a BoundingBox.
+ * Used for add/remove routing where no MTV is needed.
+ */
+export function doesBoundIntersectBox(bound: Bound, box: BoundingBox): boolean {
+    if (isBoundingBox(bound)) return doBoxAndBoxIntersect(bound, box);
+    if (isCircle(bound)) return doBoxAndCircleIntersect(box, bound);
+    return doPointAndBoxIntersect(bound as Point, box);
+}
+
+/**
  * Quicker/much cheaper check for intersection between box and point for add/remove scenarios
  * where we don't necessarily need to use SAT.
- * 
+ *
  * @param point Object point or rather point to check intersection with input box
  * @param box Box to check for intersection with input point
  */

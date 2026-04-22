@@ -70,10 +70,18 @@ export interface QuadTree<T extends Bound = Bound> {
     /**
      * The number of collision objects this node can hold
      * before subdividing.
-     * 
+     *
      * Child quadtrees or nodes will inherit this capacity upon subdividing.
      */
     capacity: number;
+    /**
+     * Maximum depth the tree will subdivide to. At this depth, a leaf node
+     * accepts objects regardless of capacity to prevent unbounded recursion
+     * when objects cluster at the same position or span quadrant boundaries.
+     *
+     * Child quadtrees or nodes will inherit this value upon subdividing.
+     */
+    maxDepth: number;
     /**
      * The child buckets/quadrants/nodes of this quadtree. They themselves
      * are quadtrees. Each manages a quarter of this quadtree's bounds.
