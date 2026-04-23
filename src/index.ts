@@ -35,14 +35,16 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth:
 
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
     const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity, quadTree.maxDepth));
-    const quadObjects: T[] = getQuadTreeData(quadTree);
+    const quadObjects: T[] = quadTree.data.slice();
     quadObjects.push(object);
 
     clearQuadTree(quadTree);
     quadTree.quadrants = quadrants;
 
-    return quadObjects
-        .every(quadObject => addToQuadTree(quadTree, quadObject, depth));
+    for (const quadObject of quadObjects) {
+        addToQuadTree(quadTree, quadObject, depth);
+    }
+    return true;
 }
 
 function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
