@@ -198,11 +198,11 @@ test('can find 2 bounding boxes intersect', t => {
     t.deepEqual([...results][0].mtv, {
         vector: {
             x: -0,
-            y: -0,
+            y: 0,
         },
         direction: {
             x: -1,
-            y: -0,
+            y: 0,
         },
         magnitude: 0,
     });

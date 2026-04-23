@@ -45,7 +45,8 @@ const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
 export function doBoundsIntersect(bound1: Bound, bound2: Bound): MinimumTranslationVectorInfo | null {
     if (isBoundingBox(bound1)) {
         if (isBoundingBox(bound2)) {
-            return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox, false);
+            if (!doBoxAndBoxIntersect(bound1 as BoundingBox, bound2 as BoundingBox)) return null;
+            return aabbVsAabbMTV(bound1 as BoundingBox, bound2 as BoundingBox);
         }
         if (isCircle(bound2)) {
             return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle, false);
@@ -113,6 +114,27 @@ function doIntersectBoundingBoxCircleSAT(box: BoundingBox, circle: Circle, shoul
     }
 
     return doIntersectSAT(sat1, sat2, shouldFlipMtvDirection);
+}
+
+function aabbVsAabbMTV(box1: BoundingBox, box2: BoundingBox): MinimumTranslationVectorInfo {
+    const overlapX = Math.min(box1.x + box1.width, box2.x + box2.width) - Math.max(box1.x, box2.x);
+    const overlapY = Math.min(box1.y + box1.height, box2.y + box2.height) - Math.max(box1.y, box2.y);
+
+    if (overlapX < overlapY) {
+        const dirX = (box2.x + box2.width * 0.5) >= (box1.x + box1.width * 0.5) ? 1 : -1;
+        return {
+            vector: { x: overlapX * dirX, y: 0 },
+            direction: { x: dirX, y: 0 },
+            magnitude: overlapX,
+        };
+    } else {
+        const dirY = (box2.y + box2.height * 0.5) >= (box1.y + box1.height * 0.5) ? 1 : -1;
+        return {
+            vector: { x: 0, y: overlapY * dirY },
+            direction: { x: 0, y: dirY },
+            magnitude: overlapY,
+        };
+    }
 }
 
 function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox, shouldFlipMtvDirection: boolean): MinimumTranslationVectorInfo | null {
