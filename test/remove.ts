@@ -14,7 +14,7 @@ test('can remove object added to quad tree', t => {
     quadTree.add(object);
     quadTree.remove(object);
 
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -32,28 +32,22 @@ test('can remove object at point with multiple objects', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    let objectsAtPoint: Set<Bound> = quadTree.data.get(`(${object1.x},${object1.y})`) || new Set<Bound>();
-    t.is(quadTree.data.size, 1);
+    t.is(quadTree.data.length, 2);
     t.is(quadTree.quadrants.length, 0);
-    t.is(objectsAtPoint.size, 2);
-    t.truthy(objectsAtPoint.has(object1));
-    t.truthy(objectsAtPoint.has(object2));
+    t.truthy(quadTree.data.includes(object1));
+    t.truthy(quadTree.data.includes(object2));
 
     quadTree.remove(object1);
-    objectsAtPoint = quadTree.data.get(`(${object1.x},${object1.y})`) || new Set<Bound>();
 
-    t.is(quadTree.data.size, 1);
+    t.is(quadTree.data.length, 1);
     t.is(quadTree.quadrants.length, 0);
-    t.is(objectsAtPoint.size, 1);
-    t.falsy(objectsAtPoint.has(object1));
-    t.truthy(objectsAtPoint.has(object2));
+    t.falsy(quadTree.data.includes(object1));
+    t.truthy(quadTree.data.includes(object2));
 
     quadTree.remove(object2);
-    objectsAtPoint = quadTree.data.get(`(${object1.x},${object1.y})`) || new Set<Bound>();
 
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.is(quadTree.quadrants.length, 0);
-    t.is(objectsAtPoint.size, 0);
 });
 
 test('can remove object added to quad tree - no collapse after remove', t => {
@@ -74,7 +68,7 @@ test('can remove object added to quad tree - no collapse after remove', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.is(quadTree.quadrants.length, 4);
 
     quadTree.remove(object1);
@@ -111,7 +105,7 @@ test('can remove object added to quad tree - no collapse after remove, higher ca
     quadTree.add(object2);
     quadTree.add(object3);
 
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.is(quadTree.quadrants.length, 4);
 
     quadTree.remove(object1);

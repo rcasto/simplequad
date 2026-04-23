@@ -20,6 +20,6 @@ test('can clear the quad tree', t => {
     quadTree.add(object2);
     quadTree.clear();
 
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.is(quadTree.quadrants.length, 0);
 });

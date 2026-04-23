@@ -55,14 +55,15 @@ export interface QuadTree<T extends Bound = Bound> {
      */
     bounds: BoundingBox;
     /**
-     * Holds data in each node or bucket.
-     * Key is generated from point (x, y).
-     * Key for (x, y) is "(x,y)"
-     * Each point can hold a set of collision objects. These won't count towards the node capacity.
-     * 
-     * This will be empty for "container nodes".
+     * Holds collision objects at this leaf node as a flat array.
+     * Object identity (===) is used for deduplication.
+     * This will be empty for container nodes (nodes with children).
      */
-    data: Map<string, Set<T>>;
+    data: T[];
+    /** @internal Set mirror of `data` — O(1) identity dedup for add/remove. */
+    _items: Set<T>;
+    /** @internal Position-key refcount — O(1) co-location check for add. Key format "(x,y)", value is count of objects at that position. */
+    _posKeys: Map<string, number>;
     /**
      * The number of collision objects this node can hold
      * before subdividing.

@@ -12,7 +12,7 @@ test('can add an object to quadtree', t => {
     };
 
     t.truthy(quadTree.add(object));
-    t.is(quadTree.data.size, 1);
+    t.is(quadTree.data.length, 1);
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -33,7 +33,7 @@ test('can add an object to quadtree - can add objects up to capacity', t => {
 
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
-    t.is(quadTree.data.size, 2);
+    t.is(quadTree.data.length, 2);
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -54,20 +54,20 @@ test('can add an object to quadtree - bucket overflow and split', t => {
 
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.is(quadTree.quadrants.length, 4);
     t.is(quadTree.query(quadTree.bounds).length, 2);
     // NW quadrant
-    t.is(quadTree.quadrants[0].data.size, 1);
+    t.is(quadTree.quadrants[0].data.length, 1);
     t.is(quadTree.quadrants[0].quadrants.length, 0);
     // NE quadrant
-    t.is(quadTree.quadrants[1].data.size, 0);
+    t.is(quadTree.quadrants[1].data.length, 0);
     t.is(quadTree.quadrants[1].quadrants.length, 0);
     // SW quadrant
-    t.is(quadTree.quadrants[2].data.size, 0);
+    t.is(quadTree.quadrants[2].data.length, 0);
     t.is(quadTree.quadrants[2].quadrants.length, 0);
     // SE quadrant
-    t.is(quadTree.quadrants[3].data.size, 1);
+    t.is(quadTree.quadrants[3].data.length, 1);
     t.is(quadTree.quadrants[3].quadrants.length, 0);
 });
 
@@ -107,7 +107,7 @@ test('can handle adding the same object twice', t => {
     quadTree.add(object);
 
     t.falsy(quadTree.add(object));
-    t.is(quadTree.data.size, 1);
+    t.is(quadTree.data.length, 1);
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -123,12 +123,11 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     const object2: Bound = Object.assign({}, bounds);
 
     quadTree.add(object1);
-    
-    t.truthy(quadTree.add(object2));
-    t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: Set<Bound> = quadTree.data.get(`(${object1.x},${object1.y})`) || new Set<Bound>();
-    t.is(objectsAtPoint.size, 2);
+    t.truthy(quadTree.add(object2));
+    t.is(quadTree.data.length, 2);
+    t.truthy(quadTree.data.includes(object1));
+    t.truthy(quadTree.data.includes(object2));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -145,12 +144,11 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     const object2: Bound = Object.assign({}, copyBounds);
 
     quadTree.add(object1);
-    
-    t.truthy(quadTree.add(object2));
-    t.is(quadTree.data.size, 1);
 
-    const objectsAtPoint: Set<Bound> = quadTree.data.get(`(${object1.x},${object1.y})`) || new Set<Bound>();
-    t.is(objectsAtPoint.size, 2);
+    t.truthy(quadTree.add(object2));
+    t.is(quadTree.data.length, 2);
+    t.truthy(quadTree.data.includes(object1));
+    t.truthy(quadTree.data.includes(object2));
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -167,9 +165,9 @@ test('can handle adding 2 objects that occupy the same originating point, capaci
     const object2: Bound = Object.assign({}, bounds);
 
     quadTree.add(object1);
-    
+
     t.truthy(quadTree.add(object2));
-    t.is(quadTree.data.size, 1);
+    t.is(quadTree.data.length, 2);
     t.is(quadTree.quadrants.length, 0);
 });
 
@@ -196,7 +194,7 @@ test('can handle adding object directly on bucket boundary crossing', t => {
     t.truthy(quadTree.add(object1));
     t.truthy(quadTree.add(object2));
 
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.is(quadTree.quadrants.length, 4);
 
     const results = quadTree.query(quadTree.bounds);

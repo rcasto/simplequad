@@ -38,12 +38,12 @@ const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
 ];
 
 /**
- * 
+ *
  * @param bound1 First bound, from usage this will always be a quad tree node bound or another object bound in the quad tree
  * @param bound2 Second bound, from usage this will always be the passed in user bound used for querying
  * @returns {Point | null} MTV (minimum translation vector) pointing towards the user passed in bound or null, if there is no collision/overlap with an object in the quad tree
  */
- export function doBoundsIntersect(bound1: Bound, bound2: Bound): MinimumTranslationVectorInfo | null {
+export function doBoundsIntersect(bound1: Bound, bound2: Bound): MinimumTranslationVectorInfo | null {
     const isBound1Circle: boolean = isCircle(bound1);
     const isBound2Circle: boolean = isCircle(bound2);
 
@@ -77,7 +77,7 @@ const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
 
     // 1 is bounding box, 2 is circle
     if (isBound1BoundingBox && isBound2Circle) {
-        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle, false);   
+        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle, false);
     }
 
     // 1 is circle, 2 is point
@@ -153,14 +153,14 @@ function doIntersectBoundingBoxesSAT(box1: BoundingBox, box2: BoundingBox, shoul
 }
 
 /**
- * 
+ *
  * @param sat1 SAT information for first bound
  * @param sat2 SAT information for second bound
  * @param shouldFlipMtvDirection Whether the mtv returned should have its direction flipped or not (normally pointing towards sat2 bound)
  * @returns {Point | null} If non-null, Point returned represents MTV (minimum translation vector) pointing in direction of sat2 bound (unless directed to flip direction)
  */
 function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: boolean): MinimumTranslationVectorInfo | null {
-    const allAxes: Point[] = sat1.axes.concat(sat2.axes);
+    const allAxes: Point[] = sat2.axes.length > 0 ? sat1.axes.concat(sat2.axes) : sat1.axes;
 
     let scalarProjection: number;
     let maxBox1: number;
@@ -182,9 +182,6 @@ function doIntersectSAT(sat1: SATInfo, sat2: SATInfo, shouldFlipMtvDirection: bo
         maxBox2 = Number.NEGATIVE_INFINITY;
         minBox2 = Number.POSITIVE_INFINITY;
 
-        // project all sides of box1 onto normal (separating axis)
-        // We want to record the minimum and maximum scalar projections
-        // This will be done for both boxes
         for (const pointIn1 of sat1.points) {
             scalarProjection = getDot(pointIn1, normalizedAxis);
             minBox1 = Math.min(scalarProjection - sat1Buffer, minBox1);

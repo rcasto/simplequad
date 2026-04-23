@@ -13,7 +13,7 @@ test('can create quad tree', t => {
         height: 600,
     });
     t.is(quadTree.capacity, 5);
-    t.is(quadTree.data.size, 0);
+    t.is(quadTree.data.length, 0);
     t.truthy(Array.isArray(quadTree.quadrants));
     t.is(quadTree.quadrants.length, 0);
 });
