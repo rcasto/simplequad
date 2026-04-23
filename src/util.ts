@@ -115,14 +115,13 @@ export function closestPointToTargetPoint(targetPoint: Point, points: Point[]): 
     let closestPoint: Point = points[0];
     let closestDistance: number = Number.POSITIVE_INFINITY;
     let currentDistance: number;
-    points
-        .forEach(point => {
-            currentDistance = getMagnitude(subtract(targetPoint, point), false);
-            if (currentDistance < closestDistance) {
-                closestDistance = currentDistance;
-                closestPoint = point;
-            }
-        });
+    for (const point of points) {
+        currentDistance = getMagnitude(subtract(targetPoint, point), false);
+        if (currentDistance < closestDistance) {
+            closestDistance = currentDistance;
+            closestPoint = point;
+        }
+    }
     return {
         closestPoint,
     };

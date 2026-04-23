@@ -8,7 +8,6 @@ import {
     getPoints,
     isBoundingBox,
     isCircle,
-    isPoint,
     normalize,
     scalarMultiply,
     subtract,
@@ -44,63 +43,43 @@ const NON_ROTATIONAL_AXIS_ALIGNED_BOUNDING_BOX_AXES: Point[] = [
  * @returns {Point | null} MTV (minimum translation vector) pointing towards the user passed in bound or null, if there is no collision/overlap with an object in the quad tree
  */
 export function doBoundsIntersect(bound1: Bound, bound2: Bound): MinimumTranslationVectorInfo | null {
-    const isBound1Circle: boolean = isCircle(bound1);
-    const isBound2Circle: boolean = isCircle(bound2);
-
-    const isBound1BoundingBox: boolean = isBoundingBox(bound1);
-    const isBound2BoundingBox: boolean = isBoundingBox(bound2);
-
-    const isBound1Point: boolean = isPoint(bound1);
-    const isBound2Point: boolean = isPoint(bound2);
-
-    // They are both circles
-    if (isBound1Circle && isBound2Circle) {
-        return doIntersectCirclesSAT(bound1 as Circle, bound2 as Circle, false);
-    }
-
-    // They are both bounding boxes
-    if (isBound1BoundingBox && isBound2BoundingBox) {
-        return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox, false);
-    }
-
-    // They are both points
-    if (isBound1Point && isBound2Point) {
-        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
-        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
-        return doIntersectCirclesSAT(point1Circle, point2Circle, false);
-    }
-
-    // 1 is circle, 2 is bounding box
-    if (isBound1Circle && isBound2BoundingBox) {
-        return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, bound1 as Circle, true);
-    }
-
-    // 1 is bounding box, 2 is circle
-    if (isBound1BoundingBox && isBound2Circle) {
-        return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle, false);
-    }
-
-    // 1 is circle, 2 is point
-    if (isBound1Circle && isBound2Point) {
-        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
-        return doIntersectCirclesSAT(bound1 as Circle, point2Circle, false);
-    }
-
-    // 1 is point, 2 is 2 is circle
-    if (isBound1Point && isBound2Circle) {
-        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
-        return doIntersectCirclesSAT(point1Circle, bound2 as Circle, false);
-    }
-
-    // 1 is bounding box, 2 is point
-    if (isBound1BoundingBox && isBound2Point) {
+    if (isBoundingBox(bound1)) {
+        if (isBoundingBox(bound2)) {
+            return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, bound2 as BoundingBox, false);
+        }
+        if (isCircle(bound2)) {
+            return doIntersectBoundingBoxCircleSAT(bound1 as BoundingBox, bound2 as Circle, false);
+        }
+        // bound2 is a point
         const point2Box: BoundingBox = toBoundingBoxFromPoint(bound2 as Point);
         return doIntersectBoundingBoxesSAT(bound1 as BoundingBox, point2Box, false);
     }
 
-    // 1 is point, 2 is bounding box
-    const point1Box: BoundingBox = toBoundingBoxFromPoint(bound1 as Point);
-    return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox, false);
+    if (isCircle(bound1)) {
+        if (isCircle(bound2)) {
+            return doIntersectCirclesSAT(bound1 as Circle, bound2 as Circle, false);
+        }
+        if (isBoundingBox(bound2)) {
+            return doIntersectBoundingBoxCircleSAT(bound2 as BoundingBox, bound1 as Circle, true);
+        }
+        // bound2 is a point
+        const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+        return doIntersectCirclesSAT(bound1 as Circle, point2Circle, false);
+    }
+
+    // bound1 is a point
+    if (isCircle(bound2)) {
+        const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+        return doIntersectCirclesSAT(point1Circle, bound2 as Circle, false);
+    }
+    if (isBoundingBox(bound2)) {
+        const point1Box: BoundingBox = toBoundingBoxFromPoint(bound1 as Point);
+        return doIntersectBoundingBoxesSAT(point1Box, bound2 as BoundingBox, false);
+    }
+    // both points
+    const point1Circle: Circle = toCircleFromPoint(bound1 as Point);
+    const point2Circle: Circle = toCircleFromPoint(bound2 as Point);
+    return doIntersectCirclesSAT(point1Circle, point2Circle, false);
 }
 
 function doIntersectCirclesSAT(circle1: Circle, circle2: Circle, shouldFlipMtvDirection: boolean): MinimumTranslationVectorInfo | null {
