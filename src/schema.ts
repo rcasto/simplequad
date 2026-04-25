@@ -60,10 +60,6 @@ export interface QuadTree<T extends Bound = Bound> {
      * This will be empty for container nodes (nodes with children).
      */
     data: T[];
-    /** @internal Set mirror of `data` — O(1) identity dedup for add/remove. */
-    _items: Set<T>;
-    /** @internal Position-key refcount — O(1) co-location check for add. Key format "(x,y)", value is count of objects at that position. */
-    _posKeys: Map<string, number>;
     /**
      * The number of collision objects this node can hold
      * before subdividing.
@@ -98,9 +94,6 @@ export interface QuadTree<T extends Bound = Bound> {
     add: (object: T) => boolean;
     /**
      * Removes a collision object from the quadtree.
-     * 
-     * Will collapse or consume child leaf nodes to parent node if # of child collision objects is less than
-     * individual node capacity. Meaning parent can fit child collision objects.
      * @param {T} object - The collision object to remove from the quadtree.
      * @return {boolean} True if the collision object was removed, false if the collision object was not.
      */

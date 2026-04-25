@@ -2,7 +2,13 @@ import { doBoundsIntersect } from './sat';
 import { Bound, BoundingBox, QuadTree, MinimumTranslationVectorInfo, QueryResult } from './schema';
 import { divideBoundingBox, doesBoundIntersectBox } from './util';
 
-function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth: number = 0): boolean {
+interface QuadTreeNode<T extends Bound> extends QuadTree<T> {
+    _items: Set<T>;
+    _posKeys: Map<string, number>;
+    quadrants: QuadTreeNode<T>[];
+}
+
+function addToQuadTree<T extends Bound>(quadTree: QuadTreeNode<T>, object: T, depth: number = 0): boolean {
     if (!doesBoundIntersectBox(object, quadTree.bounds)) {
         return false;
     }
@@ -34,7 +40,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth:
     }
 
     const quadBoxes: BoundingBox[] = divideBoundingBox(quadTree.bounds);
-    const quadrants: QuadTree<T>[] = quadBoxes.map(quadBox => createQuadTree(quadBox, quadTree.capacity, quadTree.maxDepth));
+    const quadrants: QuadTreeNode<T>[] = quadBoxes.map(quadBox => createQuadTreeNode(quadBox, quadTree.capacity, quadTree.maxDepth));
     const quadObjects: T[] = quadTree.data.slice();
     quadObjects.push(object);
 
@@ -47,7 +53,7 @@ function addToQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T, depth:
     return true;
 }
 
-function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): boolean {
+function removeFromQuadTree<T extends Bound>(quadTree: QuadTreeNode<T>, object: T): boolean {
     if (!doesBoundIntersectBox(object, quadTree.bounds)) {
         return false;
     }
@@ -77,14 +83,14 @@ function removeFromQuadTree<T extends Bound>(quadTree: QuadTree<T>, object: T): 
     return wasRemoved;
 }
 
-function clearQuadTree<T extends Bound>(quadTree: QuadTree<T>): void {
+function clearQuadTree<T extends Bound>(quadTree: QuadTreeNode<T>): void {
     quadTree.data.length = 0;
     quadTree._items.clear();
     quadTree._posKeys.clear();
     quadTree.quadrants.length = 0;
 }
 
-function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound, seen: Set<T>, results: Array<QueryResult<T>>): void {
+function queryQuadTree<T extends Bound>(quadTree: QuadTreeNode<T>, bounds: Bound, seen: Set<T>, results: Array<QueryResult<T>>): void {
     if (!doesBoundIntersectBox(bounds, quadTree.bounds)) {
         return;
     }
@@ -106,7 +112,7 @@ function queryQuadTree<T extends Bound>(quadTree: QuadTree<T>, bounds: Bound, se
     }
 }
 
-function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>, seen: Set<T> = new Set()): T[] {
+function getQuadTreeData<T extends Bound>(quadTree: QuadTreeNode<T>, seen: Set<T> = new Set()): T[] {
     for (const item of quadTree.data) {
         seen.add(item);
     }
@@ -116,17 +122,8 @@ function getQuadTreeData<T extends Bound>(quadTree: QuadTree<T>, seen: Set<T> = 
     return [...seen];
 }
 
-/**
- * Creates a quadtree "managing" the input bounds with input node capacity.
- *
- * All collision objects should intersect or be contained within these "managed" bounds.
- * @param {BoundingBox} bounds - The bounding box with which the quadtree "manages".
- * @param {number} [capacity=5] - The # of collision objects a node can contain before subdividing.
- * @param {number} [maxDepth=8] - Maximum subdivision depth. Nodes at this depth store objects regardless of capacity.
- * @return {QuadTree} The created quadtree "managing" the input bounds.
- */
-export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: number = 5, maxDepth: number = 8): QuadTree<T> {
-    const quadTree: QuadTree<T> = {
+function createQuadTreeNode<T extends Bound>(bounds: BoundingBox, capacity: number, maxDepth: number): QuadTreeNode<T> {
+    const quadTree: QuadTreeNode<T> = {
         bounds,
         data: [],
         _items: new Set<T>(),
@@ -146,5 +143,18 @@ export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: n
         getData: () => getQuadTreeData(quadTree),
     };
     return quadTree;
+}
+
+/**
+ * Creates a quadtree "managing" the input bounds with input node capacity.
+ *
+ * All collision objects should intersect or be contained within these "managed" bounds.
+ * @param {BoundingBox} bounds - The bounding box with which the quadtree "manages".
+ * @param {number} [capacity=5] - The # of collision objects a node can contain before subdividing.
+ * @param {number} [maxDepth=8] - Maximum subdivision depth. Nodes at this depth store objects regardless of capacity.
+ * @return {QuadTree} The created quadtree "managing" the input bounds.
+ */
+export function createQuadTree<T extends Bound>(bounds: BoundingBox, capacity: number = 5, maxDepth: number = 8): QuadTree<T> {
+    return createQuadTreeNode(bounds, capacity, maxDepth);
 }
 export * from './schema';
