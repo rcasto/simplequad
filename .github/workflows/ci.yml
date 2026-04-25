@@ -1,4 +1,4 @@
-name: Node.js CI
+name: CI
 
 on:
   push:
@@ -7,13 +7,12 @@ on:
     branches: [master]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
-      - name: Use Node.js 24.x
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "24.x"
           cache: "npm"
