@@ -5,6 +5,16 @@ import { runQueryBenchmarks } from './query.bench';
 import { runRemoveBenchmarks } from './remove.bench';
 import { runGameloopBenchmarks } from './gameloop.bench';
 import { runStressBenchmarks } from './stress.bench';
+import { seededRandom } from './helpers';
+
+function parseSeed(): number {
+    const args = process.argv.slice(2);
+    for (let i = 0; i < args.length; i++) {
+        if (args[i].startsWith('--seed=')) return parseInt(args[i].slice('--seed='.length), 10);
+        if (args[i] === '--seed' && i + 1 < args.length) return parseInt(args[i + 1], 10);
+    }
+    return 42;
+}
 
 const outputLines: string[] = [];
 const originalLog = console.log.bind(console);
@@ -14,14 +24,18 @@ console.log = (...args: unknown[]) => {
     outputLines.push(line);
 };
 
+const seed = parseSeed();
+
 console.log('\nsimplequad benchmark suite');
 console.log(`  ${new Date().toISOString()}`);
+console.log(`  seed: ${seed}`);
 
-runInsertBenchmarks();
-runQueryBenchmarks();
-runRemoveBenchmarks();
-runGameloopBenchmarks();
-runStressBenchmarks();
+// Each runner gets its own seeded rng so sections are independently reproducible.
+runInsertBenchmarks(seededRandom(seed));
+runQueryBenchmarks(seededRandom(seed));
+runRemoveBenchmarks(seededRandom(seed));
+runGameloopBenchmarks(seededRandom(seed));
+runStressBenchmarks(seededRandom(seed));
 
 console.log('\n');
 

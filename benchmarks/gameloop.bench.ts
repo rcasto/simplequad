@@ -6,12 +6,12 @@ import { TREE_BOUNDS, makeRandomBoxes } from './helpers';
 //   each "frame" — clear the tree, re-add all objects, query each object
 // This is how most game devs use a quadtree when objects move every frame.
 
-export function runGameloopBenchmarks(): void {
+export function runGameloopBenchmarks(rng: () => number = Math.random): void {
     printHeader('GAME LOOP — simulated frame: clear → add all → query each object');
 
     printSectionHeader('Full frame cost at varying object counts');
     for (const n of [25, 50, 100, 200, 400, 750, 1000]) {
-        const objects = makeRandomBoxes(n);
+        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const tree = createQuadTree(TREE_BOUNDS, 5);
 
         const result = bench(`frame with n=${n} AABB objects`, () => {
@@ -27,7 +27,7 @@ export function runGameloopBenchmarks(): void {
     const budgetMs = 16.7;
     console.log(`\n  Target: <${budgetMs}ms per frame for 60fps`);
     for (const n of [25, 50, 100, 150, 200, 300, 400, 500, 750, 1000]) {
-        const objects = makeRandomBoxes(n);
+        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const tree = createQuadTree(TREE_BOUNDS, 5);
 
         const result = bench(`n=${n}`, () => {
@@ -38,12 +38,13 @@ export function runGameloopBenchmarks(): void {
 
         const withinBudget = result.avgMs <= budgetMs;
         const budgetUsed = ((result.avgMs / budgetMs) * 100).toFixed(1);
+        const fmtMs = (ms: number) => ms < 1 ? `${(ms * 1000).toFixed(0)}μs` : `${ms.toFixed(3)}ms`;
         const marker = withinBudget ? '✓' : '✗';
-        console.log(`  ${marker}  n=${String(n).padEnd(4)}  avg ${result.avgMs.toFixed(3)}ms   (${budgetUsed}% of 16.7ms frame budget)`);
+        console.log(`  ${marker}  n=${String(n).padEnd(4)}  avg ${result.avgMs.toFixed(3)}ms   p95 ${fmtMs(result.p95Ms)}   (${budgetUsed}% of 16.7ms frame budget)`);
     }
 
     printSectionHeader('Capacity effect on frame cost at n=100');
-    const objects100 = makeRandomBoxes(100);
+    const objects100 = makeRandomBoxes(100, TREE_BOUNDS, rng);
     for (const cap of [1, 2, 5, 10, 25]) {
         const tree = createQuadTree(TREE_BOUNDS, cap);
         const result = bench(`frame n=100, capacity=${cap}`, () => {
@@ -55,7 +56,7 @@ export function runGameloopBenchmarks(): void {
     }
 
     printSectionHeader('Rebuild-from-scratch vs clear+re-add at n=100');
-    const objects100b = makeRandomBoxes(100);
+    const objects100b = makeRandomBoxes(100, TREE_BOUNDS, rng);
     const existingTree = createQuadTree(TREE_BOUNDS, 5);
     objects100b.forEach(o => existingTree.add(o));
 

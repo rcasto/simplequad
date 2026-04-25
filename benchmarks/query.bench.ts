@@ -8,13 +8,13 @@ function buildTree(objects: Bound[], capacity = 5): QuadTree {
     return tree;
 }
 
-export function runQueryBenchmarks(): void {
+export function runQueryBenchmarks(rng: () => number = Math.random): void {
     printHeader('QUERY — time per query call at varying population and window sizes');
 
     printSectionHeader('Single object query vs tree population (small query window ~1% of area)');
     const smallWindow = makeBox(390, 290, 8, 6); // ~1% of 800x600
     for (const n of [50, 200, 500, 1000, 2000]) {
-        const objects = makeRandomBoxes(n);
+        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const tree = buildTree(objects);
         const result = bench(`query n=${n}, small window`, () => {
             tree.query(smallWindow);
@@ -23,7 +23,7 @@ export function runQueryBenchmarks(): void {
     }
 
     printSectionHeader('Query window size comparison at n=500');
-    const objects500 = makeRandomBoxes(500);
+    const objects500 = makeRandomBoxes(500, TREE_BOUNDS, rng);
     const tree500 = buildTree(objects500);
     const windows = [
         { label: 'tiny (0.5% area)', bounds: makeBox(395, 295, 4, 3) },
@@ -41,7 +41,7 @@ export function runQueryBenchmarks(): void {
 
     printSectionHeader('Query all objects against themselves (per-object query pattern)');
     for (const n of [50, 100, 200]) {
-        const objects = makeRandomBoxes(n);
+        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const tree = buildTree(objects);
         const result = bench(`query-each-against-tree n=${n}`, () => {
             for (let i = 0; i < n; i++) tree.query(objects[i]);
@@ -50,7 +50,7 @@ export function runQueryBenchmarks(): void {
     }
 
     printSectionHeader('Mixed shapes vs AABB-only at n=500');
-    const mixedObjects = makeRandomMixedBounds(500);
+    const mixedObjects = makeRandomMixedBounds(500, TREE_BOUNDS, rng);
     const mixedTree = buildTree(mixedObjects);
     const queryBound = makeBox(200, 150, 200, 150);
 

@@ -8,14 +8,14 @@ function buildTree(objects: Bound[], capacity = 5): QuadTree {
     return tree;
 }
 
-export function runRemoveBenchmarks(): void {
+export function runRemoveBenchmarks(rng: () => number = Math.random): void {
     printHeader('REMOVE — per-remove cost at varying tree sizes');
 
     printSectionHeader('Remove all objects one by one — cost per remove vs tree size');
     // Each iteration removes ONE object from a pre-built tree of size n.
     // We rebuild between iterations by adding the object back.
     for (const n of [50, 200, 500, 1000]) {
-        const objects = makeRandomBoxes(n);
+        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const tree = buildTree(objects);
         let removeIndex = 0;
 
@@ -30,21 +30,22 @@ export function runRemoveBenchmarks(): void {
 
     printSectionHeader('Remove all n objects sequentially — total cost scales with n²');
     for (const n of [50, 100, 200, 500]) {
-        const objects = makeRandomBoxes(n);
+        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const result = bench(`drain n=${n} objects from tree`, () => {
             const tree = buildTree(objects);
-            const order = shuffled(objects);
+            const order = shuffled(objects, rng);
             for (let i = 0; i < n; i++) tree.remove(order[i]);
         }, { iterations: 100, warmupIterations: 10 });
         printResult(result);
     }
 
     printSectionHeader('Remove cost vs capacity (affects collapse frequency)');
-    const objects200 = makeRandomBoxes(200);
+    const objects200 = makeRandomBoxes(200, TREE_BOUNDS, rng);
     for (const cap of [1, 5, 10, 50]) {
+        let removeIndex = 0;
         const result = bench(`remove 1 from n=200, capacity=${cap}`, () => {
             const tree = buildTree(objects200, cap);
-            const obj = objects200[Math.floor(Math.random() * 200)];
+            const obj = objects200[removeIndex++ % 200];
             tree.remove(obj);
         }, { iterations: 500, warmupIterations: 50 });
         printResult(result);

@@ -5,7 +5,7 @@ import { TREE_BOUNDS, makeBox, makeCircle, makePoint, makeRandomBoxes } from './
 // Stress tests covering pathological inputs and edge cases that the happy-path
 // benchmarks won't surface.
 
-export function runStressBenchmarks(): void {
+export function runStressBenchmarks(rng: () => number = Math.random): void {
     printHeader('STRESS — pathological inputs and edge cases');
 
     // All objects at the exact same (x, y).
@@ -51,7 +51,7 @@ export function runStressBenchmarks(): void {
     // Maximum tree depth: capacity=1 means every second unique-position object splits a node.
     // Tests how expensive insert becomes when the tree is maximally deep.
     printSectionHeader('Capacity=1 (maximum tree depth) vs capacity=5 at n=200');
-    const objects200 = makeRandomBoxes(200);
+    const objects200 = makeRandomBoxes(200, TREE_BOUNDS, rng);
     const cap1Result = bench('add 200 objects, capacity=1', () => {
         const tree = createQuadTree(TREE_BOUNDS, 1);
         for (let i = 0; i < 200; i++) tree.add(objects200[i]);
@@ -89,7 +89,7 @@ export function runStressBenchmarks(): void {
     // Mixed shape SAT overhead: circle-vs-box is more expensive than box-vs-box
     // because it requires the extra closestPoint computation.
     printSectionHeader('SAT overhead: box-vs-box vs circle-vs-box query');
-    const boxObjects = makeRandomBoxes(100);
+    const boxObjects = makeRandomBoxes(100, TREE_BOUNDS, rng);
     const circleObjects = Array.from({ length: 100 }, (_, i) =>
         makeCircle(50 + (i % 10) * 70, 50 + Math.floor(i / 10) * 50, 8)
     );
@@ -113,7 +113,7 @@ export function runStressBenchmarks(): void {
     // Rapid remove-all stress: exposes the O(n) collapse scan per remove
     printSectionHeader('Remove-all cost scaling — O(n²) expected due to collapse scan');
     for (const n of [25, 50, 100, 200]) {
-        const objects = makeRandomBoxes(n);
+        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const start = performance.now();
         const iters = 20;
         for (let iter = 0; iter < iters; iter++) {
