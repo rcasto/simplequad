@@ -84,6 +84,7 @@
       }
       #btn-theme:hover { border-color: var(--accent); }
     </style>
+    <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
   </head>
   <body>
     <canvas id="canvas" width="800" height="560"></canvas>
@@ -136,9 +137,12 @@
 
       // ── input ─────────────────────────────────────────────────────────────
       const themeBtn = document.getElementById("btn-theme");
+      themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀";
       themeBtn.addEventListener("click", () => {
         const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        const next = isLight ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("sq-theme", next);
         themeBtn.textContent = isLight ? "☀" : "☾";
       });
 

@@ -59,7 +59,9 @@
         align-items: center;
         padding: 48px 24px;
         min-height: 100vh;
-        transition: background 0.2s, color 0.2s;
+        transition:
+          background 0.2s,
+          color 0.2s;
       }
       header {
         display: flex;
@@ -86,7 +88,9 @@
         font-size: 16px;
         padding: 4px 8px;
         font-family: monospace;
-        transition: border-color 0.15s, color 0.15s;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
       }
       #btn-theme:hover {
         border-color: var(--accent);
@@ -116,7 +120,10 @@
         background: var(--pill-bg);
         color: var(--pill-text);
         cursor: pointer;
-        transition: border-color 0.15s, color 0.15s, background 0.15s;
+        transition:
+          border-color 0.15s,
+          color 0.15s,
+          background 0.15s;
       }
       .filter-pill:hover {
         border-color: var(--pill-hover-border);
@@ -150,7 +157,9 @@
         padding: 28px 24px;
         text-decoration: none;
         color: inherit;
-        transition: border-color 0.15s, transform 0.1s;
+        transition:
+          border-color 0.15s,
+          transform 0.1s;
       }
       a.card:hover {
         border-color: var(--accent);
@@ -190,6 +199,12 @@
         border: 1px solid var(--tag-border);
       }
     </style>
+    <script>
+      (function () {
+        var t = localStorage.getItem("sq-theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <header>
@@ -203,21 +218,23 @@
       <div class="filter-sep"></div>
       <button class="filter-pill" data-filter="game">game</button>
       <button class="filter-pill" data-filter="simulation">simulation</button>
-      <button class="filter-pill" data-filter="visualization">visualization</button>
+      <button class="filter-pill" data-filter="visualization">
+        visualization
+      </button>
       <div class="filter-sep"></div>
-      <button class="filter-pill" data-filter="circles">circles</button>
       <button class="filter-pill" data-filter="aabb">aabb</button>
       <button class="filter-pill" data-filter="mixed">mixed shapes</button>
       <div class="filter-sep"></div>
       <button class="filter-pill" data-filter="mtv">mtv</button>
-      <button class="filter-pill" data-filter="flocking">flocking</button>
       <button class="filter-pill" data-filter="physics">physics</button>
-      <button class="filter-pill" data-filter="dynamic">dynamic</button>
-      <button class="filter-pill" data-filter="ai">ai</button>
     </div>
 
     <div class="grid">
-      <a class="card" href="examples/hello-world/index.html" data-tags="visualization mixed mtv">
+      <a
+        class="card"
+        href="examples/hello-world/index.html"
+        data-tags="visualization mixed mtv"
+      >
         <div class="icon">🔍</div>
         <h2>Query Explorer</h2>
         <p>
@@ -229,11 +246,14 @@
           <span class="tag">visualization</span>
           <span class="tag">mixed shapes</span>
           <span class="tag">mtv</span>
-          <span class="tag">start here</span>
         </div>
       </a>
 
-      <a class="card" href="examples/platformer/index.html" data-tags="game aabb mtv">
+      <a
+        class="card"
+        href="examples/platformer/index.html"
+        data-tags="game aabb mtv"
+      >
         <div class="icon">🟧</div>
         <h2>Platformer</h2>
         <p>
@@ -248,7 +268,11 @@
         </div>
       </a>
 
-      <a class="card" href="examples/shooter/index.html" data-tags="game circles dynamic">
+      <a
+        class="card"
+        href="examples/shooter/index.html"
+        data-tags="game circles"
+      >
         <div class="icon">🔵</div>
         <h2>Top-down Shooter</h2>
         <p>
@@ -258,11 +282,15 @@
         <div class="tags">
           <span class="tag">game</span>
           <span class="tag">circles</span>
-          <span class="tag">dynamic</span>
+          <!-- <span class="tag">dynamic</span> -->
         </div>
       </a>
 
-      <a class="card" href="examples/breakout/index.html" data-tags="game circles aabb mtv">
+      <a
+        class="card"
+        href="examples/breakout/index.html"
+        data-tags="game circles aabb mtv"
+      >
         <div class="icon">🟦</div>
         <h2>Breakout</h2>
         <p>
@@ -278,7 +306,11 @@
         </div>
       </a>
 
-      <a class="card" href="examples/boids/index.html" data-tags="simulation circles flocking">
+      <a
+        class="card"
+        href="examples/boids/index.html"
+        data-tags="simulation circles"
+      >
         <div class="icon">🐦</div>
         <h2>Boids</h2>
         <p>
@@ -289,11 +321,14 @@
         <div class="tags">
           <span class="tag">simulation</span>
           <span class="tag">circles</span>
-          <span class="tag">flocking</span>
         </div>
       </a>
 
-      <a class="card" href="examples/gravity-sandbox/index.html" data-tags="simulation circles physics">
+      <a
+        class="card"
+        href="examples/gravity-sandbox/index.html"
+        data-tags="simulation circles physics"
+      >
         <div class="icon">✨</div>
         <h2>Gravity Sandbox</h2>
         <p>
@@ -308,7 +343,11 @@
         </div>
       </a>
 
-      <a class="card" href="examples/asteroid-field/index.html" data-tags="game circles dynamic">
+      <a
+        class="card"
+        href="examples/asteroid-field/index.html"
+        data-tags="game circles"
+      >
         <div class="icon">🪨</div>
         <h2>Asteroid Field</h2>
         <p>
@@ -319,49 +358,96 @@
         <div class="tags">
           <span class="tag">game</span>
           <span class="tag">circles</span>
-          <span class="tag">dynamic</span>
+          <!-- <span class="tag">dynamic</span> -->
         </div>
       </a>
 
-      <a class="card" href="examples/predator-prey/index.html" data-tags="simulation circles flocking ai">
+      <a
+        class="card"
+        href="examples/tower-defense/index.html"
+        data-tags="game circles"
+      >
+        <div class="icon">🗼</div>
+        <h2>Tower Defense</h2>
+        <p>
+          Place fixed towers to shoot enemies following a winding path. Each
+          tower queries a range circle every frame — demonstrating stationary
+          queriers against many path-following objects.
+        </p>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">circles</span>
+        </div>
+      </a>
+
+      <a
+        class="card"
+        href="examples/predator-prey/index.html"
+        data-tags="simulation circles"
+      >
         <div class="icon">🐾</div>
         <h2>Predator-Prey</h2>
         <p>
-          Prey flock and flee using spatial neighborhood queries. Predators
-          hunt via a wide search circle and eat on collision. The same tree
-          drives both behaviors every frame.
+          Prey flock and flee using spatial neighborhood queries. Predators hunt
+          via a wide search circle and eat on collision. The same tree drives
+          both behaviors every frame.
         </p>
         <div class="tags">
           <span class="tag">simulation</span>
           <span class="tag">circles</span>
-          <span class="tag">flocking</span>
-          <span class="tag">ai</span>
         </div>
       </a>
     </div>
 
     <script>
       const themeBtn = document.getElementById("btn-theme");
+      themeBtn.textContent =
+        document.documentElement.getAttribute("data-theme") === "light"
+          ? "☾"
+          : "☀";
       themeBtn.addEventListener("click", () => {
-        const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        const isLight =
+          document.documentElement.getAttribute("data-theme") === "light";
+        const next = isLight ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("sq-theme", next);
         themeBtn.textContent = isLight ? "☀" : "☾";
       });
 
       const pills = document.querySelectorAll(".filter-pill");
       const cards = document.querySelectorAll(".card");
 
-      pills.forEach(pill => {
+      function applyFilter(filter) {
+        pills.forEach((p) =>
+          p.classList.toggle("active", p.dataset.filter === filter),
+        );
+        cards.forEach((card) => {
+          const match =
+            filter === "all" || card.dataset.tags.split(" ").includes(filter);
+          card.classList.toggle("hidden", !match);
+        });
+      }
+
+      pills.forEach((pill) => {
         pill.addEventListener("click", () => {
-          pills.forEach(p => p.classList.remove("active"));
-          pill.classList.add("active");
           const filter = pill.dataset.filter;
-          cards.forEach(card => {
-            const match = filter === "all" || card.dataset.tags.split(" ").includes(filter);
-            card.classList.toggle("hidden", !match);
-          });
+          if (filter === "all") {
+            history.replaceState(null, "", location.pathname);
+          } else {
+            location.hash = filter;
+          }
+          applyFilter(filter);
         });
       });
+
+      function getHashFilter() {
+        const h = location.hash.slice(1);
+        return h && [...pills].some((p) => p.dataset.filter === h) ? h : "all";
+      }
+
+      window.addEventListener("hashchange", () => applyFilter(getHashFilter()));
+
+      applyFilter(getHashFilter());
     </script>
   </body>
 </html>

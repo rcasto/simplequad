@@ -85,33 +85,38 @@
       #touch-move {
         display: none;
         margin-top: 12px;
-        gap: 8px;
+        gap: 20px;
         align-items: center;
-        flex-wrap: wrap;
         justify-content: center;
       }
-      .move-btn {
-        width: 52px;
-        height: 52px;
+      #joystick-pad {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
         background: var(--btn-bg);
         border: 1px solid var(--btn-border);
-        border-radius: 8px;
-        color: var(--btn-text);
-        font-size: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        user-select: none;
-        -webkit-user-select: none;
+        position: relative;
         touch-action: none;
+        flex-shrink: 0;
+      }
+      #joystick-knob {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid var(--btn-border);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
       }
       #btn-fire-touch {
-        width: 64px;
-        height: 64px;
+        width: 80px;
+        height: 80px;
         background: rgba(124, 77, 255, 0.15);
         border: 1px solid rgba(124, 77, 255, 0.35);
-        border-radius: 8px;
+        border-radius: 50%;
         color: #a07cff;
         font-size: 13px;
         font-weight: bold;
@@ -122,12 +127,14 @@
         user-select: none;
         -webkit-user-select: none;
         touch-action: none;
+        flex-shrink: 0;
       }
       @media (hover: none), (max-width: 600px) {
         #controls { display: none; }
         #touch-move { display: flex; }
       }
     </style>
+    <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
   </head>
   <body>
     <canvas id="canvas" width="800" height="560"></canvas>
@@ -145,10 +152,9 @@
       &nbsp;|&nbsp; space to auto-aim + shoot
     </div>
     <div id="touch-move">
-      <button class="move-btn" id="btn-left">◀</button>
-      <button class="move-btn" id="btn-up">▲</button>
-      <button class="move-btn" id="btn-down">▼</button>
-      <button class="move-btn" id="btn-right">▶</button>
+      <div id="joystick-pad">
+        <div id="joystick-knob"></div>
+      </div>
       <button id="btn-fire-touch">FIRE</button>
     </div>
 
@@ -234,23 +240,46 @@
         else shoot(currentTs, pos.x, pos.y);
       }, { passive: false });
 
-      // On-screen movement buttons
-      function addMoveBtn(id, code) {
-        const btn = document.getElementById(id);
-        if (!btn) return;
-        btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[code] = true; }, { passive: false });
-        btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; }, { passive: false });
+      // Virtual joystick
+      const joystickPad = document.getElementById("joystick-pad");
+      const joystickKnob = document.getElementById("joystick-knob");
+      const JOYSTICK_MAX = 38;
+      let joystickActive = false;
+
+      function applyJoystick(touch) {
+        const rect = joystickPad.getBoundingClientRect();
+        const dx = touch.clientX - (rect.left + rect.width / 2);
+        const dy = touch.clientY - (rect.top + rect.height / 2);
+        const dist = Math.hypot(dx, dy) || 1;
+        const ratio = Math.min(dist, JOYSTICK_MAX) / dist;
+        const tx = dx * ratio;
+        const ty = dy * ratio;
+        joystickKnob.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+        const threshold = JOYSTICK_MAX * 0.3;
+        keys["ArrowLeft"]  = tx < -threshold;
+        keys["ArrowRight"] = tx >  threshold;
+        keys["ArrowUp"]    = ty < -threshold;
+        keys["ArrowDown"]  = ty >  threshold;
       }
-      addMoveBtn("btn-left", "ArrowLeft");
-      addMoveBtn("btn-right", "ArrowRight");
-      addMoveBtn("btn-up", "ArrowUp");
-      addMoveBtn("btn-down", "ArrowDown");
+
+      function resetJoystick() {
+        joystickKnob.style.transform = "translate(-50%, -50%)";
+        keys["ArrowLeft"] = keys["ArrowRight"] = keys["ArrowUp"] = keys["ArrowDown"] = false;
+      }
+
+      joystickPad.addEventListener("touchstart", (e) => { e.preventDefault(); joystickActive = true; applyJoystick(e.changedTouches[0]); }, { passive: false });
+      joystickPad.addEventListener("touchmove",  (e) => { e.preventDefault(); if (joystickActive) applyJoystick(e.changedTouches[0]); }, { passive: false });
+      joystickPad.addEventListener("touchend",   (e) => { e.preventDefault(); joystickActive = false; resetJoystick(); }, { passive: false });
+      joystickPad.addEventListener("touchcancel", () => { joystickActive = false; resetJoystick(); });
 
       // Theme toggle
       const themeBtn = document.getElementById("btn-theme");
+      themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀";
       themeBtn.addEventListener("click", () => {
         const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        const next = isLight ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("sq-theme", next);
         themeBtn.textContent = isLight ? "☀" : "☾";
       });
 

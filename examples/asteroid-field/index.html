@@ -122,6 +122,7 @@
         #touch-controls { display: flex; }
       }
     </style>
+    <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
   </head>
   <body>
     <canvas id="canvas" width="800" height="560"></canvas>
@@ -138,11 +139,8 @@
     </div>
     <div id="touch-controls">
       <div class="touch-row">
-        <button class="touch-btn" id="btn-left">↺</button>
         <button class="touch-btn" id="btn-thrust">▲</button>
         <button class="touch-btn" id="btn-right">↻</button>
-      </div>
-      <div class="touch-row">
         <button class="touch-btn" id="btn-fire">FIRE</button>
       </div>
     </div>
@@ -188,9 +186,12 @@
       let currentTs = 0;
 
       const themeBtn = document.getElementById("btn-theme");
+      themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀";
       themeBtn.addEventListener("click", () => {
         const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        const next = isLight ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("sq-theme", next);
         themeBtn.textContent = isLight ? "☀" : "☾";
       });
 
@@ -205,7 +206,6 @@
         btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; }, { passive: false });
         btn.addEventListener("touchcancel", () => { keys[code] = false; });
       }
-      addTouchBtn("btn-left",   "ArrowLeft");
       addTouchBtn("btn-right",  "ArrowRight");
       addTouchBtn("btn-thrust", "ArrowUp");
       addTouchBtn("btn-fire",   "Space");
