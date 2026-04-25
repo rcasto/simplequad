@@ -1,29 +1,52 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Asteroid Field</title>
     <style>
+      :root {
+        --bg: #060610;
+        --border: #1a1a3e;
+        --text: #eee;
+        --muted: #aaa;
+        --muted2: #555;
+        --accent: #7c4dff;
+        --btn-bg: rgba(255,255,255,0.06);
+        --btn-border: rgba(255,255,255,0.14);
+        --btn-text: #aaa;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --border: #c8c8e0;
+        --text: #1a1a2e;
+        --muted: #666;
+        --muted2: #999;
+        --accent: #5c2ddf;
+        --btn-bg: rgba(0,0,0,0.05);
+        --btn-border: rgba(0,0,0,0.15);
+        --btn-text: #555;
+      }
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       body {
-        background: #060610;
+        background: var(--bg);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
         font-family: monospace;
-        color: #eee;
+        color: var(--text);
         padding: 16px;
+        transition: background 0.2s, color 0.2s;
       }
       canvas {
         display: block;
-        border: 2px solid #1a1a3e;
+        border: 2px solid var(--border);
         width: min(800px, calc(100vw - 32px));
         aspect-ratio: 800 / 560;
         touch-action: none;
@@ -31,18 +54,32 @@
       #hud {
         margin-top: 8px;
         font-size: 13px;
-        color: #aaa;
+        color: var(--muted);
         display: flex;
         gap: 20px;
         flex-wrap: wrap;
         justify-content: center;
+        align-items: center;
       }
+      #hud b { color: var(--text); }
       #controls {
         margin-top: 4px;
         font-size: 12px;
-        color: #555;
+        color: var(--muted2);
         text-align: center;
       }
+      #btn-theme {
+        background: none;
+        border: 1px solid var(--btn-border);
+        border-radius: 4px;
+        color: var(--btn-text);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px 7px;
+        font-family: monospace;
+        transition: border-color 0.15s;
+      }
+      #btn-theme:hover { border-color: var(--accent); }
       #touch-controls {
         display: none;
         margin-top: 12px;
@@ -58,10 +95,10 @@
       .touch-btn {
         width: 56px;
         height: 56px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.14);
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
         border-radius: 10px;
-        color: #aaa;
+        color: var(--btn-text);
         font-size: 20px;
         display: flex;
         align-items: center;
@@ -94,6 +131,7 @@
       <span>asteroids: <b id="ast-count">0</b></span>
       <span>in tree: <b id="in-tree">0</b></span>
       <span>fps: <b id="fps">0</b></span>
+      <button id="btn-theme" title="toggle theme">☀</button>
     </div>
     <div id="controls">
       ← → to rotate &nbsp;|&nbsp; ↑ / W to thrust &nbsp;|&nbsp; Space to fire
@@ -148,6 +186,13 @@
       let respawnTimer = 0;
       let lastShot = -Infinity;
       let currentTs = 0;
+
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
 
       const keys = {};
       document.addEventListener("keydown", (e) => (keys[e.code] = true));

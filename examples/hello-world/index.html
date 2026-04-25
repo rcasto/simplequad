@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>simplequad — Query Explorer</title>
+    <style>
+      :root {
+        --bg: #080814;
+        --border: #1a1a3e;
+        --text: #eee;
+        --muted: #666;
+        --muted2: #3a3a5a;
+        --accent: #7c4dff;
+        --btn-bg: #10101e;
+        --btn-border: #2a2a4a;
+        --btn-text: #666;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --border: #c8c8e0;
+        --text: #1a1a2e;
+        --muted: #778;
+        --muted2: #aaa;
+        --accent: #5c2ddf;
+        --btn-bg: #eeeef8;
+        --btn-border: #c0c0d8;
+        --btn-text: #555;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+        color: var(--text);
+        padding: 16px;
+        transition: background 0.2s, color 0.2s;
+      }
+      canvas {
+        border: 2px solid var(--border);
+        display: block;
+        cursor: none;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 500;
+        touch-action: none;
+      }
+      #hud {
+        margin-top: 8px;
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #hud b {
+        color: var(--text);
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .swatch-box {
+        width: 11px;
+        height: 11px;
+        border: 1.5px solid #4488ff;
+      }
+      .swatch-circle {
+        width: 11px;
+        height: 11px;
+        border: 1.5px solid #44ccaa;
+        border-radius: 50%;
+      }
+      .swatch-point {
+        width: 10px;
+        height: 10px;
+        background: #ff8844;
+        transform: rotate(45deg);
+      }
+      #controls {
+        margin-top: 5px;
+        font-size: 12px;
+        color: var(--muted2);
+        text-align: center;
+      }
+      button {
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
+        color: var(--btn-text);
+        padding: 3px 10px;
+        font-family: monospace;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c" width="800" height="500"></canvas>
+    <div id="hud">
+      <div class="legend">
+        <div class="legend-item"><div class="swatch-box"></div>BoundingBox</div>
+        <div class="legend-item"><div class="swatch-circle"></div>Circle</div>
+        <div class="legend-item"><div class="swatch-point"></div>Point</div>
+      </div>
+      <span>hits: <b id="hits">0</b></span>
+      <span>fps: <b id="fps">0</b></span>
+      <button id="btn-tree">tree overlay</button>
+      <button id="btn-shape">query: box</button>
+      <button id="btn-theme" title="toggle theme">☀</button>
+    </div>
+    <div id="controls">move cursor over shapes · yellow arrows show MTV · points have no depth (MTV n/a)</div>
+
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById("c");
+      const ctx = canvas.getContext("2d");
+      const W = 800, H = 500;
+
+      // ── shapes ────────────────────────────────────────────────────────────
+      const shapes = [
+        { x: 55,  y: 95,  width: 140, height: 95  },
+        { x: 585, y: 60,  width: 130, height: 120 },
+        { x: 300, y: 310, width: 160, height: 100 },
+        { x: 192, y: 318, r: 70 },
+        { x: 512, y: 282, r: 58 },
+        { x: 672, y: 402, r: 46 },
+        { x: 400, y: 148 },
+        { x: 148, y: 435 },
+      ];
+
+      function isBox(s)    { return s.width !== undefined; }
+      function isCircle(s) { return s.r    !== undefined; }
+
+      function center(s) {
+        if (isBox(s)) return { x: s.x + s.width / 2, y: s.y + s.height / 2 };
+        return { x: s.x, y: s.y };
+      }
+
+      const tree = SimpleQuad.createQuadTree({ x: 0, y: 0, width: W, height: H });
+      for (const s of shapes) tree.add(s);
+
+      // ── state ─────────────────────────────────────────────────────────────
+      let mx = W / 2, my = H / 2;
+      let showTree    = false;
+      let circleQuery = false;
+      const QW = 110, QR = 62;
+
+      // ── fps tracking ──────────────────────────────────────────────────────
+      let lastTime = 0, frameCount = 0, fpsTime = 0;
+
+      // ── input ─────────────────────────────────────────────────────────────
+      function toCanvas(cx, cy) {
+        const r = canvas.getBoundingClientRect();
+        return {
+          x: (cx - r.left) * (W / r.width),
+          y: (cy - r.top)  * (H / r.height),
+        };
+      }
+      canvas.addEventListener("mousemove", e => {
+        const p = toCanvas(e.clientX, e.clientY);
+        mx = p.x; my = p.y;
+      });
+      canvas.addEventListener("touchstart", e => {
+        e.preventDefault();
+        const p = toCanvas(e.touches[0].clientX, e.touches[0].clientY);
+        mx = p.x; my = p.y;
+      }, { passive: false });
+      canvas.addEventListener("touchmove", e => {
+        e.preventDefault();
+        const p = toCanvas(e.touches[0].clientX, e.touches[0].clientY);
+        mx = p.x; my = p.y;
+      }, { passive: false });
+
+      document.getElementById("btn-tree").addEventListener("click", e => {
+        showTree = !showTree;
+        e.currentTarget.classList.toggle("on", showTree);
+      });
+      document.getElementById("btn-shape").addEventListener("click", e => {
+        circleQuery = !circleQuery;
+        e.currentTarget.textContent = circleQuery ? "query: circle" : "query: box";
+      });
+
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
+
+      // ── colors ────────────────────────────────────────────────────────────
+      const C_BOX    = "#4488ff";
+      const C_CIRCLE = "#44ccaa";
+      const C_POINT  = "#ff8844";
+      const C_HIT    = "#ffffff";
+      const C_MTV    = "#ffdd00";
+
+      // ── draw helpers ──────────────────────────────────────────────────────
+      function drawShape(s, color, hit) {
+        ctx.lineWidth = hit ? 2.5 : 1.5;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+
+        if (isBox(s)) {
+          ctx.globalAlpha = hit ? 0.22 : 0.08;
+          ctx.fillRect(s.x, s.y, s.width, s.height);
+          ctx.globalAlpha = 1;
+          ctx.strokeRect(s.x, s.y, s.width, s.height);
+        } else if (isCircle(s)) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.globalAlpha = hit ? 0.22 : 0.08;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+        } else {
+          const sz = hit ? 9 : 7;
+          ctx.beginPath();
+          ctx.moveTo(s.x,      s.y - sz);
+          ctx.lineTo(s.x + sz, s.y);
+          ctx.lineTo(s.x,      s.y + sz);
+          ctx.lineTo(s.x - sz, s.y);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawLabel(s, color, hit) {
+        const label = isBox(s) ? "BoundingBox" : isCircle(s) ? "Circle" : "Point";
+        const c = center(s);
+        const yOff = isBox(s) ? s.height / 2 + 15
+                   : isCircle(s) ? s.r + 15
+                   : 18;
+        ctx.fillStyle = hit ? "rgba(255,255,255,0.85)" : color + "66";
+        ctx.font = "11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(label, c.x, c.y + yOff);
+        // Points don't have geometric depth, so no MTV applies
+        if (!isBox(s) && !isCircle(s) && hit) {
+          ctx.fillStyle = "rgba(255,221,0,0.6)";
+          ctx.fillText("mtv: n/a", c.x, c.y + yOff + 14);
+        }
+      }
+
+      function drawArrow(cx, cy, dx, dy, len) {
+        const ex = cx + dx * len;
+        const ey = cy + dy * len;
+        ctx.strokeStyle = C_MTV;
+        ctx.fillStyle   = C_MTV;
+        ctx.lineWidth   = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        const a = Math.atan2(dy, dx);
+        const hw = 9;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - hw * Math.cos(a - 0.42), ey - hw * Math.sin(a - 0.42));
+        ctx.lineTo(ex - hw * Math.cos(a + 0.42), ey - hw * Math.sin(a + 0.42));
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function drawMtvLabel(cx, cy, dx, dy, len, mag) {
+        const lx = cx + dx * (len * 0.55);
+        const ly = cy + dy * (len * 0.55) - 8;
+        ctx.fillStyle = C_MTV + "cc";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(mag.toFixed(1) + "px", lx, ly);
+      }
+
+      function drawTreeNode(node) {
+        ctx.strokeRect(node.bounds.x, node.bounds.y, node.bounds.width, node.bounds.height);
+        for (const q of node.quadrants) drawTreeNode(q);
+      }
+
+      // ── frame loop ────────────────────────────────────────────────────────
+      function frame(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+        frameCount++;
+        fpsTime += dt;
+        if (fpsTime >= 500) {
+          document.getElementById("fps").textContent = Math.round(frameCount / (fpsTime / 1000));
+          frameCount = 0;
+          fpsTime = 0;
+        }
+
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#080814";
+        ctx.fillRect(0, 0, W, H);
+
+        if (showTree) {
+          ctx.strokeStyle = "rgba(124,77,255,0.2)";
+          ctx.lineWidth = 0.5;
+          drawTreeNode(tree);
+        }
+
+        const qb = circleQuery
+          ? { x: mx, y: my, r: QR }
+          : { x: mx - QW / 2, y: my - QW / 2, width: QW, height: QW };
+
+        const hits    = tree.query(qb);
+        const hitSet  = new Set(hits.map(h => h.object));
+        const hitMtv  = new Map(hits.map(h => [h.object, h.mtv]));
+
+        for (const s of shapes) {
+          if (hitSet.has(s)) continue;
+          const base = isBox(s) ? C_BOX : isCircle(s) ? C_CIRCLE : C_POINT;
+          drawShape(s, base, false);
+        }
+        for (const s of shapes) {
+          if (!hitSet.has(s)) continue;
+          drawShape(s, C_HIT, true);
+        }
+
+        // MTV arrows — only for shapes that have geometric extent (box, circle)
+        for (const s of shapes) {
+          if (!hitSet.has(s)) continue;
+          if (!isBox(s) && !isCircle(s)) continue;
+          const mtv = hitMtv.get(s);
+          const c   = center(s);
+          const len = Math.max(40, mtv.magnitude * 2.5);
+          drawArrow(c.x, c.y, mtv.direction.x, mtv.direction.y, len);
+          drawMtvLabel(c.x, c.y, mtv.direction.x, mtv.direction.y, len, mtv.magnitude);
+        }
+
+        for (const s of shapes) {
+          const base = isBox(s) ? C_BOX : isCircle(s) ? C_CIRCLE : C_POINT;
+          drawLabel(s, base, hitSet.has(s));
+        }
+
+        // query window
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth   = 1.5;
+        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+        ctx.fillStyle   = "rgba(255,255,255,0.03)";
+        if (circleQuery) {
+          ctx.beginPath();
+          ctx.arc(qb.x, qb.y, qb.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillRect(qb.x, qb.y, qb.width, qb.height);
+          ctx.strokeRect(qb.x, qb.y, qb.width, qb.height);
+        }
+        ctx.restore();
+
+        // cursor dot
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.beginPath();
+        ctx.arc(mx, my, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        document.getElementById("hits").textContent = hits.length;
+
+        requestAnimationFrame(frame);
+      }
+
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

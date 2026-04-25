@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>simplequad — Predator-Prey</title>
+    <style>
+      :root {
+        --bg: #050510;
+        --border: #1a1a3e;
+        --text: #eee;
+        --muted: #666;
+        --muted2: #444;
+        --muted3: #333;
+        --accent: #7c4dff;
+        --btn-bg: #10101e;
+        --btn-border: #2a2a4a;
+        --btn-text: #666;
+        --label-color: #777;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --border: #c8c8e0;
+        --text: #1a1a2e;
+        --muted: #778;
+        --muted2: #aaa;
+        --muted3: #bbb;
+        --accent: #5c2ddf;
+        --btn-bg: #eeeef8;
+        --btn-border: #c0c0d8;
+        --btn-text: #555;
+        --label-color: #999;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+        color: var(--text);
+        padding: 16px;
+        transition: background 0.2s, color 0.2s;
+      }
+      #game {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        width: 100%;
+        max-width: 1040px;
+        justify-content: center;
+      }
+      canvas {
+        display: block;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 520;
+      }
+      #sidebar {
+        display: flex;
+        flex-direction: column;
+        min-width: 180px;
+      }
+      #hud {
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #hud b {
+        color: var(--text);
+      }
+      #hud .label {
+        font-size: 11px;
+        color: var(--muted2);
+        margin-top: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .prey-color  { color: #44ff88; }
+      .pred-color  { color: #ff5544; }
+      #toggles {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      button {
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
+        color: var(--btn-text);
+        padding: 4px 10px;
+        font-family: monospace;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      #controls {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--muted3);
+        line-height: 1.6;
+      }
+      label {
+        font-size: 12px;
+        color: var(--label-color);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        width: 90px;
+      }
+      @media (max-width: 900px) {
+        #game { flex-direction: column; align-items: center; }
+        #sidebar { flex-direction: row; flex-wrap: wrap; gap: 16px; min-width: unset; }
+        #hud { flex-direction: row; flex-wrap: wrap; gap: 16px; }
+        #hud .label { display: none; }
+        #toggles { flex-direction: row; flex-wrap: wrap; margin-top: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game">
+      <canvas id="c" width="800" height="520"></canvas>
+      <div id="sidebar">
+        <div id="hud">
+          <div class="label">population</div>
+          <div>prey &nbsp;<b id="prey-count" class="prey-color">0</b></div>
+          <div>predators &nbsp;<b id="pred-count" class="pred-color">0</b></div>
+          <div class="label">stats</div>
+          <div>eaten &nbsp;<b id="eaten">0</b></div>
+          <div>queries/frame &nbsp;<b id="qpf">0</b></div>
+          <div>fps &nbsp;<b id="fps">0</b></div>
+        </div>
+        <div id="toggles">
+          <button id="btn-hunt">hunt radius</button>
+          <button id="btn-tree">tree overlay</button>
+          <button id="btn-theme" title="toggle theme">☀</button>
+        </div>
+        <div style="margin-top: 12px;">
+          <label>
+            pred speed
+            <input type="range" id="pred-speed" min="0.8" max="4.0" step="0.1" value="2.0" />
+            <b id="pred-speed-val">2.0</b>
+          </label>
+        </div>
+        <div id="controls">
+          Prey flock and flee.<br>
+          Predators hunt and eat<br>
+          on collision. Starved<br>
+          predators die and respawn<br>
+          once prey recovers.<br>
+          Same tree, two roles.
+        </div>
+      </div>
+    </div>
+
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById("c");
+      const ctx = canvas.getContext("2d");
+      const W = 800, H = 520;
+
+      // ── constants ─────────────────────────────────────────────────────────
+      const PREY_R         = 6;
+      const PRED_R         = 14;
+      const PREY_MAX_SPEED = 2.3;
+      let   PRED_MAX_SPEED = 2.0;
+      const PERCEPTION_R   = 68;  // prey sees other prey
+      const FLEE_R         = 105; // prey detects predators
+      const SEP_DIST       = 20;  // prey separation threshold
+      const HUNT_R         = 180; // predator detects prey
+      const PRED_SEP_R     = 60;  // predators space out
+      const HUNGER_MAX     = 500; // frames before predator dies
+      const MAX_PREY       = 110;
+      const MIN_PREY       = 8;
+      const REPRODUCE_RATE = 0.0003; // chance per prey per frame
+
+      // ── factories ─────────────────────────────────────────────────────────
+      function createPrey(x, y) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 1.4 + Math.random() * 0.8;
+        return { x, y, r: PREY_R, vx: Math.cos(a) * s, vy: Math.sin(a) * s, type: "prey" };
+      }
+
+      function createPredator(x, y) {
+        const a = Math.random() * Math.PI * 2;
+        return { x, y, r: PRED_R, vx: Math.cos(a) * 1.2, vy: Math.sin(a) * 1.2, type: "predator", hunger: HUNGER_MAX };
+      }
+
+      // ── populations ───────────────────────────────────────────────────────
+      let prey      = Array.from({ length: 55 }, () => createPrey(Math.random() * W, Math.random() * H));
+      let predators = Array.from({ length: 3  }, () => createPredator(Math.random() * W, Math.random() * H));
+
+      // ── tree ──────────────────────────────────────────────────────────────
+      const tree = SimpleQuad.createQuadTree({ x: 0, y: 0, width: W, height: H });
+
+      // ── state ─────────────────────────────────────────────────────────────
+      let showHunt    = false;
+      let showTree    = false;
+      let eatenTotal  = 0;
+      let qpf         = 0; // queries per frame counter
+      let predRespawnTimer = 0;
+
+      document.getElementById("btn-hunt").addEventListener("click", e => {
+        showHunt = !showHunt;
+        e.currentTarget.classList.toggle("on", showHunt);
+      });
+      document.getElementById("btn-tree").addEventListener("click", e => {
+        showTree = !showTree;
+        e.currentTarget.classList.toggle("on", showTree);
+      });
+
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
+
+      const predSpeedSlider = document.getElementById("pred-speed");
+      const predSpeedVal    = document.getElementById("pred-speed-val");
+      predSpeedSlider.addEventListener("input", e => {
+        PRED_MAX_SPEED = parseFloat(e.target.value);
+        predSpeedVal.textContent = PRED_MAX_SPEED.toFixed(1);
+      });
+
+      // ── helpers ───────────────────────────────────────────────────────────
+      function clamp(vx, vy, max) {
+        const s = Math.hypot(vx, vy);
+        return s > max ? { vx: vx / s * max, vy: vy / s * max } : { vx, vy };
+      }
+
+      function wrap(agent, r) {
+        if (agent.x < -r)    agent.x += W + r * 2;
+        if (agent.x > W + r) agent.x -= W + r * 2;
+        if (agent.y < -r)    agent.y += H + r * 2;
+        if (agent.y > H + r) agent.y -= H + r * 2;
+      }
+
+      // ── update ────────────────────────────────────────────────────────────
+      function updatePrey(p) {
+        // Single query covers both flocking (PERCEPTION_R) and flee (FLEE_R) ranges.
+        const neighbors = tree
+          .query({ x: p.x, y: p.y, r: Math.max(PERCEPTION_R, FLEE_R) })
+          .map(r => r.object)
+          .filter(o => o !== p);
+        qpf++;
+
+        let sx = 0, sy = 0;  // separation
+        let ax = 0, ay = 0;  // alignment
+        let cx = 0, cy = 0, cn = 0; // cohesion
+        let fx = 0, fy = 0;  // flee
+
+        for (const o of neighbors) {
+          const dx = p.x - o.x;
+          const dy = p.y - o.y;
+          const d  = Math.hypot(dx, dy) || 0.01;
+
+          if (o.type === "predator") {
+            if (d < FLEE_R) {
+              const str = (FLEE_R - d) / FLEE_R;
+              fx += (dx / d) * str * 4;
+              fy += (dy / d) * str * 4;
+            }
+          } else {
+            if (d < SEP_DIST) {
+              sx += dx / (d * d);
+              sy += dy / (d * d);
+            }
+            if (d < PERCEPTION_R) {
+              ax += o.vx; ay += o.vy;
+              cx += o.x;  cy += o.y; cn++;
+            }
+          }
+        }
+
+        let tvx = p.vx, tvy = p.vy;
+        tvx += sx * 1.4 + fy * 0; tvy += sy * 1.4;
+        tvx += fx;                 tvy += fy;
+        if (cn > 0) {
+          tvx += (ax / cn) * 0.25;
+          tvy += (ay / cn) * 0.25;
+          const toCx = cx / cn - p.x;
+          const toCy = cy / cn - p.y;
+          const td = Math.hypot(toCx, toCy) || 1;
+          tvx += (toCx / td) * 0.3;
+          tvy += (toCy / td) * 0.3;
+        }
+
+        p.vx = p.vx * 0.84 + tvx * 0.16;
+        p.vy = p.vy * 0.84 + tvy * 0.16;
+
+        const clamped = clamp(p.vx, p.vy, PREY_MAX_SPEED);
+        p.vx = clamped.vx; p.vy = clamped.vy;
+
+        // nudge stalled agents
+        if (Math.hypot(p.vx, p.vy) < 0.4) {
+          const a = Math.random() * Math.PI * 2;
+          p.vx += Math.cos(a) * 0.4;
+          p.vy += Math.sin(a) * 0.4;
+        }
+
+        p.x += p.vx; p.y += p.vy;
+        wrap(p, PREY_R);
+      }
+
+      const toEat = new Set();
+
+      function updatePredator(pred) {
+        pred.hunger--;
+
+        // Eat: query using predator's own circle — any overlapping prey is caught.
+        const eatHits = tree.query(pred);
+        qpf++;
+        for (const { object: o } of eatHits) {
+          if (o.type === "prey") toEat.add(o);
+        }
+        if (toEat.size > 0) pred.hunger = HUNGER_MAX;
+
+        // Hunt: large search circle to steer toward nearest prey cluster.
+        const huntHits = tree
+          .query({ x: pred.x, y: pred.y, r: HUNT_R })
+          .map(r => r.object)
+          .filter(o => o.type === "prey");
+        qpf++;
+
+        if (huntHits.length > 0) {
+          // steer toward the centroid of visible prey
+          let tx = 0, ty = 0;
+          for (const o of huntHits) { tx += o.x; ty += o.y; }
+          tx /= huntHits.length; ty /= huntHits.length;
+          const dx = tx - pred.x, dy = ty - pred.y;
+          const d  = Math.hypot(dx, dy) || 1;
+          pred.vx = pred.vx * 0.92 + (dx / d) * PRED_MAX_SPEED * 0.08;
+          pred.vy = pred.vy * 0.92 + (dy / d) * PRED_MAX_SPEED * 0.08;
+        } else {
+          // wander
+          pred.vx += (Math.random() - 0.5) * 0.35;
+          pred.vy += (Math.random() - 0.5) * 0.35;
+        }
+
+        // predators repel each other
+        const predNeighbors = tree
+          .query({ x: pred.x, y: pred.y, r: PRED_SEP_R })
+          .map(r => r.object)
+          .filter(o => o.type === "predator" && o !== pred);
+        qpf++;
+        for (const o of predNeighbors) {
+          const dx = pred.x - o.x, dy = pred.y - o.y;
+          const d  = Math.hypot(dx, dy) || 1;
+          pred.vx += (dx / d) * 0.6;
+          pred.vy += (dy / d) * 0.6;
+        }
+
+        const clamped = clamp(pred.vx, pred.vy, PRED_MAX_SPEED);
+        pred.vx = clamped.vx; pred.vy = clamped.vy;
+
+        pred.x += pred.vx; pred.y += pred.vy;
+        wrap(pred, PRED_R);
+      }
+
+      // ── tree overlay helper ───────────────────────────────────────────────
+      function drawTreeNode(node) {
+        ctx.strokeRect(node.bounds.x, node.bounds.y, node.bounds.width, node.bounds.height);
+        for (const q of node.quadrants) drawTreeNode(q);
+      }
+
+      // ── main loop ─────────────────────────────────────────────────────────
+      let frameQpf = 0;
+      let lastTime = 0, frameCount = 0, fpsTime = 0;
+
+      function frame(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+        frameCount++;
+        fpsTime += dt;
+        if (fpsTime >= 500) {
+          document.getElementById("fps").textContent = Math.round(frameCount / (fpsTime / 1000));
+          frameCount = 0;
+          fpsTime = 0;
+        }
+
+        qpf = 0;
+
+        // rebuild tree
+        tree.clear();
+        for (const p of prey)      tree.add(p);
+        for (const p of predators) tree.add(p);
+
+        // update
+        toEat.clear();
+        for (const p of prey)      updatePrey(p);
+        for (const p of predators) updatePredator(p);
+
+        // remove eaten prey
+        if (toEat.size > 0) {
+          eatenTotal += toEat.size;
+          prey = prey.filter(p => !toEat.has(p));
+        }
+
+        // remove starved predators
+        predators = predators.filter(p => p.hunger > 0);
+
+        // prey reproduction
+        if (prey.length < MAX_PREY && prey.length > 0) {
+          const spawns = Math.floor(Math.random() < REPRODUCE_RATE * prey.length ? 1 : 0);
+          for (let i = 0; i < spawns; i++) {
+            const parent = prey[Math.floor(Math.random() * prey.length)];
+            prey.push(createPrey(
+              parent.x + (Math.random() - 0.5) * 16,
+              parent.y + (Math.random() - 0.5) * 16,
+            ));
+          }
+        }
+
+        // respawn prey if near extinction
+        if (prey.length < MIN_PREY) {
+          for (let i = 0; i < 12; i++) {
+            prey.push(createPrey(Math.random() * W, Math.random() * H));
+          }
+        }
+
+        // respawn a predator if all gone and enough prey exists
+        if (predators.length === 0) {
+          predRespawnTimer++;
+          if (predRespawnTimer > 180 && prey.length > 20) {
+            predators.push(createPredator(Math.random() * W, Math.random() * H));
+            predRespawnTimer = 0;
+          }
+        } else {
+          predRespawnTimer = 0;
+        }
+
+        frameQpf = qpf;
+
+        // ── draw ─────────────────────────────────────────────────────────
+        ctx.fillStyle = "rgba(5,5,16,0.28)";
+        ctx.fillRect(0, 0, W, H);
+
+        if (showTree) {
+          ctx.strokeStyle = "rgba(124,77,255,0.18)";
+          ctx.lineWidth = 0.5;
+          drawTreeNode(tree);
+        }
+
+        // predator hunt radius rings
+        if (showHunt) {
+          ctx.strokeStyle = "rgba(255,85,68,0.12)";
+          ctx.lineWidth = 1;
+          for (const p of predators) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, HUNT_R, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        // prey
+        for (const p of prey) {
+          const hunger = 1; // prey don't have hunger
+          ctx.fillStyle = "#44ff88";
+          ctx.globalAlpha = 0.85;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, PREY_R, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        // predators
+        for (const p of predators) {
+          const vitality = p.hunger / HUNGER_MAX;
+          // fade toward dark red as hunger drops
+          const r = Math.round(255 * (0.35 + 0.65 * vitality));
+          const g = Math.round(60  * vitality);
+          ctx.fillStyle = `rgb(${r},${g},60)`;
+          ctx.strokeStyle = `rgba(255,100,80,${0.3 + vitality * 0.5})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, PRED_R, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // HUD
+        document.getElementById("prey-count").textContent = prey.length;
+        document.getElementById("pred-count").textContent = predators.length;
+        document.getElementById("eaten").textContent      = eatenTotal;
+        document.getElementById("qpf").textContent        = frameQpf;
+
+        requestAnimationFrame(frame);
+      }
+
+      // initial clear before first frame
+      ctx.fillStyle = "#050510";
+      ctx.fillRect(0, 0, W, H);
+
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

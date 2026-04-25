@@ -1,28 +1,51 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Platformer</title>
     <style>
+      :root {
+        --bg: #1a1a2e;
+        --border: #444;
+        --text: #eee;
+        --muted: #aaa;
+        --muted2: #666;
+        --accent: #7c4dff;
+        --btn-bg: rgba(255,255,255,0.07);
+        --btn-border: rgba(255,255,255,0.18);
+        --btn-text: #bbb;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --border: #c8c8e0;
+        --text: #1a1a2e;
+        --muted: #666;
+        --muted2: #999;
+        --accent: #5c2ddf;
+        --btn-bg: rgba(0,0,0,0.05);
+        --btn-border: rgba(0,0,0,0.15);
+        --btn-text: #555;
+      }
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       body {
-        background: #1a1a2e;
+        background: var(--bg);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
         font-family: monospace;
-        color: #eee;
+        color: var(--text);
         padding: 16px;
+        transition: background 0.2s, color 0.2s;
       }
       canvas {
-        border: 2px solid #444;
+        border: 2px solid var(--border);
         display: block;
         width: min(800px, calc(100vw - 32px));
         aspect-ratio: 800 / 500;
@@ -30,14 +53,31 @@
       #hud {
         margin-top: 8px;
         font-size: 13px;
-        color: #aaa;
+        color: var(--muted);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       #controls {
         margin-top: 6px;
         font-size: 12px;
-        color: #666;
+        color: var(--muted2);
         text-align: center;
       }
+      #btn-theme {
+        background: none;
+        border: 1px solid var(--btn-border);
+        border-radius: 4px;
+        color: var(--btn-text);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px 7px;
+        font-family: monospace;
+        transition: border-color 0.15s;
+      }
+      #btn-theme:hover { border-color: var(--accent); }
       /* On-screen touch controls */
       #touch-controls {
         display: none;
@@ -49,10 +89,10 @@
       .touch-btn {
         width: 60px;
         height: 60px;
-        background: rgba(255,255,255,0.07);
-        border: 1px solid rgba(255,255,255,0.18);
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
         border-radius: 10px;
-        color: #bbb;
+        color: var(--btn-text);
         font-size: 22px;
         display: flex;
         align-items: center;
@@ -77,8 +117,9 @@
   <body>
     <canvas id="canvas" width="800" height="500"></canvas>
     <div id="hud">
-      objects in tree: <span id="count">0</span> &nbsp;|&nbsp; fps:
-      <span id="fps">0</span>
+      <span>objects in tree: <b id="count">0</b></span>
+      <span>fps: <b id="fps">0</b></span>
+      <button id="btn-theme" title="toggle theme">☀</button>
     </div>
     <div id="controls">
       Arrow keys / WASD to move &nbsp;|&nbsp; Up / W / Space to jump
@@ -145,6 +186,13 @@
         onGround: false,
         color: "#e8a838",
       };
+
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
 
       const keys = {};
       document.addEventListener("keydown", (e) => (keys[e.code] = true));

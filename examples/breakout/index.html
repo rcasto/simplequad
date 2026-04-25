@@ -1,51 +1,88 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Breakout</title>
     <style>
+      :root {
+        --bg: #0a0a18;
+        --border: #1a1a3e;
+        --text: #eee;
+        --muted: #666;
+        --muted2: #444;
+        --accent: #7c4dff;
+        --btn-bg: none;
+        --btn-border: #2a2a4a;
+        --btn-text: #666;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --border: #c8c8e0;
+        --text: #1a1a2e;
+        --muted: #778;
+        --muted2: #aaa;
+        --accent: #5c2ddf;
+        --btn-bg: none;
+        --btn-border: #c0c0d8;
+        --btn-text: #666;
+      }
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       body {
-        background: #0a0a18;
+        background: var(--bg);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
         font-family: monospace;
-        color: #eee;
+        color: var(--text);
+        padding: 16px;
+        transition: background 0.2s, color 0.2s;
       }
       canvas {
         display: block;
-        border: 2px solid #1a1a3e;
+        border: 2px solid var(--border);
         cursor: none;
         width: min(800px, calc(100vw - 32px));
         aspect-ratio: 800 / 560;
         touch-action: none;
       }
-      body {
-        padding: 16px;
-      }
       #hud {
         margin-top: 8px;
         font-size: 13px;
-        color: #666;
+        color: var(--muted);
         display: flex;
         gap: 24px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
       }
       #hud b {
-        color: #aaa;
+        color: var(--text);
       }
       #controls {
         margin-top: 4px;
         font-size: 12px;
-        color: #444;
+        color: var(--muted2);
+        text-align: center;
       }
+      #btn-theme {
+        background: none;
+        border: 1px solid var(--btn-border);
+        border-radius: 4px;
+        color: var(--btn-text);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px 7px;
+        font-family: monospace;
+        transition: border-color 0.15s;
+      }
+      #btn-theme:hover { border-color: var(--accent); }
     </style>
   </head>
   <body>
@@ -56,6 +93,7 @@
       <span>lives: <b id="lives">♥ ♥ ♥</b></span>
       <span>bricks in tree: <b id="inTree">0</b></span>
       <span>fps: <b id="fps">0</b></span>
+      <button id="btn-theme" title="toggle theme">☀</button>
     </div>
     <div id="controls">
       mouse or A / D / arrows to move paddle &nbsp;|&nbsp; space or click to launch
@@ -97,6 +135,13 @@
       let cursorX = W / 2;
 
       // ── input ─────────────────────────────────────────────────────────────
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
+
       const keys = {};
       function getCanvasX(clientX) {
         const rect = canvas.getBoundingClientRect();

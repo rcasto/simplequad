@@ -1,28 +1,53 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Gravity Sandbox</title>
     <style>
+      :root {
+        --bg: #050510;
+        --border: #1a1a3e;
+        --text: #eee;
+        --muted: #666;
+        --muted2: #444;
+        --accent: #7c4dff;
+        --btn-bg: #1a1a3e;
+        --btn-border: #7c4dff44;
+        --btn-text: #7c4dff;
+        --label-color: #888;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --border: #c8c8e0;
+        --text: #1a1a2e;
+        --muted: #778;
+        --muted2: #aaa;
+        --accent: #5c2ddf;
+        --btn-bg: #ece8ff;
+        --btn-border: #c5b8ff;
+        --btn-text: #5c2ddf;
+        --label-color: #778;
+      }
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       body {
-        background: #050510;
+        background: var(--bg);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
         font-family: monospace;
-        color: #eee;
+        color: var(--text);
         padding: 16px;
+        transition: background 0.2s, color 0.2s;
       }
       canvas {
-        border: 2px solid #1a1a3e;
+        border: 2px solid var(--border);
         display: block;
         cursor: crosshair;
         width: min(800px, calc(100vw - 32px));
@@ -32,34 +57,36 @@
       #hud {
         margin-top: 8px;
         font-size: 13px;
-        color: #666;
+        color: var(--muted);
         display: flex;
         gap: 16px;
         flex-wrap: wrap;
         justify-content: center;
+        align-items: center;
       }
+      #hud b { color: var(--text); }
       #controls {
         margin-top: 4px;
         font-size: 12px;
-        color: #444;
+        color: var(--muted2);
         text-align: center;
       }
       label {
-        color: #888;
+        color: var(--label-color);
       }
       input[type="range"] {
         vertical-align: middle;
         width: 90px;
-        accent-color: #7c4dff;
+        accent-color: var(--accent);
       }
       #attract-btn {
         display: none;
         margin-top: 10px;
         padding: 10px 24px;
-        background: #1a1a3e;
-        border: 1px solid #7c4dff44;
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
         border-radius: 6px;
-        color: #7c4dff;
+        color: var(--btn-text);
         font-family: monospace;
         font-size: 13px;
         cursor: pointer;
@@ -103,6 +130,7 @@
             step="0.001"
             value="0.985" /></label
       ></span>
+      <button id="btn-theme" style="background:none;border:1px solid var(--btn-border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 7px;font-family:monospace;" title="toggle theme">☀</button>
     </div>
     <div id="controls">
       tap / click to spawn &nbsp;|&nbsp; right-click to attract &nbsp;|&nbsp; sliders adjust physics
@@ -150,6 +178,13 @@
           y: (clientY - r.top) * (H / r.height),
         };
       }
+
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
 
       document.getElementById("grav").addEventListener("input", (e) => {
         gravityY = parseFloat(e.target.value);

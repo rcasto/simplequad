@@ -1,11 +1,11 @@
 # simplequad
 
-A TypeScript quadtree for 2D collision detection. Bundles spatial partitioning, SAT intersection testing, and minimum translation vector (MTV) output in a single zero-dependency package.
+Most spatial indexers return candidates — simplequad returns results. One `query()` call gives you the colliding objects *and* the overlap vector to push them apart. No second library, no glue code.
+
+Bundles quadtree spatial partitioning, SAT intersection testing, and minimum translation vector (MTV) output in a single zero-dependency TypeScript package. Supports `BoundingBox`, `Circle`, and `Point`, freely mixed. It detects and measures collisions — resolution is up to you.
 
 ![simplequad](./simplequad.gif)  
-[Interactive playground](https://rcasto.github.io/simplequad-playground/)
-
-**Note:** This library detects collisions and returns overlap vectors. It does not resolve or simulate them.
+[Examples →](https://rcasto.github.io/simplequad/)
 
 ---
 
@@ -164,10 +164,18 @@ for (const { mtv } of hits) {
 
 ## Examples
 
-- [simplequad with monster (above example) — CodePen](https://codepen.io/rcasto/pen/JgPjVm?editors=0012)
-- [simplequad with static circles — CodePen](https://codepen.io/rcasto/full/EqYxWw)
-- [simplequad with moving circles — CodePen](https://codepen.io/rcasto/full/wVGGzV)
-- [simplequad with images — GitHub Page](https://rcasto.github.io/simplequad-playground/)
+Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequad/)**
+
+| Example | What it shows |
+|---------|---------------|
+| [Query Explorer](examples/hello-world/index.html) | All three shape types, live query window, MTV arrows drawn — start here |
+| [Platformer](examples/platformer/index.html) | AABB collision and MTV resolution — player stands on platforms and collects coins |
+| [Top-down Shooter](examples/shooter/index.html) | Circle queries across escalating enemy waves, 100–200 dynamic objects |
+| [Breakout](examples/breakout/index.html) | Mixed shapes — circle ball vs. AABB bricks, MTV drives push-out and reflection angle |
+| [Boids](examples/boids/index.html) | 150 flocking agents querying spatial neighborhoods every frame; toggle tree overlay |
+| [Gravity Sandbox](examples/gravity-sandbox/index.html) | Spawn colliding blobs with real-time gravity and drag controls |
+| [Asteroid Field](examples/asteroid-field/index.html) | Split mechanic — rocks fragment on impact, mixed-size circle queries grow each frame |
+| [Predator-Prey](examples/predator-prey/index.html) | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles |
 
 ---
 

@@ -1,58 +1,163 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>simplequad — Examples</title>
     <style>
+      :root {
+        --bg: #0d0d1a;
+        --surface: #14142a;
+        --border: #2a2a4a;
+        --text: #eee;
+        --muted: #777;
+        --muted2: #555;
+        --accent: #7c4dff;
+        --tag-bg: #7c4dff22;
+        --tag-text: #a07cff;
+        --tag-border: #7c4dff44;
+        --tag-active-bg: #7c4dff;
+        --tag-active-text: #fff;
+        --pill-bg: transparent;
+        --pill-border: #2a2a4a;
+        --pill-text: #666;
+        --pill-hover-border: #7c4dff;
+        --pill-active-bg: #7c4dff;
+        --pill-active-text: #fff;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --surface: #ffffff;
+        --border: #d0d0e8;
+        --text: #1a1a2e;
+        --muted: #666;
+        --muted2: #999;
+        --accent: #5c2ddf;
+        --tag-bg: #ece8ff;
+        --tag-text: #5c2ddf;
+        --tag-border: #c5b8ff;
+        --tag-active-bg: #5c2ddf;
+        --tag-active-text: #fff;
+        --pill-bg: transparent;
+        --pill-border: #c8c8e0;
+        --pill-text: #888;
+        --pill-hover-border: #5c2ddf;
+        --pill-active-bg: #5c2ddf;
+        --pill-active-text: #fff;
+      }
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       body {
-        background: #0d0d1a;
+        background: var(--bg);
         font-family: monospace;
-        color: #eee;
+        color: var(--text);
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 48px 24px;
         min-height: 100vh;
+        transition: background 0.2s, color 0.2s;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 8px;
+        position: relative;
+        width: 100%;
+        max-width: 880px;
+        justify-content: center;
       }
       h1 {
         font-size: 28px;
-        color: #7c4dff;
-        margin-bottom: 8px;
+        color: var(--accent);
+      }
+      #btn-theme {
+        position: absolute;
+        right: 0;
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px 8px;
+        font-family: monospace;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      #btn-theme:hover {
+        border-color: var(--accent);
+        color: var(--text);
       }
       p.sub {
-        color: #666;
+        color: var(--muted);
         font-size: 14px;
-        margin-bottom: 48px;
+        margin-bottom: 24px;
       }
+      /* ── filter bar ─────────────────────────────────────────────────────── */
+      #filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 32px;
+        justify-content: center;
+        max-width: 880px;
+        width: 100%;
+      }
+      .filter-pill {
+        font-family: monospace;
+        font-size: 11px;
+        padding: 4px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--pill-border);
+        background: var(--pill-bg);
+        color: var(--pill-text);
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .filter-pill:hover {
+        border-color: var(--pill-hover-border);
+        color: var(--text);
+      }
+      .filter-pill.active {
+        background: var(--pill-active-bg);
+        border-color: var(--pill-active-bg);
+        color: var(--pill-active-text);
+      }
+      .filter-sep {
+        width: 1px;
+        background: var(--border);
+        margin: 0 4px;
+        align-self: stretch;
+      }
+      /* ── card grid ───────────────────────────────────────────────────────── */
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 24px;
-        max-width: 860px;
+        max-width: 880px;
         width: 100%;
       }
       a.card {
         display: flex;
         flex-direction: column;
-        background: #14142a;
-        border: 1px solid #2a2a4a;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 28px 24px;
         text-decoration: none;
         color: inherit;
-        transition:
-          border-color 0.15s,
-          transform 0.1s;
+        transition: border-color 0.15s, transform 0.1s;
       }
       a.card:hover {
-        border-color: #7c4dff;
+        border-color: var(--accent);
         transform: translateY(-2px);
+      }
+      a.card.hidden {
+        display: none;
       }
       .card .icon {
         font-size: 36px;
@@ -60,30 +165,75 @@
       }
       .card h2 {
         font-size: 18px;
-        color: #eee;
+        color: var(--text);
         margin-bottom: 8px;
       }
       .card p {
         font-size: 13px;
-        color: #777;
+        color: var(--muted);
         line-height: 1.6;
+        flex: 1;
       }
-      .card .tag {
-        display: inline-block;
+      /* ── tag pills on cards ──────────────────────────────────────────────── */
+      .card .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
         margin-top: 16px;
+      }
+      .tag {
         font-size: 11px;
-        color: #7c4dff;
-        border: 1px solid #7c4dff44;
-        border-radius: 4px;
-        padding: 2px 8px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: var(--tag-bg);
+        color: var(--tag-text);
+        border: 1px solid var(--tag-border);
       }
     </style>
   </head>
   <body>
-    <h1>simplequad</h1>
-    <p class="sub">examples</p>
+    <header>
+      <h1>simplequad</h1>
+      <button id="btn-theme" title="toggle theme">☀</button>
+    </header>
+    <p class="sub">examples · a quadtree library for 2D collision detection</p>
+
+    <div id="filters">
+      <button class="filter-pill active" data-filter="all">all</button>
+      <div class="filter-sep"></div>
+      <button class="filter-pill" data-filter="game">game</button>
+      <button class="filter-pill" data-filter="simulation">simulation</button>
+      <button class="filter-pill" data-filter="visualization">visualization</button>
+      <div class="filter-sep"></div>
+      <button class="filter-pill" data-filter="circles">circles</button>
+      <button class="filter-pill" data-filter="aabb">aabb</button>
+      <button class="filter-pill" data-filter="mixed">mixed shapes</button>
+      <div class="filter-sep"></div>
+      <button class="filter-pill" data-filter="mtv">mtv</button>
+      <button class="filter-pill" data-filter="flocking">flocking</button>
+      <button class="filter-pill" data-filter="physics">physics</button>
+      <button class="filter-pill" data-filter="dynamic">dynamic</button>
+      <button class="filter-pill" data-filter="ai">ai</button>
+    </div>
+
     <div class="grid">
-      <a class="card" href="examples/platformer/index.html">
+      <a class="card" href="examples/hello-world/index.html" data-tags="visualization mixed mtv">
+        <div class="icon">🔍</div>
+        <h2>Query Explorer</h2>
+        <p>
+          Move the cursor to query a static scene. Hit shapes light up, and
+          yellow arrows show the MTV response vector for each collision. Toggle
+          the tree overlay to see spatial partitioning live.
+        </p>
+        <div class="tags">
+          <span class="tag">visualization</span>
+          <span class="tag">mixed shapes</span>
+          <span class="tag">mtv</span>
+          <span class="tag">start here</span>
+        </div>
+      </a>
+
+      <a class="card" href="examples/platformer/index.html" data-tags="game aabb mtv">
         <div class="icon">🟧</div>
         <h2>Platformer</h2>
         <p>
@@ -91,18 +241,28 @@
           coins. Collision resolution via MTV keeps the player standing on
           surfaces.
         </p>
-        <span class="tag">AABB · MTV response</span>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">aabb</span>
+          <span class="tag">mtv</span>
+        </div>
       </a>
-      <a class="card" href="examples/shooter/index.html">
+
+      <a class="card" href="examples/shooter/index.html" data-tags="game circles dynamic">
         <div class="icon">🔵</div>
         <h2>Top-down Shooter</h2>
         <p>
           Shoot enemies that swarm from the edges. Escalating waves and enemy HP
           stress the tree's circle queries across many dynamic objects.
         </p>
-        <span class="tag">Circles · 100–200 objects</span>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">circles</span>
+          <span class="tag">dynamic</span>
+        </div>
       </a>
-      <a class="card" href="examples/breakout/index.html">
+
+      <a class="card" href="examples/breakout/index.html" data-tags="game circles aabb mtv">
         <div class="icon">🟦</div>
         <h2>Breakout</h2>
         <p>
@@ -110,9 +270,15 @@
           AABBs. MTV from each query hit drives both the push-out and the
           reflection angle — no manual geometry needed.
         </p>
-        <span class="tag">Circle · AABB · MTV reflection</span>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">circles</span>
+          <span class="tag">aabb</span>
+          <span class="tag">mtv</span>
+        </div>
       </a>
-      <a class="card" href="examples/boids/index.html">
+
+      <a class="card" href="examples/boids/index.html" data-tags="simulation circles flocking">
         <div class="icon">🐦</div>
         <h2>Boids</h2>
         <p>
@@ -120,9 +286,14 @@
           frame for separation, alignment, and cohesion. Toggle the tree overlay
           to see the partitioning in action.
         </p>
-        <span class="tag">Circles · proximity queries · neighborhood AI</span>
+        <div class="tags">
+          <span class="tag">simulation</span>
+          <span class="tag">circles</span>
+          <span class="tag">flocking</span>
+        </div>
       </a>
-      <a class="card" href="examples/gravity-sandbox/index.html">
+
+      <a class="card" href="examples/gravity-sandbox/index.html" data-tags="simulation circles physics">
         <div class="icon">✨</div>
         <h2>Gravity Sandbox</h2>
         <p>
@@ -130,9 +301,14 @@
           gravity and drag in real time. Right-click to attract everything to
           the cursor.
         </p>
-        <span class="tag">Circles · MTV physics · interactive</span>
+        <div class="tags">
+          <span class="tag">simulation</span>
+          <span class="tag">circles</span>
+          <span class="tag">physics</span>
+        </div>
       </a>
-      <a class="card" href="examples/asteroid-field/index.html">
+
+      <a class="card" href="examples/asteroid-field/index.html" data-tags="game circles dynamic">
         <div class="icon">🪨</div>
         <h2>Asteroid Field</h2>
         <p>
@@ -140,8 +316,52 @@
           fragments on impact. The tree handles mixed-size circle queries each
           frame as the field grows.
         </p>
-        <span class="tag">Circles · split mechanic · wrap-around world</span>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">circles</span>
+          <span class="tag">dynamic</span>
+        </div>
+      </a>
+
+      <a class="card" href="examples/predator-prey/index.html" data-tags="simulation circles flocking ai">
+        <div class="icon">🐾</div>
+        <h2>Predator-Prey</h2>
+        <p>
+          Prey flock and flee using spatial neighborhood queries. Predators
+          hunt via a wide search circle and eat on collision. The same tree
+          drives both behaviors every frame.
+        </p>
+        <div class="tags">
+          <span class="tag">simulation</span>
+          <span class="tag">circles</span>
+          <span class="tag">flocking</span>
+          <span class="tag">ai</span>
+        </div>
       </a>
     </div>
+
+    <script>
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
+
+      const pills = document.querySelectorAll(".filter-pill");
+      const cards = document.querySelectorAll(".card");
+
+      pills.forEach(pill => {
+        pill.addEventListener("click", () => {
+          pills.forEach(p => p.classList.remove("active"));
+          pill.classList.add("active");
+          const filter = pill.dataset.filter;
+          cards.forEach(card => {
+            const match = filter === "all" || card.dataset.tags.split(" ").includes(filter);
+            card.classList.toggle("hidden", !match);
+          });
+        });
+      });
+    </script>
   </body>
 </html>

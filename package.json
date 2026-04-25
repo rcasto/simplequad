@@ -1,7 +1,7 @@
 {
   "name": "simplequad",
   "version": "3.0.0",
-  "description": "A simple quadtree implementation useful for 2D collision detection and more.",
+  "description": "TypeScript quadtree with SAT collision detection and MTV output. Zero dependencies.",
   "main": "dist/simplequad.umd.js",
   "module": "dist/simplequad.esm.js",
   "types": "dist/index.d.ts",

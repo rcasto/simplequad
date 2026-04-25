@@ -1,25 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Boids</title>
     <style>
+      :root {
+        --bg: #050510;
+        --border: #1a1a3e;
+        --text: #eee;
+        --muted: #666;
+        --muted2: #444;
+        --accent: #7c4dff;
+        --btn-bg: none;
+        --btn-border: #2a2a4a;
+        --btn-text: #666;
+        --label-color: #777;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --border: #c8c8e0;
+        --text: #1a1a2e;
+        --muted: #778;
+        --muted2: #aaa;
+        --accent: #5c2ddf;
+        --btn-bg: none;
+        --btn-border: #c0c0d8;
+        --btn-text: #666;
+        --label-color: #888;
+      }
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       body {
-        background: #050510;
+        background: var(--bg);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
         font-family: monospace;
-        color: #eee;
+        color: var(--text);
         padding: 16px;
+        transition: background 0.2s, color 0.2s;
       }
       #game {
         display: flex;
@@ -31,9 +56,8 @@
       }
       canvas {
         display: block;
-        border: 2px solid #1a1a3e;
+        border: 2px solid var(--border);
         flex-shrink: 0;
-        /* Desktop: natural size. On mobile: scale down to viewport. */
         width: min(800px, calc(100vw - 32px));
         aspect-ratio: 800 / 520;
       }
@@ -44,30 +68,31 @@
       }
       #hud {
         font-size: 13px;
-        color: #666;
+        color: var(--muted);
         display: flex;
         flex-direction: column;
         gap: 2px;
       }
       #hud b {
-        color: #aaa;
+        color: var(--text);
       }
       #controls-toggle {
         display: none; /* shown only on mobile */
         margin-top: 10px;
         padding: 7px 14px;
         background: none;
-        border: 1px solid #2a2a4a;
+        border: 1px solid var(--btn-border);
         border-radius: 5px;
-        color: #666;
+        color: var(--btn-text);
         font-family: monospace;
         font-size: 12px;
         cursor: pointer;
         text-align: left;
+        transition: border-color 0.15s, color 0.15s;
       }
       #controls-toggle:hover {
-        border-color: #7c4dff44;
-        color: #999;
+        border-color: var(--accent);
+        color: var(--text);
       }
       #controls {
         display: flex;
@@ -77,17 +102,31 @@
         gap: 14px;
       }
       label {
-        color: #777;
+        color: var(--label-color);
         display: flex;
         flex-direction: column;
         gap: 3px;
       }
       input[type="range"] {
-        accent-color: #7c4dff;
+        accent-color: var(--accent);
       }
       input[type="checkbox"] {
-        accent-color: #7c4dff;
+        accent-color: var(--accent);
       }
+      #btn-theme {
+        margin-top: 8px;
+        background: none;
+        border: 1px solid var(--btn-border);
+        border-radius: 4px;
+        color: var(--btn-text);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 3px 8px;
+        font-family: monospace;
+        align-self: flex-start;
+        transition: border-color 0.15s;
+      }
+      #btn-theme:hover { border-color: var(--accent); }
 
       /* ── Mobile layout ─────────────────────────────────────────────────── */
       @media (max-width: 860px) {
@@ -181,6 +220,7 @@
           <label><input type="checkbox" id="showTree" /> show tree</label>
           <label><input type="checkbox" id="showPerc" /> show perception</label>
         </div>
+        <button id="btn-theme" title="toggle theme">☀</button>
       </section>
     </main>
     <script src="../../dist/simplequad.umd.js"></script>
@@ -191,6 +231,13 @@
         const btn = document.getElementById("controls-toggle");
         const isOpen = ctrl.classList.toggle("open");
         btn.textContent = isOpen ? "▴ controls" : "▾ controls";
+      });
+
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.addEventListener("click", () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute("data-theme", isLight ? "dark" : "light");
+        themeBtn.textContent = isLight ? "☀" : "☾";
       });
 
       const canvas = document.getElementById("canvas");
