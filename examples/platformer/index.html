@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Platformer</title>
     <style>
       * {
@@ -15,13 +16,16 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 100vh;
+        min-height: 100vh;
         font-family: monospace;
         color: #eee;
+        padding: 16px;
       }
       canvas {
         border: 2px solid #444;
         display: block;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 500;
       }
       #hud {
         margin-top: 8px;
@@ -32,6 +36,41 @@
         margin-top: 6px;
         font-size: 12px;
         color: #666;
+        text-align: center;
+      }
+      /* On-screen touch controls */
+      #touch-controls {
+        display: none;
+        margin-top: 14px;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+      }
+      .touch-btn {
+        width: 60px;
+        height: 60px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 10px;
+        color: #bbb;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+      }
+      #btn-jump {
+        width: 80px;
+        background: rgba(232, 168, 56, 0.15);
+        border-color: rgba(232, 168, 56, 0.3);
+        color: #e8a838;
+      }
+      @media (hover: none), (max-width: 600px) {
+        #controls { display: none; }
+        #touch-controls { display: flex; }
       }
     </style>
   </head>
@@ -43,6 +82,11 @@
     </div>
     <div id="controls">
       Arrow keys / WASD to move &nbsp;|&nbsp; Up / W / Space to jump
+    </div>
+    <div id="touch-controls">
+      <button class="touch-btn" id="btn-left">◀</button>
+      <button class="touch-btn" id="btn-jump">▲ Jump</button>
+      <button class="touch-btn" id="btn-right">▶</button>
     </div>
 
     <script src="../../dist/simplequad.umd.js"></script>
@@ -65,7 +109,6 @@
         height: H,
       });
 
-      // platforms: array of {x,y,width,height,color}
       const platforms = [
         // ground
         { x: 0, y: H - TILE, width: W, height: TILE, color: "#4a7c59" },
@@ -79,31 +122,18 @@
         { x: 50, y: 140, width: 120, height: TILE, color: "#3d6b4f" },
         { x: 660, y: 150, width: 110, height: TILE, color: "#3d6b4f" },
         { x: 350, y: 120, width: 100, height: TILE, color: "#3d6b4f" },
-        // coins (small boxes used as collectibles)
       ];
 
-      // coins
-      const coins = [];
       const coinPositions = [
-        [130, 340],
-        [200, 340],
-        [380, 280],
-        [440, 280],
-        [570, 230],
-        [640, 230],
-        [230, 190],
-        [260, 190],
-        [80, 120],
-        [130, 120],
-        [380, 100],
-        [430, 100],
-        [680, 130],
-        [720, 130],
-        [660, 360],
+        [130, 340], [200, 340], [380, 280], [440, 280],
+        [570, 230], [640, 230], [230, 190], [260, 190],
+        [80, 120],  [130, 120], [380, 100], [430, 100],
+        [680, 130], [720, 130], [660, 360],
       ];
-      coinPositions.forEach(([cx, cy]) => {
-        coins.push({ x: cx, y: cy, width: 10, height: 10, collected: false });
-      });
+
+      const coins = coinPositions.map(([cx, cy]) => ({
+        x: cx, y: cy, width: 10, height: 10, collected: false,
+      }));
 
       const player = {
         x: 60,
@@ -120,17 +150,51 @@
       document.addEventListener("keydown", (e) => (keys[e.code] = true));
       document.addEventListener("keyup", (e) => (keys[e.code] = false));
 
+      // Touch buttons set keys directly
+      function addTouchBtn(id, code) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[code] = true; }, { passive: false });
+        btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; }, { passive: false });
+        btn.addEventListener("touchcancel", () => { keys[code] = false; });
+      }
+      addTouchBtn("btn-left", "ArrowLeft");
+      addTouchBtn("btn-right", "ArrowRight");
+      addTouchBtn("btn-jump", "Space");
+
       function isJump() {
         return keys["ArrowUp"] || keys["KeyW"] || keys["Space"];
       }
 
       let score = 0;
-      let lastTime = 0,
-        fps = 0,
-        frameCount = 0,
-        fpsTime = 0;
+      let gameState = "playing"; // 'playing' | 'won'
+      let lastTime = 0, fps = 0, frameCount = 0, fpsTime = 0;
+
+      function resetGame() {
+        score = 0;
+        gameState = "playing";
+        player.x = 60;
+        player.y = H - TILE - 32;
+        player.vx = 0;
+        player.vy = 0;
+        player.onGround = false;
+        coins.forEach((c) => { c.collected = false; });
+      }
+
+      // Tap canvas on win screen to restart
+      canvas.addEventListener("click", () => {
+        if (gameState === "won") resetGame();
+      });
+      canvas.addEventListener("touchstart", (e) => {
+        if (gameState === "won") { e.preventDefault(); resetGame(); }
+      }, { passive: false });
 
       function update(dt) {
+        if (gameState === "won") {
+          if (keys["Space"] || keys["Enter"]) resetGame();
+          return;
+        }
+
         // horizontal
         if (keys["ArrowLeft"] || keys["KeyA"]) player.vx = -PLAYER_SPEED;
         else if (keys["ArrowRight"] || keys["KeyD"]) player.vx = PLAYER_SPEED;
@@ -146,7 +210,6 @@
         player.x += player.vx;
         player.y += player.vy;
 
-        // clamp to canvas horizontally
         player.x = Math.max(0, Math.min(W - player.width, player.x));
 
         // rebuild tree each frame
@@ -154,65 +217,59 @@
         platforms.forEach((p) => tree.add(p));
         coins.filter((c) => !c.collected).forEach((c) => tree.add(c));
 
-        // query player
         const hits = tree.query(player);
         player.onGround = false;
 
         for (const { object, mtv } of hits) {
           if (object.collected !== undefined) {
-            // coin
             object.collected = true;
             score++;
             continue;
           }
-          // platform collision response via MTV
           player.x += mtv.vector.x;
           player.y += mtv.vector.y;
 
-          // landing: MTV pushed us upward (negative y component dominates)
           if (mtv.vector.y < -0.1) {
             player.vy = 0;
             player.onGround = true;
           }
-          // hitting ceiling
           if (mtv.vector.y > 0.1 && player.vy < 0) {
             player.vy = 0;
           }
-          // wall
           if (Math.abs(mtv.vector.x) > 0.1) {
             player.vx = 0;
           }
         }
 
-        // fall off bottom resets
+        // fall off bottom resets position
         if (player.y > H + 50) {
           player.x = 60;
           player.y = H - TILE - 32;
           player.vx = 0;
           player.vy = 0;
         }
+
+        if (score === coins.length) {
+          gameState = "won";
+        }
       }
 
       function draw() {
         ctx.clearRect(0, 0, W, H);
 
-        // background gradient
         const bg = ctx.createLinearGradient(0, 0, 0, H);
         bg.addColorStop(0, "#1a1a2e");
         bg.addColorStop(1, "#16213e");
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, W, H);
 
-        // platforms
         for (const p of platforms) {
           ctx.fillStyle = p.color;
           ctx.fillRect(p.x, p.y, p.width, p.height);
-          // top highlight
           ctx.fillStyle = "rgba(255,255,255,0.08)";
           ctx.fillRect(p.x, p.y, p.width, 3);
         }
 
-        // coins
         for (const c of coins) {
           if (c.collected) continue;
           ctx.fillStyle = "#f5c518";
@@ -221,20 +278,17 @@
           ctx.fill();
         }
 
-        // player
         ctx.fillStyle = player.color;
         ctx.fillRect(player.x, player.y, player.width, player.height);
-        // eyes
         ctx.fillStyle = "#1a1a2e";
         ctx.fillRect(player.x + 5, player.y + 8, 4, 4);
         ctx.fillRect(player.x + 15, player.y + 8, 4, 4);
 
-        // score
         ctx.fillStyle = "#f5c518";
         ctx.font = "bold 16px monospace";
         ctx.fillText(`coins: ${score} / ${coins.length}`, 12, 24);
 
-        if (score === coins.length) {
+        if (gameState === "won") {
           ctx.fillStyle = "rgba(0,0,0,0.5)";
           ctx.fillRect(0, 0, W, H);
           ctx.fillStyle = "#f5c518";
@@ -243,7 +297,7 @@
           ctx.fillText("You collected all coins!", W / 2, H / 2);
           ctx.font = "16px monospace";
           ctx.fillStyle = "#aaa";
-          ctx.fillText("Refresh to play again", W / 2, H / 2 + 36);
+          ctx.fillText("Press Space or tap to play again", W / 2, H / 2 + 36);
           ctx.textAlign = "left";
         }
       }

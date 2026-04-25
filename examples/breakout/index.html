@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Breakout</title>
     <style>
       * {
@@ -23,6 +24,12 @@
         display: block;
         border: 2px solid #1a1a3e;
         cursor: none;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 560;
+        touch-action: none;
+      }
+      body {
+        padding: 16px;
       }
       #hud {
         margin-top: 8px;
@@ -91,9 +98,23 @@
 
       // ── input ─────────────────────────────────────────────────────────────
       const keys = {};
+      function getCanvasX(clientX) {
+        const rect = canvas.getBoundingClientRect();
+        return (clientX - rect.left) * (W / rect.width);
+      }
+
       canvas.addEventListener('mousemove', e => {
-        cursorX = e.clientX - canvas.getBoundingClientRect().left;
+        cursorX = getCanvasX(e.clientX);
       });
+      canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        cursorX = getCanvasX(e.touches[0].clientX);
+      }, { passive: false });
+      canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        cursorX = getCanvasX(e.touches[0].clientX);
+        tryLaunch();
+      }, { passive: false });
       canvas.addEventListener('click', tryLaunch);
       document.addEventListener('keydown', e => {
         keys[e.code] = true;

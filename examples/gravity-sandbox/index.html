@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Gravity Sandbox</title>
     <style>
       * {
@@ -15,26 +16,33 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 100vh;
+        min-height: 100vh;
         font-family: monospace;
         color: #eee;
+        padding: 16px;
       }
       canvas {
         border: 2px solid #1a1a3e;
         display: block;
         cursor: crosshair;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 540;
+        touch-action: none;
       }
       #hud {
         margin-top: 8px;
         font-size: 13px;
         color: #666;
         display: flex;
-        gap: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       #controls {
         margin-top: 4px;
         font-size: 12px;
         color: #444;
+        text-align: center;
       }
       label {
         color: #888;
@@ -43,6 +51,28 @@
         vertical-align: middle;
         width: 90px;
         accent-color: #7c4dff;
+      }
+      #attract-btn {
+        display: none;
+        margin-top: 10px;
+        padding: 10px 24px;
+        background: #1a1a3e;
+        border: 1px solid #7c4dff44;
+        border-radius: 6px;
+        color: #7c4dff;
+        font-family: monospace;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      @media (hover: none) {
+        #controls { display: none; }
+        #attract-btn { display: inline-block; }
+      }
+      @media (max-width: 600px) {
+        #controls { display: none; }
+        #attract-btn { display: inline-block; }
       }
     </style>
   </head>
@@ -75,9 +105,9 @@
       ></span>
     </div>
     <div id="controls">
-      click to spawn blobs &nbsp;|&nbsp; right-click to attract to cursor
-      &nbsp;|&nbsp; sliders adjust physics
+      tap / click to spawn &nbsp;|&nbsp; right-click to attract &nbsp;|&nbsp; sliders adjust physics
     </div>
+    <button id="attract-btn">hold to attract</button>
 
     <script src="../../dist/simplequad.umd.js"></script>
     <script>
@@ -111,16 +141,27 @@
       let attractMode = false;
       const mouse = { x: W / 2, y: H / 2 };
 
+      // ── coordinate helper ──────────────────────────────────────────────────
+      // Accounts for CSS scaling: canvas may display smaller than its pixel dims.
+      function getPos(clientX, clientY) {
+        const r = canvas.getBoundingClientRect();
+        return {
+          x: (clientX - r.left) * (W / r.width),
+          y: (clientY - r.top) * (H / r.height),
+        };
+      }
+
       document.getElementById("grav").addEventListener("input", (e) => {
         gravityY = parseFloat(e.target.value);
       });
       document.getElementById("drag").addEventListener("input", (e) => {
         drag = parseFloat(e.target.value);
       });
+
       canvas.addEventListener("mousemove", (e) => {
-        const r = canvas.getBoundingClientRect();
-        mouse.x = e.clientX - r.left;
-        mouse.y = e.clientY - r.top;
+        const pos = getPos(e.clientX, e.clientY);
+        mouse.x = pos.x;
+        mouse.y = pos.y;
       });
       canvas.addEventListener("mousedown", (e) => {
         if (e.button === 2) {
@@ -133,6 +174,29 @@
         if (e.button === 2) attractMode = false;
       });
       canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      // Touch: tap to spawn, move updates attract target
+      canvas.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        for (const touch of e.changedTouches) {
+          const pos = getPos(touch.clientX, touch.clientY);
+          spawnBlob(pos.x, pos.y);
+        }
+      }, { passive: false });
+      canvas.addEventListener("touchmove", (e) => {
+        e.preventDefault();
+        const pos = getPos(e.touches[0].clientX, e.touches[0].clientY);
+        mouse.x = pos.x;
+        mouse.y = pos.y;
+      }, { passive: false });
+
+      // Mobile attract button
+      const attractBtn = document.getElementById("attract-btn");
+      attractBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        attractMode = true;
+      }, { passive: false });
+      attractBtn.addEventListener("touchend", () => { attractMode = false; });
 
       // ── blobs ──────────────────────────────────────────────────────────────
       const blobs = [];
@@ -147,6 +211,8 @@
             vx: (Math.random() - 0.5) * 3,
             vy: (Math.random() - 0.5) * 3,
             color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+            // Each blob gets its own bounciness: 0.3 (soft) to 0.95 (super bouncy)
+            bounciness: 0.3 + Math.random() * 0.65,
             trail: [],
           });
         }
@@ -188,7 +254,7 @@
           // gravity
           blob.vy += gravityY;
 
-          // attract to cursor on right-click
+          // attract to cursor
           if (attractMode) {
             const dx = mouse.x - blob.x;
             const dy = mouse.y - blob.y;
@@ -205,22 +271,22 @@
           blob.x += blob.vx;
           blob.y += blob.vy;
 
-          // wall bounce
+          // wall bounce — each blob uses its own bounciness
           if (blob.x - blob.r < 0) {
             blob.x = blob.r;
-            blob.vx *= -0.6;
+            blob.vx *= -blob.bounciness;
           }
           if (blob.x + blob.r > W) {
             blob.x = W - blob.r;
-            blob.vx *= -0.6;
+            blob.vx *= -blob.bounciness;
           }
           if (blob.y - blob.r < 0) {
             blob.y = blob.r;
-            blob.vy *= -0.6;
+            blob.vy *= -blob.bounciness;
           }
           if (blob.y + blob.r > H) {
             blob.y = H - blob.r;
-            blob.vy *= -0.6;
+            blob.vy *= -blob.bounciness;
           }
 
           // trail
@@ -231,21 +297,21 @@
           const hits = tree.query(blob);
           for (const { object, mtv } of hits) {
             if (object === blob) continue;
-            // split the push between the two objects
             const half = 0.5;
             blob.x += mtv.vector.x * half;
             blob.y += mtv.vector.y * half;
             object.x -= mtv.vector.x * half;
             object.y -= mtv.vector.y * half;
 
-            // elastic-ish velocity exchange along collision axis
             const nx = mtv.direction.x;
             const ny = mtv.direction.y;
             const dvx = blob.vx - object.vx;
             const dvy = blob.vy - object.vy;
             const dot = dvx * nx + dvy * ny;
             if (dot < 0) {
-              const impulse = dot * 0.7;
+              // Restitution is the average of the two blobs' individual bounciness
+              const restitution = (blob.bounciness + object.bounciness) / 2;
+              const impulse = dot * restitution;
               blob.vx -= impulse * nx;
               blob.vy -= impulse * ny;
               object.vx += impulse * nx;

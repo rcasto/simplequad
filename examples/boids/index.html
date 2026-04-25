@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Boids</title>
     <style>
       * {
@@ -18,48 +19,111 @@
         min-height: 100vh;
         font-family: monospace;
         color: #eee;
+        padding: 16px;
+      }
+      #game {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        width: 100%;
+        max-width: 1040px;
+        justify-content: center;
       }
       canvas {
         display: block;
         border: 2px solid #1a1a3e;
-      }
-      #game {
-        display: flex;
+        flex-shrink: 0;
+        /* Desktop: natural size. On mobile: scale down to viewport. */
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 520;
       }
       #sidebar {
         display: flex;
         flex-direction: column;
-        margin-left: 24px;
+        min-width: 170px;
       }
       #hud {
-        display: flex;
-        flex-direction: column;
         font-size: 13px;
         color: #666;
         display: flex;
+        flex-direction: column;
+        gap: 2px;
       }
       #hud b {
         color: #aaa;
+      }
+      #controls-toggle {
+        display: none; /* shown only on mobile */
+        margin-top: 10px;
+        padding: 7px 14px;
+        background: none;
+        border: 1px solid #2a2a4a;
+        border-radius: 5px;
+        color: #666;
+        font-family: monospace;
+        font-size: 12px;
+        cursor: pointer;
+        text-align: left;
+      }
+      #controls-toggle:hover {
+        border-color: #7c4dff44;
+        color: #999;
       }
       #controls {
         display: flex;
         flex-direction: column;
         margin-top: 8px;
         font-size: 12px;
-        display: flex;
-        flex-wrap: wrap;
         gap: 14px;
       }
       label {
         color: #777;
         display: flex;
         flex-direction: column;
+        gap: 3px;
       }
       input[type="range"] {
         accent-color: #7c4dff;
       }
       input[type="checkbox"] {
         accent-color: #7c4dff;
+      }
+
+      /* ── Mobile layout ─────────────────────────────────────────────────── */
+      @media (max-width: 860px) {
+        body {
+          justify-content: flex-start;
+          padding-top: 20px;
+        }
+        #game {
+          flex-direction: column;
+          align-items: center;
+        }
+        canvas {
+          /* fills viewport width on mobile */
+          width: calc(100vw - 32px);
+        }
+        #sidebar {
+          width: 100%;
+          max-width: 500px;
+        }
+        #hud {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        #controls-toggle {
+          display: block;
+        }
+        #controls {
+          display: none; /* collapsed by default on mobile */
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        #controls.open {
+          display: flex;
+        }
       }
     </style>
   </head>
@@ -70,8 +134,9 @@
         <div id="hud">
           <span>boids: <b id="count">150</b></span>
           <span>fps: <b id="fps">0</b></span>
-          <span>avg neighbors queried: <b id="neighbors">0</b></span>
+          <span>avg neighbors: <b id="neighbors">0</b></span>
         </div>
+        <button id="controls-toggle">▾ controls</button>
         <div id="controls">
           <label
             >separation
@@ -120,6 +185,14 @@
     </main>
     <script src="../../dist/simplequad.umd.js"></script>
     <script>
+      // Toggle controls panel on mobile
+      document.getElementById("controls-toggle").addEventListener("click", () => {
+        const ctrl = document.getElementById("controls");
+        const btn = document.getElementById("controls-toggle");
+        const isOpen = ctrl.classList.toggle("open");
+        btn.textContent = isOpen ? "▴ controls" : "▾ controls";
+      });
+
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       const W = canvas.width,
@@ -129,7 +202,7 @@
       const BOID_COUNT = 150;
       const MAX_SPEED = 2.5;
       const MAX_FORCE = 0.08;
-      const SEP_RADIUS = 28; // hard separation zone inside perception radius
+      const SEP_RADIUS = 28;
       const BOID_SIZE = 7;
 
       let PERCEPTION_R = 60;
@@ -144,19 +217,13 @@
         .addEventListener("input", (e) => (SEP_W = parseFloat(e.target.value)));
       document
         .getElementById("align")
-        .addEventListener(
-          "input",
-          (e) => (ALIGN_W = parseFloat(e.target.value)),
-        );
+        .addEventListener("input", (e) => (ALIGN_W = parseFloat(e.target.value)));
       document
         .getElementById("coh")
         .addEventListener("input", (e) => (COH_W = parseFloat(e.target.value)));
       document
         .getElementById("perc")
-        .addEventListener(
-          "input",
-          (e) => (PERCEPTION_R = parseInt(e.target.value)),
-        );
+        .addEventListener("input", (e) => (PERCEPTION_R = parseInt(e.target.value)));
       document
         .getElementById("showTree")
         .addEventListener("change", (e) => (showTree = e.target.checked));
@@ -172,8 +239,8 @@
         height: H,
       });
 
-      // r:0 stores each boid as a point; neighborhood queries use a separate
-      // circle with r = PERCEPTION_R so the match distance is exactly PERCEPTION_R.
+      // r:0 stores each boid as a point; neighborhood queries use a circle with
+      // r = PERCEPTION_R so the match distance is exactly PERCEPTION_R.
       const boids = Array.from({ length: BOID_COUNT }, () => {
         const angle = Math.random() * Math.PI * 2;
         const speed = MAX_SPEED * (0.5 + Math.random() * 0.5);
@@ -192,7 +259,6 @@
         return m > max ? [(vx / m) * max, (vy / m) * max] : [vx, vy];
       }
 
-      // steer toward a desired direction at MAX_SPEED, clamped to MAX_FORCE
       function steerToward(desiredX, desiredY, boid) {
         const m = Math.hypot(desiredX, desiredY) || 1;
         return clamp(
@@ -212,7 +278,6 @@
         totalNeighbors = 0;
 
         for (const boid of boids) {
-          // query a circle with PERCEPTION_R around this boid, exclude self
           const neighbors = tree
             .query({ x: boid.x, y: boid.y, r: PERCEPTION_R })
             .map((r) => r.object)
@@ -224,16 +289,13 @@
             ay = 0;
 
           if (neighbors.length > 0) {
-            // ── separation: steer away from neighbors within SEP_RADIUS ──
-            let sx = 0,
-              sy = 0,
-              sc = 0;
+            // separation: steer away from neighbors within SEP_RADIUS
+            let sx = 0, sy = 0, sc = 0;
             for (const n of neighbors) {
               const dx = boid.x - n.x,
                 dy = boid.y - n.y;
               const d = Math.hypot(dx, dy);
               if (d > 0 && d < SEP_RADIUS) {
-                // weight by inverse distance so closer neighbors push harder
                 sx += dx / (d * d);
                 sy += dy / (d * d);
                 sc++;
@@ -245,9 +307,8 @@
               ay += fy * SEP_W;
             }
 
-            // ── alignment: match average velocity of neighbors ────────────
-            let avgVx = 0,
-              avgVy = 0;
+            // alignment: match average velocity of neighbors
+            let avgVx = 0, avgVy = 0;
             for (const n of neighbors) {
               avgVx += n.vx;
               avgVy += n.vy;
@@ -260,9 +321,8 @@
             ax += afX * ALIGN_W;
             ay += afY * ALIGN_W;
 
-            // ── cohesion: steer toward average position of neighbors ───────
-            let avgX = 0,
-              avgY = 0;
+            // cohesion: steer toward average position of neighbors
+            let avgX = 0, avgY = 0;
             for (const n of neighbors) {
               avgX += n.x;
               avgY += n.y;
@@ -280,7 +340,6 @@
           boid.vy += ay;
           [boid.vx, boid.vy] = clamp(boid.vx, boid.vy, MAX_SPEED);
 
-          // enforce a minimum speed so boids never fully stop
           if (Math.hypot(boid.vx, boid.vy) < 0.5) {
             const a = Math.random() * Math.PI * 2;
             boid.vx = Math.cos(a);
@@ -332,14 +391,12 @@
 
         for (const b of boids) {
           const angle = Math.atan2(b.vy, b.vx);
-          // color by heading so flocking formations show up as color bands
           const hue = ((angle / Math.PI + 1) * 180) % 360;
           ctx.fillStyle = `hsl(${hue}, 85%, 65%)`;
 
           ctx.save();
           ctx.translate(b.x, b.y);
           ctx.rotate(angle);
-          // arrow / fish shape with a concave tail notch
           ctx.beginPath();
           ctx.moveTo(BOID_SIZE, 0);
           ctx.lineTo(-BOID_SIZE * 0.65, BOID_SIZE * 0.55);

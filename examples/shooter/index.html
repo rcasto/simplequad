@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>simplequad — Top-down Shooter</title>
     <style>
       * {
@@ -15,26 +16,60 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 100vh;
+        min-height: 100vh;
         font-family: monospace;
         color: #eee;
+        padding: 16px;
       }
       canvas {
         border: 2px solid #333;
         display: block;
         cursor: none;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 560;
+        touch-action: none;
       }
       #hud {
         margin-top: 8px;
         font-size: 13px;
         color: #aaa;
         display: flex;
-        gap: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       #controls {
         margin-top: 4px;
         font-size: 12px;
         color: #555;
+        text-align: center;
+      }
+      /* On-screen touch movement buttons */
+      #touch-move {
+        display: none;
+        margin-top: 12px;
+        gap: 8px;
+        align-items: center;
+      }
+      .move-btn {
+        width: 52px;
+        height: 52px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        color: #aaa;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+      }
+      @media (hover: none), (max-width: 600px) {
+        #controls { display: none; }
+        #touch-move { display: flex; }
       }
     </style>
   </head>
@@ -51,6 +86,12 @@
     <div id="controls">
       WASD / arrows to move &nbsp;|&nbsp; mouse to aim + click/hold to shoot
       &nbsp;|&nbsp; space to auto-aim + shoot
+    </div>
+    <div id="touch-move">
+      <button class="move-btn" id="btn-left">◀</button>
+      <button class="move-btn" id="btn-up">▲</button>
+      <button class="move-btn" id="btn-down">▼</button>
+      <button class="move-btn" id="btn-right">▶</button>
     </div>
 
     <script src="../../dist/simplequad.umd.js"></script>
@@ -74,15 +115,18 @@
       const BULLET_SPEED = 9;
       const PLAYER_SPEED = 3.5;
       const SHOOT_INTERVAL = 130; // ms
+      const RESTART_DELAY = 2000; // ms to wait before spacebar can restart
 
       let score = 0;
       let wave = 1;
       let playerHp = 3;
       let gameOver = false;
+      let gameOverTime = -Infinity; // timestamp when game ended
+      let currentTs = 0;           // latest frame timestamp (for draw)
       let lastShot = 0;
       let mouseDown = false;
       let waveTimer = 0;
-      const WAVE_INTERVAL = 8000; // ms between waves
+      const WAVE_INTERVAL = 8000;
 
       const mouse = { x: W / 2, y: H / 2 };
       const keys = {};
@@ -98,15 +142,47 @@
       const enemies = [];
       const particles = [];
 
-      canvas.addEventListener("mousemove", (e) => {
+      // ── coordinate helper ──────────────────────────────────────────────────
+      function getPos(clientX, clientY) {
         const rect = canvas.getBoundingClientRect();
-        mouse.x = e.clientX - rect.left;
-        mouse.y = e.clientY - rect.top;
+        return {
+          x: (clientX - rect.left) * (W / rect.width),
+          y: (clientY - rect.top) * (H / rect.height),
+        };
+      }
+
+      canvas.addEventListener("mousemove", (e) => {
+        const pos = getPos(e.clientX, e.clientY);
+        mouse.x = pos.x;
+        mouse.y = pos.y;
       });
       canvas.addEventListener("mousedown", () => (mouseDown = true));
       canvas.addEventListener("mouseup", () => (mouseDown = false));
       document.addEventListener("keydown", (e) => (keys[e.code] = true));
       document.addEventListener("keyup", (e) => (keys[e.code] = false));
+
+      // Touch-to-fire: tap canvas to shoot toward that point (or nearest enemy)
+      canvas.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const pos = getPos(touch.clientX, touch.clientY);
+        if (gameOver) return;
+        const target = nearestEnemy();
+        if (target) shoot(currentTs, target.x, target.y);
+        else shoot(currentTs, pos.x, pos.y);
+      }, { passive: false });
+
+      // On-screen movement buttons
+      function addMoveBtn(id, code) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[code] = true; }, { passive: false });
+        btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; }, { passive: false });
+      }
+      addMoveBtn("btn-left", "ArrowLeft");
+      addMoveBtn("btn-right", "ArrowRight");
+      addMoveBtn("btn-up", "ArrowUp");
+      addMoveBtn("btn-down", "ArrowDown");
 
       function spawnWave(n) {
         const count = 6 + n * 4;
@@ -183,6 +259,26 @@
         });
       }
 
+      function resetGame(ts) {
+        score = 0;
+        wave = 1;
+        playerHp = 3;
+        gameOver = false;
+        gameOverTime = -Infinity;
+        lastShot = 0;
+        waveTimer = 0;
+        player.x = W / 2;
+        player.y = H / 2;
+        player.invincible = 0;
+        bullets.length = 0;
+        enemies.length = 0;
+        particles.length = 0;
+        spawnWave(wave);
+        document.getElementById("score").textContent = score;
+        document.getElementById("wave").textContent = wave;
+        document.getElementById("hp").textContent = playerHp;
+      }
+
       spawnWave(wave);
 
       let lastTime = 0,
@@ -195,21 +291,11 @@
         lastTime = ts;
 
         if (gameOver) {
-          if (keys["Space"]) {
-            // reset state
-            score = 0;
-            wave = 1;
-            playerHp = 3;
-            gameOver = false;
-            lastShot = 0;
-            waveTimer = 0;
-            bullets.length = 0;
-            enemies.length = 0;
-            particles.length = 0;
-            spawnWave(wave);
-            document.getElementById("score").textContent = score;
-            document.getElementById("wave").textContent = wave;
-            document.getElementById("hp").textContent = playerHp;
+          // Require a pause before spacebar can restart — prevents accidental
+          // restart from the spacebar held down during gameplay.
+          const canRestart = ts - gameOverTime >= RESTART_DELAY;
+          if (canRestart && keys["Space"]) {
+            resetGame(ts);
           }
           return;
         }
@@ -310,6 +396,7 @@
             document.getElementById("hp").textContent = playerHp;
             if (playerHp <= 0) {
               gameOver = true;
+              gameOverTime = ts;
             }
             break;
           }
@@ -403,7 +490,7 @@
           ctx.fill();
         }
 
-        // replace mouse position with that of nearest enemy (try always auto tracking/aim)
+        // snap crosshair/aim to nearest enemy
         if (enemies.length > 0) {
           const target = nearestEnemy();
           if (target) {
@@ -481,18 +568,28 @@
           ctx.fillStyle = "#eee";
           ctx.font = "20px monospace";
           ctx.fillText(`score: ${score}  |  wave: ${wave}`, W / 2, H / 2 + 20);
+
+          // Show countdown before allowing restart, to prevent accidental
+          // restart from the spacebar that was held during gameplay.
+          const elapsed = currentTs - gameOverTime;
+          const delayLeft = Math.max(0, RESTART_DELAY - elapsed);
           ctx.fillStyle = "#888";
           ctx.font = "14px monospace";
-          ctx.fillText(
-            "Press spacebar or refresh to play again",
-            W / 2,
-            H / 2 + 56,
-          );
+          if (delayLeft > 0) {
+            ctx.fillText(
+              `Ready in ${Math.ceil(delayLeft / 1000)}…`,
+              W / 2,
+              H / 2 + 56,
+            );
+          } else {
+            ctx.fillText("Press spacebar to play again", W / 2, H / 2 + 56);
+          }
           ctx.textAlign = "left";
         }
       }
 
       function loop(ts) {
+        currentTs = ts;
         update(ts);
         draw();
         requestAnimationFrame(loop);
