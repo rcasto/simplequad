@@ -52,11 +52,11 @@ Benchmarked using the game-loop pattern (clear → add all → query each object
 
 | Objects | avg frame time | p95 frame time | 60fps budget used |
 | ------- | -------------- | -------------- | ----------------- |
-| 100     | 0.14ms         | 0.15ms         | 0.8%              |
-| 200     | 0.32ms         | 0.33ms         | 1.9%              |
-| 300     | 0.56ms         | 0.59ms         | 3.4%              |
-| 500     | 1.12ms         | 1.15ms         | 6.7%              |
-| 1000    | 2.98ms         | 3.3ms          | 17.8%             |
+| 100     | 0.233ms        | 0.238ms        | 1.4%              |
+| 200     | 0.491ms        | 0.501ms        | 2.9%              |
+| 300     | 0.861ms        | 0.878ms        | 5.2%              |
+| 500     | 1.634ms        | 1.657ms        | 9.8%              |
+| 1000    | 4.271ms        | 4.669ms        | 25.6%             |
 
 The p95 column shows worst-case frame time across test samples; it stays within the 16.7ms budget at all tested object counts.
 
