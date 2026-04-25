@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>simplequad — Asteroid Field</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #060610;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+        color: #eee;
+        padding: 16px;
+      }
+      canvas {
+        display: block;
+        border: 2px solid #1a1a3e;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 560;
+        touch-action: none;
+      }
+      #hud {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #aaa;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #controls {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #555;
+        text-align: center;
+      }
+      #touch-controls {
+        display: none;
+        margin-top: 12px;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .touch-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .touch-btn {
+        width: 56px;
+        height: 56px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 10px;
+        color: #aaa;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+      }
+      #btn-fire {
+        width: 72px;
+        height: 72px;
+        background: rgba(124, 77, 255, 0.15);
+        border-color: rgba(124, 77, 255, 0.35);
+        color: #a07cff;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      @media (hover: none), (max-width: 600px) {
+        #controls { display: none; }
+        #touch-controls { display: flex; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="560"></canvas>
+    <div id="hud">
+      <span>score: <b id="score">0</b></span>
+      <span>lives: <b id="lives">♥ ♥ ♥</b></span>
+      <span>asteroids: <b id="ast-count">0</b></span>
+      <span>in tree: <b id="in-tree">0</b></span>
+      <span>fps: <b id="fps">0</b></span>
+    </div>
+    <div id="controls">
+      ← → to rotate &nbsp;|&nbsp; ↑ / W to thrust &nbsp;|&nbsp; Space to fire
+    </div>
+    <div id="touch-controls">
+      <div class="touch-row">
+        <button class="touch-btn" id="btn-left">↺</button>
+        <button class="touch-btn" id="btn-thrust">▲</button>
+        <button class="touch-btn" id="btn-right">↻</button>
+      </div>
+      <div class="touch-row">
+        <button class="touch-btn" id="btn-fire">FIRE</button>
+      </div>
+    </div>
+
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width,
+        H = canvas.height;
+
+      // ── quadtree — slightly expanded bounds so objects at edges are tracked ──
+      const tree = SimpleQuad.createQuadTree({
+        x: -60,
+        y: -60,
+        width: W + 120,
+        height: H + 120,
+      });
+
+      // ── constants ──────────────────────────────────────────────────────────
+      const SHIP_R = 14;
+      const BULLET_R = 3;
+      const BULLET_SPEED = 8;
+      const SHOOT_CD = 250; // ms
+      const TURN_SPEED = 0.055;
+      const THRUST = 0.18;
+      const DRAG = 0.988;
+      const INVINCIBLE_MS = 2200;
+
+      // Asteroid sizes: large splits into 2 medium; medium into 2 small; small dies
+      const SIZES = {
+        large:  { r: 34, score: 20, next: "medium" },
+        medium: { r: 20, score: 50, next: "small"  },
+        small:  { r: 11, score: 100, next: null     },
+      };
+
+      // ── state ──────────────────────────────────────────────────────────────
+      let score = 0;
+      let lives = 3;
+      let gameState = "playing"; // 'playing' | 'dead' | 'gameover'
+      let respawnTimer = 0;
+      let lastShot = -Infinity;
+      let currentTs = 0;
+
+      const keys = {};
+      document.addEventListener("keydown", (e) => (keys[e.code] = true));
+      document.addEventListener("keyup", (e) => (keys[e.code] = false));
+
+      function addTouchBtn(id, code) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[code] = true; }, { passive: false });
+        btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; }, { passive: false });
+        btn.addEventListener("touchcancel", () => { keys[code] = false; });
+      }
+      addTouchBtn("btn-left",   "ArrowLeft");
+      addTouchBtn("btn-right",  "ArrowRight");
+      addTouchBtn("btn-thrust", "ArrowUp");
+      addTouchBtn("btn-fire",   "Space");
+
+      // ── ship ───────────────────────────────────────────────────────────────
+      const ship = {
+        x: W / 2,
+        y: H / 2,
+        r: SHIP_R,
+        vx: 0,
+        vy: 0,
+        angle: -Math.PI / 2, // pointing up
+        invincible: 0,
+        type: "ship",
+        thrusting: false,
+      };
+
+      // ── collections ────────────────────────────────────────────────────────
+      const bullets = [];
+      const asteroids = [];
+      const particles = [];
+
+      // ── helpers ────────────────────────────────────────────────────────────
+      function livesText(n) {
+        return Array.from({ length: 3 }, (_, i) => (i < n ? "♥" : "♡")).join(" ");
+      }
+
+      function wrap(obj) {
+        if (obj.x < -obj.r) obj.x += W + obj.r * 2;
+        else if (obj.x > W + obj.r) obj.x -= W + obj.r * 2;
+        if (obj.y < -obj.r) obj.y += H + obj.r * 2;
+        else if (obj.y > H + obj.r) obj.y -= H + obj.r * 2;
+      }
+
+      function spawnParticles(x, y, color, n = 10) {
+        for (let i = 0; i < n; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const spd = 0.8 + Math.random() * 2.5;
+          particles.push({
+            x, y,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            life: 1.0,
+            decay: 0.025 + Math.random() * 0.04,
+            r: 1 + Math.random() * 3,
+            color,
+          });
+        }
+      }
+
+      // ── asteroid factory ───────────────────────────────────────────────────
+      function makeAsteroid(x, y, size, inheritVx = 0, inheritVy = 0) {
+        const info = SIZES[size];
+        const angle = Math.random() * Math.PI * 2;
+        // smaller fragments move a bit faster than large ones
+        const speed = (0.4 + Math.random() * 0.8) * (size === "large" ? 1 : size === "medium" ? 1.3 : 1.7);
+        return {
+          x, y,
+          r: info.r,
+          vx: Math.cos(angle) * speed + inheritVx * 0.4,
+          vy: Math.sin(angle) * speed + inheritVy * 0.4,
+          spin: (Math.random() - 0.5) * 0.04,
+          angle: Math.random() * Math.PI * 2,
+          size,
+          type: "asteroid",
+          // Irregular shape: random radii at 10 vertices
+          verts: Array.from({ length: 10 }, () => 0.7 + Math.random() * 0.3),
+        };
+      }
+
+      function spawnAsteroid() {
+        // Spawn off a random edge, safely away from the ship
+        const edge = Math.floor(Math.random() * 4);
+        let x, y;
+        if (edge === 0) { x = Math.random() * W; y = -50; }
+        else if (edge === 1) { x = W + 50; y = Math.random() * H; }
+        else if (edge === 2) { x = Math.random() * W; y = H + 50; }
+        else { x = -50; y = Math.random() * H; }
+        asteroids.push(makeAsteroid(x, y, "large"));
+      }
+
+      function splitAsteroid(ast, removeSet) {
+        removeSet.add(ast);
+        const info = SIZES[ast.size];
+        spawnParticles(ast.x, ast.y, "#aaa", 8);
+        if (info.next) {
+          for (let i = 0; i < 2; i++) {
+            asteroids.push(makeAsteroid(ast.x, ast.y, info.next, ast.vx, ast.vy));
+          }
+        }
+        score += info.score;
+        document.getElementById("score").textContent = score;
+      }
+
+      // ── initial asteroids ──────────────────────────────────────────────────
+      for (let i = 0; i < 5; i++) spawnAsteroid();
+
+      function resetShip() {
+        ship.x = W / 2;
+        ship.y = H / 2;
+        ship.vx = 0;
+        ship.vy = 0;
+        ship.angle = -Math.PI / 2;
+        ship.invincible = INVINCIBLE_MS;
+        ship.thrusting = false;
+        gameState = "playing";
+      }
+
+      // ── update ─────────────────────────────────────────────────────────────
+      let lastTime = 0, frameCount = 0, fpsTime = 0;
+
+      function update(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+        frameCount++;
+        fpsTime += dt;
+        if (fpsTime >= 500) {
+          document.getElementById("fps").textContent = Math.round(frameCount / (fpsTime / 1000));
+          frameCount = 0;
+          fpsTime = 0;
+        }
+
+        if (gameState === "gameover") {
+          if (keys["Space"] || keys["Enter"]) {
+            // restart
+            score = 0;
+            lives = 3;
+            bullets.length = 0;
+            asteroids.length = 0;
+            particles.length = 0;
+            for (let i = 0; i < 5; i++) spawnAsteroid();
+            document.getElementById("score").textContent = 0;
+            document.getElementById("lives").textContent = livesText(3);
+            resetShip();
+          }
+          return;
+        }
+
+        if (gameState === "dead") {
+          respawnTimer -= dt;
+          if (respawnTimer <= 0 && lives > 0) {
+            resetShip();
+          } else if (respawnTimer <= 0) {
+            gameState = "gameover";
+          }
+          // advance particles and asteroids while dead
+          for (const p of particles) {
+            p.x += p.vx; p.y += p.vy;
+            p.vx *= 0.93; p.vy *= 0.93;
+            p.life -= p.decay;
+          }
+          particles.splice(0, particles.length, ...particles.filter((p) => p.life > 0));
+          for (const a of asteroids) {
+            a.x += a.vx; a.y += a.vy;
+            a.angle += a.spin;
+            wrap(a);
+          }
+          return;
+        }
+
+        // ── ship controls ──────────────────────────────────────────────────
+        if (keys["ArrowLeft"] || keys["KeyA"]) ship.angle -= TURN_SPEED;
+        if (keys["ArrowRight"] || keys["KeyD"]) ship.angle += TURN_SPEED;
+
+        ship.thrusting = keys["ArrowUp"] || keys["KeyW"] || keys["ShiftLeft"];
+        if (ship.thrusting) {
+          ship.vx += Math.cos(ship.angle) * THRUST;
+          ship.vy += Math.sin(ship.angle) * THRUST;
+        }
+
+        ship.vx *= DRAG;
+        ship.vy *= DRAG;
+        ship.x += ship.vx;
+        ship.y += ship.vy;
+        wrap(ship);
+
+        if (ship.invincible > 0) ship.invincible -= dt;
+
+        // fire
+        if (keys["Space"] && ts - lastShot >= SHOOT_CD) {
+          lastShot = ts;
+          bullets.push({
+            x: ship.x + Math.cos(ship.angle) * (SHIP_R + BULLET_R + 2),
+            y: ship.y + Math.sin(ship.angle) * (SHIP_R + BULLET_R + 2),
+            vx: Math.cos(ship.angle) * BULLET_SPEED + ship.vx,
+            vy: Math.sin(ship.angle) * BULLET_SPEED + ship.vy,
+            r: BULLET_R,
+            type: "bullet",
+            life: 1.0,
+            decay: 0.011, // ~90 frames → ~1.5 s lifetime at 60 fps
+          });
+        }
+
+        // ── move bullets ───────────────────────────────────────────────────
+        for (const b of bullets) {
+          b.x += b.vx;
+          b.y += b.vy;
+          b.life -= b.decay;
+          wrap(b);
+        }
+
+        // ── move asteroids ─────────────────────────────────────────────────
+        for (const a of asteroids) {
+          a.x += a.vx;
+          a.y += a.vy;
+          a.angle += a.spin;
+          wrap(a);
+        }
+
+        // ── particles ──────────────────────────────────────────────────────
+        for (const p of particles) {
+          p.x += p.vx; p.y += p.vy;
+          p.vx *= 0.93; p.vy *= 0.93;
+          p.life -= p.decay;
+        }
+
+        // ── rebuild tree each frame ────────────────────────────────────────
+        // (all objects move every frame so clear+rebuild is the right pattern)
+        tree.clear();
+        for (const a of asteroids) tree.add(a);
+        for (const b of bullets) tree.add(b);
+        if (ship.invincible <= 0) tree.add(ship);
+
+        document.getElementById("in-tree").textContent = tree.getData().length;
+
+        // ── bullet vs asteroid ─────────────────────────────────────────────
+        const deadBullets = new Set();
+        const deadAsteroids = new Set();
+
+        for (const b of bullets) {
+          const hits = tree.query(b);
+          for (const { object } of hits) {
+            if (object.type !== "asteroid") continue;
+            deadBullets.add(b);
+            splitAsteroid(object, deadAsteroids);
+          }
+        }
+
+        // ── ship vs asteroid ───────────────────────────────────────────────
+        if (ship.invincible <= 0) {
+          const hits = tree.query(ship);
+          for (const { object } of hits) {
+            if (object.type !== "asteroid") continue;
+            spawnParticles(ship.x, ship.y, "#4fc3f7", 16);
+            lives--;
+            document.getElementById("lives").textContent = livesText(lives);
+            gameState = "dead";
+            respawnTimer = 2000;
+            break;
+          }
+        }
+
+        // ── cull dead objects ──────────────────────────────────────────────
+        bullets.splice(0, bullets.length, ...bullets.filter(
+          (b) => !deadBullets.has(b) && b.life > 0,
+        ));
+        asteroids.splice(0, asteroids.length, ...asteroids.filter(
+          (a) => !deadAsteroids.has(a),
+        ));
+        particles.splice(0, particles.length, ...particles.filter((p) => p.life > 0));
+
+        // ── wave complete? spawn more ──────────────────────────────────────
+        if (asteroids.length === 0) {
+          for (let i = 0; i < 5; i++) spawnAsteroid();
+        }
+
+        document.getElementById("ast-count").textContent = asteroids.length;
+      }
+
+      // ── draw ───────────────────────────────────────────────────────────────
+      function drawAsteroid(a) {
+        const n = a.verts.length;
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const angle = a.angle + (i / n) * Math.PI * 2;
+          const r = a.r * a.verts[i];
+          const px = a.x + Math.cos(angle) * r;
+          const py = a.y + Math.sin(angle) * r;
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#060610";
+        ctx.fillRect(0, 0, W, H);
+
+        // particles
+        for (const p of particles) {
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // asteroids
+        ctx.strokeStyle = "#9aa";
+        ctx.lineWidth = 1.5;
+        for (const a of asteroids) {
+          ctx.fillStyle = a.size === "large" ? "#222a2a" : a.size === "medium" ? "#1e2828" : "#1a2424";
+          drawAsteroid(a);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // bullets
+        ctx.fillStyle = "#ffe066";
+        for (const b of bullets) {
+          ctx.globalAlpha = b.life;
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // ship
+        if (gameState !== "dead") {
+          const blink = ship.invincible > 0 && Math.floor(ship.invincible / 80) % 2 === 0;
+          if (!blink) {
+            ctx.save();
+            ctx.translate(ship.x, ship.y);
+            ctx.rotate(ship.angle);
+
+            // engine glow when thrusting
+            if (ship.thrusting) {
+              const grd = ctx.createRadialGradient(-SHIP_R, 0, 0, -SHIP_R, 0, SHIP_R * 1.5);
+              grd.addColorStop(0, "rgba(255, 140, 0, 0.9)");
+              grd.addColorStop(1, "rgba(255, 60, 0, 0)");
+              ctx.fillStyle = grd;
+              ctx.beginPath();
+              ctx.arc(-SHIP_R, 0, SHIP_R * 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // ship body
+            ctx.fillStyle = "#4fc3f7";
+            ctx.beginPath();
+            ctx.moveTo(SHIP_R, 0);
+            ctx.lineTo(-SHIP_R * 0.7, SHIP_R * 0.6);
+            ctx.lineTo(-SHIP_R * 0.3, 0);
+            ctx.lineTo(-SHIP_R * 0.7, -SHIP_R * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        // HUD: score drawn on canvas
+        ctx.fillStyle = "#7c4dff";
+        ctx.font = "bold 14px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(`score ${score}`, W - 12, 22);
+        ctx.textAlign = "left";
+
+        if (gameState === "dead") {
+          ctx.fillStyle = "rgba(255,255,255,0.3)";
+          ctx.font = "14px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("respawning…", W / 2, H / 2);
+          ctx.textAlign = "left";
+        }
+
+        if (gameState === "gameover") {
+          ctx.fillStyle = "rgba(0,0,0,0.65)";
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "#f44";
+          ctx.font = "bold 40px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("GAME OVER", W / 2, H / 2 - 20);
+          ctx.fillStyle = "#eee";
+          ctx.font = "18px monospace";
+          ctx.fillText(`final score: ${score}`, W / 2, H / 2 + 18);
+          ctx.fillStyle = "#777";
+          ctx.font = "13px monospace";
+          ctx.fillText("Press Space or Enter to play again", W / 2, H / 2 + 52);
+          ctx.textAlign = "left";
+        }
+      }
+
+      // ── loop ───────────────────────────────────────────────────────────────
+      function loop(ts) {
+        currentTs = ts;
+        update(ts);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
