@@ -1,5 +1,7 @@
 # simplequad
 
+[![Node.js CI](https://github.com/rcasto/simplequad/actions/workflows/node.js.yml/badge.svg)](https://github.com/rcasto/simplequad/actions/workflows/node.js.yml)
+
 Most spatial indexers return candidates — simplequad returns results. One `query()` call gives you the colliding objects *and* the overlap vector to push them apart. No second library, no glue code.
 
 Bundles quadtree spatial partitioning, SAT intersection testing, and minimum translation vector (MTV) output in a single zero-dependency TypeScript package. Supports `BoundingBox`, `Circle`, and `Point`, freely mixed. It detects and measures collisions — resolution is up to you.
@@ -71,7 +73,7 @@ npm install simplequad
 
 ### CDN
 ```html
-<script src="https://unpkg.com/simplequad@latest/dist/simplequad.umd.min.js"></script>
+<script src="https://unpkg.com/simplequad@latest/dist/simplequad.umd.js"></script>
 ```
 
 The window global is `SimpleQuad`.
@@ -175,6 +177,7 @@ Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequa
 | [Boids](examples/boids/index.html) | 150 flocking agents querying spatial neighborhoods every frame; toggle tree overlay |
 | [Gravity Sandbox](examples/gravity-sandbox/index.html) | Spawn colliding blobs with real-time gravity and drag controls |
 | [Asteroid Field](examples/asteroid-field/index.html) | Split mechanic — rocks fragment on impact, mixed-size circle queries grow each frame |
+| [Tower Defense](examples/tower-defense/index.html) | Fixed towers query a range circle every frame against many path-following enemies |
 | [Predator-Prey](examples/predator-prey/index.html) | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles |
 
 ---

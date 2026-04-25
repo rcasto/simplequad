@@ -24,7 +24,7 @@
     "benchmark": "tsx benchmarks/index.ts"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
-  "homepage": "https://github.com/rcasto/simplequad#readme",
+  "homepage": "https://rcasto.github.io/simplequad/",
   "repository": {
     "type": "git",
     "url": "https://github.com/rcasto/simplequad.git"
@@ -32,6 +32,13 @@
   "keywords": [
     "quadtree",
     "2d-collision",
+    "collision-detection",
+    "sat",
+    "minimum-translation-vector",
+    "game-dev",
+    "canvas",
+    "spatial-index",
+    "typescript",
     "2d-collision-library",
     "quadtree-js",
     "quadtree-lib"

@@ -1,0 +1,137 @@
+# simplequad
+
+> TypeScript quadtree with SAT collision detection and MTV output. Zero dependencies. Built for 2D canvas games and interactive apps.
+
+simplequad combines quadtree spatial indexing, Separating Axis Theorem (SAT) intersection testing, and Minimum Translation Vector (MTV) output in a single zero-dependency TypeScript package. One `query()` call returns both the colliding objects and the overlap vectors needed to push them apart — no second library, no glue code.
+
+Supported shapes: BoundingBox (AABB), Circle, Point — freely mixed in the same tree.
+
+## Installation
+
+```
+npm install simplequad
+```
+
+Or via CDN (UMD global `SimpleQuad`):
+
+```html
+<script src="https://unpkg.com/simplequad@latest/dist/simplequad.umd.js"></script>
+```
+
+## Key API
+
+### createQuadTree(bounds, capacity?, maxDepth?)
+
+Creates a quadtree over the given bounding box.
+
+- `bounds: BoundingBox` — the spatial region to manage (e.g. `{ x: 0, y: 0, width: 800, height: 600 }`)
+- `capacity?: number` — objects per node before subdividing (default: 5)
+- `maxDepth?: number` — max subdivision depth (default: 8)
+
+Returns a `QuadTree<T>` where `T extends Bound`.
+
+### QuadTree<T> methods
+
+- `add(object: T): boolean` — add an object; returns false if it falls outside bounds
+- `remove(object: T): boolean` — remove a specific object by reference
+- `clear(): void` — remove all objects and reset all subdivisions
+- `query(bounds: Bound): Array<QueryResult<T>>` — find all intersecting objects with MTVs; the query object itself is excluded
+- `getData(): T[]` — flat deduplicated array of all objects currently in the tree
+
+### Types
+
+```typescript
+type Bound = BoundingBox | Circle | Point;
+
+interface Point { x: number; y: number; }
+interface BoundingBox extends Point { width: number; height: number; }
+interface Circle extends Point { r: number; }
+
+interface QueryResult<T> {
+  object: T;
+  mtv: MinimumTranslationVectorInfo;
+}
+
+interface MinimumTranslationVectorInfo {
+  vector: Point;     // apply to querying object's position to resolve overlap
+  direction: Point;  // unit vector pointing from found object toward querying object
+  magnitude: number; // overlap depth
+}
+```
+
+Objects added to the tree must embed the relevant fields directly (`x`, `y`, and `width`/`height` for AABB, or `r` for Circle).
+
+## Game Loop Pattern (recommended for moving objects)
+
+Clear and rebuild the tree each frame — this is the pattern the benchmarks are based on:
+
+```typescript
+import { createQuadTree } from 'simplequad';
+
+const tree = createQuadTree({ x: 0, y: 0, width: 800, height: 600 });
+
+function gameLoop(entities) {
+  tree.clear();
+  for (const entity of entities) {
+    tree.add(entity);
+  }
+  for (const entity of entities) {
+    const hits = tree.query(entity);
+    for (const { object, mtv } of hits) {
+      // push entity out of overlap
+      entity.x += mtv.vector.x;
+      entity.y += mtv.vector.y;
+    }
+  }
+}
+```
+
+## Moving a single object
+
+simplequad does not track movement. To reposition an object:
+
+```typescript
+tree.remove(entity);
+entity.x = newX;
+entity.y = newY;
+tree.add(entity);
+```
+
+## Performance
+
+Benchmarked with AABB objects, clear+rebuild pattern, averaged across seeds:
+
+| Objects | avg frame time | p95 frame time | 60fps budget used |
+|---------|----------------|----------------|-------------------|
+| 100     | 0.14ms         | 0.15ms         | 0.8%              |
+| 200     | 0.32ms         | 0.33ms         | 1.9%              |
+| 300     | 0.56ms         | 0.59ms         | 3.4%              |
+| 500     | 1.12ms         | 1.15ms         | 6.7%              |
+| 1000    | 2.98ms         | 3.3ms          | 17.8%             |
+
+Circle scenes run ~1.5–2× slower than AABB-only at the same object count, due to additional geometry in circle SAT.
+
+## Fits well for
+
+| Genre | Typical active objects | Fits? |
+|-------|------------------------|-------|
+| Casual / puzzle | < 100 | Comfortably |
+| Platformer | 50–80 | Comfortably |
+| Top-down shooter | 100–200 | Yes |
+| Tower defense (peak wave) | 150–350 | Yes |
+| Bullet hell | 500–2000 | No |
+| RTS (large armies) | 300–1000+ | No |
+
+## When to use something else
+
+- **Beyond ~1000 dynamic objects** — look at purpose-built high-count spatial indexes
+- **Rotation or convex polygons** — only axis-aligned shapes are supported
+- **Continuous collision detection** — fast-moving objects can tunnel through thin geometry between frames
+- **Full physics simulation** — simplequad provides collision detection and MTV, not mass, inertia, or constraints
+
+## Links
+
+- npm: https://www.npmjs.com/package/simplequad
+- GitHub: https://github.com/rcasto/simplequad
+- Live examples: https://rcasto.github.io/simplequad/
+- Source (TypeScript): https://github.com/rcasto/simplequad/tree/master/src
