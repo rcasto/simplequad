@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test, expect } from 'vitest';
 import { performance } from 'perf_hooks';
 import { QuadTree } from '../src';
 import { createMockQuadTree, createRandomBound } from './helpers/util';
@@ -15,7 +15,7 @@ import { createMockQuadTree, createRandomBound } from './helpers/util';
 const addThresholdInSeconds: number = 10;
 const queryThresholdInSeconds: number = 8;
 
-test('can add an object to quadtree', t => {
+test('can add an object to quadtree', () => {
     const numSimulations: number = 3;
     const numObjectsToAdd: number = 1000000;
     const quadTree: QuadTree = createMockQuadTree(Math.floor(numObjectsToAdd * .01)); // 1% of objects capacity per node
@@ -34,15 +34,15 @@ test('can add an object to quadtree', t => {
 
         duration = (performance.now() - startTime) / 1000; // in seconds
         addDurations.push(duration);
-        t.log(`Took ${duration} seconds to add ${numObjectsToAdd} objects. Average time per object: ${(duration / numObjectsToAdd) * 1000} ms`);
+        console.log(`Took ${duration} seconds to add ${numObjectsToAdd} objects. Average time per object: ${(duration / numObjectsToAdd) * 1000} ms`);
 
         startTime = performance.now();
         const results = quadTree.query(quadTree.bounds);
         duration = (performance.now() - startTime) / 1000; // in seconds
         queryDurations.push(duration);
-        t.log(`Took ${duration} seconds to query for ${numObjectsToAdd} objects`);
+        console.log(`Took ${duration} seconds to query for ${numObjectsToAdd} objects`);
 
-        t.is(results.length, numObjectsToAdd);
+        expect(results.length).toBe(numObjectsToAdd);
 
         quadTree.clear();
     }
@@ -50,9 +50,9 @@ test('can add an object to quadtree', t => {
     const averageAddDuration = addDurations.reduce((totalDuration, currAddDuration) => totalDuration + currAddDuration, 0) / numSimulations;
     const averageQueryDuration = queryDurations.reduce((totalDuration, currQueryDuration) => totalDuration + currQueryDuration, 0) / numSimulations;
 
-    t.log(`Took ${averageAddDuration} seconds on average to add ${numObjectsToAdd} objects`);
-    t.log(`Took ${averageQueryDuration} seconds on average to query ${numObjectsToAdd} objects`);
+    console.log(`Took ${averageAddDuration} seconds on average to add ${numObjectsToAdd} objects`);
+    console.log(`Took ${averageQueryDuration} seconds on average to query ${numObjectsToAdd} objects`);
 
-    t.assert(averageAddDuration < addThresholdInSeconds);
-    t.assert(averageQueryDuration < queryThresholdInSeconds);
+    expect(averageAddDuration).toBeLessThan(addThresholdInSeconds);
+    expect(averageQueryDuration).toBeLessThan(queryThresholdInSeconds);
 });

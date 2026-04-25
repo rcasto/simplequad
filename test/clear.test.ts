@@ -1,8 +1,8 @@
-import test from 'ava';
+import { test, expect } from 'vitest';
 import { QuadTree, Bound } from '../src';
 import { createMockQuadTree } from './helpers/util';
 
-test('can clear the quad tree', t => {
+test('can clear the quad tree', () => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object1: Bound = ({
         x: 0,
@@ -20,6 +20,6 @@ test('can clear the quad tree', t => {
     quadTree.add(object2);
     quadTree.clear();
 
-    t.is(quadTree.data.length, 0);
-    t.is(quadTree.quadrants.length, 0);
+    expect(quadTree.data.length).toBe(0);
+    expect(quadTree.quadrants.length).toBe(0);
 });

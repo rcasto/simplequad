@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test, expect } from 'vitest';
 import { BoundingBox, createQuadTree, QuadTree, Bound, Circle, QueryResult } from '../src';
 
 /*
@@ -25,7 +25,7 @@ const bounds: BoundingBox = {
     height: 200,
 };
 
-test('can find 2 circles intersect', t => {
+test('can find 2 circles intersect', () => {
     const object1: Bound = ({
         x: 10,
         y: 10,
@@ -39,8 +39,8 @@ test('can find 2 circles intersect', t => {
 
     const results = doIntersect(object1, object2);
 
-    t.truthy(results);
-    t.deepEqual([...results][0].mtv, {
+    expect(results).toBeTruthy();
+    expect([...results][0].mtv).toEqual({
         vector: {
             x: -5,
             y: 0,
@@ -53,7 +53,7 @@ test('can find 2 circles intersect', t => {
     });
 });
 
-test('can find 2 circles intersect - circle contains circle', t => {
+test('can find 2 circles intersect - circle contains circle', () => {
     const object1: Bound = ({
         x: 10,
         y: 10,
@@ -65,10 +65,10 @@ test('can find 2 circles intersect - circle contains circle', t => {
         r: 2,
     });
 
-    t.truthy(doIntersect(object1, object2));
+    expect(doIntersect(object1, object2)).toBeTruthy();
 });
 
-test('can find circle intersects with point', t => {
+test('can find circle intersects with point', () => {
     const object1: Bound = ({
         x: 10,
         y: 10,
@@ -79,10 +79,10 @@ test('can find circle intersects with point', t => {
         y: 12,
     });
 
-    t.truthy(doIntersect(object1, object2));
+    expect(doIntersect(object1, object2)).toBeTruthy();
 });
 
-test('can find circle intersects with bounding box', t => {
+test('can find circle intersects with bounding box', () => {
     const circle: Circle = ({
         x: 10,
         y: 10,
@@ -101,8 +101,8 @@ test('can find circle intersects with bounding box', t => {
     // query as circle
     const resultsQueryAsCircle = doIntersect(box, circle);
 
-    t.truthy(resultsQueryAsBox);
-    t.deepEqual([...resultsQueryAsBox][0].mtv, {
+    expect(resultsQueryAsBox).toBeTruthy();
+    expect([...resultsQueryAsBox][0].mtv).toEqual({
         vector: {
             x: -0,
             y: 5,
@@ -114,8 +114,8 @@ test('can find circle intersects with bounding box', t => {
         magnitude: 5,
     });
 
-    t.truthy(resultsQueryAsCircle);
-    t.deepEqual([...resultsQueryAsCircle][0].mtv, {
+    expect(resultsQueryAsCircle).toBeTruthy();
+    expect([...resultsQueryAsCircle][0].mtv).toEqual({
         vector: {
             x: 0,
             y: -5,
@@ -128,7 +128,7 @@ test('can find circle intersects with bounding box', t => {
     });
 });
 
-test('can find circle intersects with bounding box - center of circle to closest bounding box point normal', t => {
+test('can find circle intersects with bounding box - center of circle to closest bounding box point normal', () => {
     const circle: Circle = ({
         x: 10,
         y: 10,
@@ -140,7 +140,7 @@ test('can find circle intersects with bounding box - center of circle to closest
         width: 5,
         height: 5,
     });
-    
+
     const squareRootOfOneHalf = 0.7071067811865475;     // Math.sqrt(0.5)
     const expectedMagnitude = 2.171572875253812;        // 5 - 4 * squareRootOfOneHalf
     const expectedVectorComponent = 1.5355339059327389; // squareRootOfOneHalf * expectedMagnitude
@@ -151,8 +151,8 @@ test('can find circle intersects with bounding box - center of circle to closest
     // query as circle
     const resultsQueryAsCircle = doIntersect(box, circle);
 
-    t.truthy(resultsQueryAsBox);
-    t.deepEqual([...resultsQueryAsBox][0].mtv, {
+    expect(resultsQueryAsBox).toBeTruthy();
+    expect([...resultsQueryAsBox][0].mtv).toEqual({
         vector: {
             x: expectedVectorComponent,
             y: expectedVectorComponent
@@ -164,8 +164,8 @@ test('can find circle intersects with bounding box - center of circle to closest
         magnitude: expectedMagnitude,
     });
 
-    t.truthy(resultsQueryAsCircle);
-    t.deepEqual([...resultsQueryAsCircle][0].mtv, {
+    expect(resultsQueryAsCircle).toBeTruthy();
+    expect([...resultsQueryAsCircle][0].mtv).toEqual({
         vector: {
             x: -expectedVectorComponent,
             y: -expectedVectorComponent,
@@ -178,7 +178,7 @@ test('can find circle intersects with bounding box - center of circle to closest
     });
 });
 
-test('can find 2 bounding boxes intersect', t => {
+test('can find 2 bounding boxes intersect', () => {
     const object1: Bound = ({
         x: 10,
         y: 10,
@@ -194,8 +194,8 @@ test('can find 2 bounding boxes intersect', t => {
 
     const results = doIntersect(object1, object2);
 
-    t.truthy(results);
-    t.deepEqual([...results][0].mtv, {
+    expect(results).toBeTruthy();
+    expect([...results][0].mtv).toEqual({
         vector: {
             x: -0,
             y: 0,
@@ -208,7 +208,7 @@ test('can find 2 bounding boxes intersect', t => {
     });
 });
 
-test('can find bounding box intersects with Point', t => {
+test('can find bounding box intersects with Point', () => {
     const object1: Bound = ({
         x: 10,
         y: 10,
@@ -220,10 +220,10 @@ test('can find bounding box intersects with Point', t => {
         height: 5,
     });
 
-    t.truthy(doIntersect(object1, object2));
+    expect(doIntersect(object1, object2)).toBeTruthy();
 });
 
-test('can find 2 points intersect', t => {
+test('can find 2 points intersect', () => {
     const object1: Bound = ({
         x: 10,
         y: 10,
@@ -233,12 +233,12 @@ test('can find 2 points intersect', t => {
         y: 10,
     });
 
-    t.truthy(doIntersect(object1, object2));
+    expect(doIntersect(object1, object2)).toBeTruthy();
 });
 
 /**
  * This function assumes all objects fit within the default test bounds
- * 
+ *
  * @param object1 Bound to add to tree
  * @param object2 Bound to query tree with
  * @returns query results using object or bound 2

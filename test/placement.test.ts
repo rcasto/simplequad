@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test, expect } from 'vitest';
 import { QuadTree, BoundingBox, Bound, QueryResult, createQuadTree } from '../src';
 
 // All tests use a 200x200 tree that subdivides into four 100x100 quadrants:
@@ -16,7 +16,7 @@ function addAndSplit(tree: QuadTree, spanning: Bound): void {
 
 // ─── add: multi-quadrant placement ───────────────────────────────────────────
 
-test('placement: large AABB spanning all quadrants is findable via SE-only query', t => {
+test('placement: large AABB spanning all quadrants is findable via SE-only query', () => {
     const tree = makeSmallTree();
     // origin (50,50) is in NW; bounds [50,150]x[50,150] cross all four quadrants
     const largeObj: Bound = { x: 50, y: 50, width: 100, height: 100 };
@@ -26,11 +26,11 @@ test('placement: large AABB spanning all quadrants is findable via SE-only query
     const seWindow: BoundingBox = { x: 110, y: 110, width: 20, height: 20 };
     const results: Array<QueryResult<Bound>> = tree.query(seWindow);
 
-    t.is(results.length, 1);
-    t.is(results[0].object, largeObj);
+    expect(results.length).toBe(1);
+    expect(results[0].object).toBe(largeObj);
 });
 
-test('placement: large AABB spanning NW+NE is findable via NE-only query', t => {
+test('placement: large AABB spanning NW+NE is findable via NE-only query', () => {
     const tree = makeSmallTree();
     // origin (80,10) is in NW; right edge at x=120 crosses into NE
     const largeObj: Bound = { x: 80, y: 10, width: 40, height: 5 };
@@ -40,11 +40,11 @@ test('placement: large AABB spanning NW+NE is findable via NE-only query', t => 
     const neWindow: BoundingBox = { x: 105, y: 5, width: 20, height: 20 };
     const results: Array<QueryResult<Bound>> = tree.query(neWindow);
 
-    t.is(results.length, 1);
-    t.is(results[0].object, largeObj);
+    expect(results.length).toBe(1);
+    expect(results[0].object).toBe(largeObj);
 });
 
-test('placement: large AABB spanning NW+SW is findable via SW-only query', t => {
+test('placement: large AABB spanning NW+SW is findable via SW-only query', () => {
     const tree = makeSmallTree();
     // origin (10,80) is in NW; bottom edge at y=120 crosses into SW
     const largeObj: Bound = { x: 10, y: 80, width: 5, height: 40 };
@@ -54,13 +54,13 @@ test('placement: large AABB spanning NW+SW is findable via SW-only query', t => 
     const swWindow: BoundingBox = { x: 5, y: 110, width: 20, height: 20 };
     const results: Array<QueryResult<Bound>> = tree.query(swWindow);
 
-    t.is(results.length, 1);
-    t.is(results[0].object, largeObj);
+    expect(results.length).toBe(1);
+    expect(results[0].object).toBe(largeObj);
 });
 
 // ─── query: deduplication ────────────────────────────────────────────────────
 
-test('placement: full-tree query returns spanning object exactly once (no duplicates)', t => {
+test('placement: full-tree query returns spanning object exactly once (no duplicates)', () => {
     const tree = makeSmallTree();
     const anchor: Bound = { x: 10, y: 10, width: 5, height: 5 };
     const largeObj: Bound = { x: 50, y: 50, width: 100, height: 100 };
@@ -71,14 +71,14 @@ test('placement: full-tree query returns spanning object exactly once (no duplic
     const objects = results.map(r => r.object);
 
     // both objects must appear, but neither more than once
-    t.is(results.length, 2);
-    t.is(objects.filter(o => o === largeObj).length, 1);
-    t.is(objects.filter(o => o === anchor).length, 1);
+    expect(results.length).toBe(2);
+    expect(objects.filter(o => o === largeObj).length).toBe(1);
+    expect(objects.filter(o => o === anchor).length).toBe(1);
 });
 
 // ─── remove: all quadrants cleared ───────────────────────────────────────────
 
-test('placement: removing a spanning object removes it from all quadrants', t => {
+test('placement: removing a spanning object removes it from all quadrants', () => {
     const tree = makeSmallTree();
     const anchor: Bound = { x: 10, y: 10, width: 5, height: 5 };
     const largeObj: Bound = { x: 50, y: 50, width: 100, height: 100 };
@@ -86,14 +86,14 @@ test('placement: removing a spanning object removes it from all quadrants', t =>
     tree.add(largeObj);
 
     const removed = tree.remove(largeObj);
-    t.true(removed);
+    expect(removed).toBe(true);
 
     const results: Array<QueryResult<Bound>> = tree.query(tree.bounds);
-    t.is(results.length, 1);
-    t.is(results[0].object, anchor);
+    expect(results.length).toBe(1);
+    expect(results[0].object).toBe(anchor);
 });
 
-test('placement: removing a spanning object leaves it unfindable from any quadrant', t => {
+test('placement: removing a spanning object leaves it unfindable from any quadrant', () => {
     const tree = makeSmallTree();
     const anchor: Bound = { x: 10, y: 10, width: 5, height: 5 };
     const largeObj: Bound = { x: 50, y: 50, width: 100, height: 100 };
@@ -105,7 +105,7 @@ test('placement: removing a spanning object leaves it unfindable from any quadra
     const neWindow: BoundingBox = { x: 110, y: 10, width: 20, height: 20 };
     const swWindow: BoundingBox = { x: 10, y: 110, width: 20, height: 20 };
 
-    t.is(tree.query(seWindow).length, 0);
-    t.is(tree.query(neWindow).length, 0);
-    t.is(tree.query(swWindow).length, 0);
+    expect(tree.query(seWindow).length).toBe(0);
+    expect(tree.query(neWindow).length).toBe(0);
+    expect(tree.query(swWindow).length).toBe(0);
 });

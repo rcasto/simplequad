@@ -1,8 +1,8 @@
-import test from 'ava';
+import { test, expect } from 'vitest';
 import { QuadTree, BoundingBox, Bound } from '../src';
 import { createMockQuadTree } from './helpers/util';
 
-test('can remove object added to quad tree', t => {
+test('can remove object added to quad tree', () => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object: Bound = {
         x: 0,
@@ -14,11 +14,11 @@ test('can remove object added to quad tree', t => {
     quadTree.add(object);
     quadTree.remove(object);
 
-    t.is(quadTree.data.length, 0);
-    t.is(quadTree.quadrants.length, 0);
+    expect(quadTree.data.length).toBe(0);
+    expect(quadTree.quadrants.length).toBe(0);
 });
 
-test('can remove object at point with multiple objects', t => {
+test('can remove object at point with multiple objects', () => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const bounds: BoundingBox = {
         x: 0,
@@ -32,25 +32,25 @@ test('can remove object at point with multiple objects', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    t.is(quadTree.data.length, 2);
-    t.is(quadTree.quadrants.length, 0);
-    t.truthy(quadTree.data.includes(object1));
-    t.truthy(quadTree.data.includes(object2));
+    expect(quadTree.data.length).toBe(2);
+    expect(quadTree.quadrants.length).toBe(0);
+    expect(quadTree.data.includes(object1)).toBeTruthy();
+    expect(quadTree.data.includes(object2)).toBeTruthy();
 
     quadTree.remove(object1);
 
-    t.is(quadTree.data.length, 1);
-    t.is(quadTree.quadrants.length, 0);
-    t.falsy(quadTree.data.includes(object1));
-    t.truthy(quadTree.data.includes(object2));
+    expect(quadTree.data.length).toBe(1);
+    expect(quadTree.quadrants.length).toBe(0);
+    expect(quadTree.data.includes(object1)).toBeFalsy();
+    expect(quadTree.data.includes(object2)).toBeTruthy();
 
     quadTree.remove(object2);
 
-    t.is(quadTree.data.length, 0);
-    t.is(quadTree.quadrants.length, 0);
+    expect(quadTree.data.length).toBe(0);
+    expect(quadTree.quadrants.length).toBe(0);
 });
 
-test('can remove object added to quad tree - no collapse after remove', t => {
+test('can remove object added to quad tree - no collapse after remove', () => {
     const quadTree: QuadTree = createMockQuadTree(1);
     const object1: Bound = {
         x: 0,
@@ -68,19 +68,19 @@ test('can remove object added to quad tree - no collapse after remove', t => {
     quadTree.add(object1);
     quadTree.add(object2);
 
-    t.is(quadTree.data.length, 0);
-    t.is(quadTree.quadrants.length, 4);
+    expect(quadTree.data.length).toBe(0);
+    expect(quadTree.quadrants.length).toBe(4);
 
     quadTree.remove(object1);
 
     // Tree stays subdivided — no collapse. Remaining object still findable.
-    t.is(quadTree.quadrants.length, 4);
+    expect(quadTree.quadrants.length).toBe(4);
     const remaining = quadTree.getData();
-    t.is(remaining.length, 1);
-    t.true(remaining.includes(object2));
+    expect(remaining.length).toBe(1);
+    expect(remaining.includes(object2)).toBe(true);
 });
 
-test('can remove object added to quad tree - no collapse after remove, higher capacity', t => {
+test('can remove object added to quad tree - no collapse after remove, higher capacity', () => {
     const quadTree: QuadTree = createMockQuadTree(2);
     const object1: Bound = {
         x: 0,
@@ -105,15 +105,15 @@ test('can remove object added to quad tree - no collapse after remove, higher ca
     quadTree.add(object2);
     quadTree.add(object3);
 
-    t.is(quadTree.data.length, 0);
-    t.is(quadTree.quadrants.length, 4);
+    expect(quadTree.data.length).toBe(0);
+    expect(quadTree.quadrants.length).toBe(4);
 
     quadTree.remove(object1);
 
     // Tree stays subdivided — no collapse. Remaining objects still findable.
-    t.is(quadTree.quadrants.length, 4);
+    expect(quadTree.quadrants.length).toBe(4);
     const remaining = quadTree.getData();
-    t.is(remaining.length, 2);
-    t.true(remaining.includes(object2));
-    t.true(remaining.includes(object3));
+    expect(remaining.length).toBe(2);
+    expect(remaining.includes(object2)).toBe(true);
+    expect(remaining.includes(object3)).toBe(true);
 });
