@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>simplequad — Boids</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #050510;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+        color: #eee;
+      }
+      canvas {
+        display: block;
+        border: 2px solid #1a1a3e;
+      }
+      #game {
+        display: flex;
+      }
+      #sidebar {
+        display: flex;
+        flex-direction: column;
+        margin-left: 24px;
+      }
+      #hud {
+        display: flex;
+        flex-direction: column;
+        font-size: 13px;
+        color: #666;
+        display: flex;
+      }
+      #hud b {
+        color: #aaa;
+      }
+      #controls {
+        display: flex;
+        flex-direction: column;
+        margin-top: 8px;
+        font-size: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      label {
+        color: #777;
+        display: flex;
+        flex-direction: column;
+      }
+      input[type="range"] {
+        accent-color: #7c4dff;
+      }
+      input[type="checkbox"] {
+        accent-color: #7c4dff;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="game">
+      <canvas id="canvas" width="800" height="520"></canvas>
+      <section id="sidebar">
+        <div id="hud">
+          <span>boids: <b id="count">150</b></span>
+          <span>fps: <b id="fps">0</b></span>
+          <span>avg neighbors queried: <b id="neighbors">0</b></span>
+        </div>
+        <div id="controls">
+          <label
+            >separation
+            <input
+              type="range"
+              id="sep"
+              min="0"
+              max="4"
+              step="0.05"
+              value="1.5"
+          /></label>
+          <label
+            >alignment
+            <input
+              type="range"
+              id="align"
+              min="0"
+              max="4"
+              step="0.05"
+              value="1.0"
+          /></label>
+          <label
+            >cohesion
+            <input
+              type="range"
+              id="coh"
+              min="0"
+              max="4"
+              step="0.05"
+              value="1.0"
+          /></label>
+          <label
+            >perception
+            <input
+              type="range"
+              id="perc"
+              min="20"
+              max="140"
+              step="5"
+              value="60"
+          /></label>
+          <label><input type="checkbox" id="showTree" /> show tree</label>
+          <label><input type="checkbox" id="showPerc" /> show perception</label>
+        </div>
+      </section>
+    </main>
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width,
+        H = canvas.height;
+
+      // ── tunables ────────────────────────────────────────────────────────
+      const BOID_COUNT = 150;
+      const MAX_SPEED = 2.5;
+      const MAX_FORCE = 0.08;
+      const SEP_RADIUS = 28; // hard separation zone inside perception radius
+      const BOID_SIZE = 7;
+
+      let PERCEPTION_R = 60;
+      let SEP_W = 1.5,
+        ALIGN_W = 1.0,
+        COH_W = 1.0;
+      let showTree = false,
+        showPerc = false;
+
+      document
+        .getElementById("sep")
+        .addEventListener("input", (e) => (SEP_W = parseFloat(e.target.value)));
+      document
+        .getElementById("align")
+        .addEventListener(
+          "input",
+          (e) => (ALIGN_W = parseFloat(e.target.value)),
+        );
+      document
+        .getElementById("coh")
+        .addEventListener("input", (e) => (COH_W = parseFloat(e.target.value)));
+      document
+        .getElementById("perc")
+        .addEventListener(
+          "input",
+          (e) => (PERCEPTION_R = parseInt(e.target.value)),
+        );
+      document
+        .getElementById("showTree")
+        .addEventListener("change", (e) => (showTree = e.target.checked));
+      document
+        .getElementById("showPerc")
+        .addEventListener("change", (e) => (showPerc = e.target.checked));
+
+      // ── tree + boids ─────────────────────────────────────────────────────
+      const tree = SimpleQuad.createQuadTree({
+        x: 0,
+        y: 0,
+        width: W,
+        height: H,
+      });
+
+      // r:0 stores each boid as a point; neighborhood queries use a separate
+      // circle with r = PERCEPTION_R so the match distance is exactly PERCEPTION_R.
+      const boids = Array.from({ length: BOID_COUNT }, () => {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = MAX_SPEED * (0.5 + Math.random() * 0.5);
+        return {
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: 0,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+        };
+      });
+
+      // ── helpers ──────────────────────────────────────────────────────────
+      function clamp(vx, vy, max) {
+        const m = Math.hypot(vx, vy);
+        return m > max ? [(vx / m) * max, (vy / m) * max] : [vx, vy];
+      }
+
+      // steer toward a desired direction at MAX_SPEED, clamped to MAX_FORCE
+      function steerToward(desiredX, desiredY, boid) {
+        const m = Math.hypot(desiredX, desiredY) || 1;
+        return clamp(
+          (desiredX / m) * MAX_SPEED - boid.vx,
+          (desiredY / m) * MAX_SPEED - boid.vy,
+          MAX_FORCE,
+        );
+      }
+
+      // ── update ───────────────────────────────────────────────────────────
+      let totalNeighbors = 0;
+
+      function update() {
+        tree.clear();
+        for (const b of boids) tree.add(b);
+
+        totalNeighbors = 0;
+
+        for (const boid of boids) {
+          // query a circle with PERCEPTION_R around this boid, exclude self
+          const neighbors = tree
+            .query({ x: boid.x, y: boid.y, r: PERCEPTION_R })
+            .map((r) => r.object)
+            .filter((o) => o !== boid);
+
+          totalNeighbors += neighbors.length;
+
+          let ax = 0,
+            ay = 0;
+
+          if (neighbors.length > 0) {
+            // ── separation: steer away from neighbors within SEP_RADIUS ──
+            let sx = 0,
+              sy = 0,
+              sc = 0;
+            for (const n of neighbors) {
+              const dx = boid.x - n.x,
+                dy = boid.y - n.y;
+              const d = Math.hypot(dx, dy);
+              if (d > 0 && d < SEP_RADIUS) {
+                // weight by inverse distance so closer neighbors push harder
+                sx += dx / (d * d);
+                sy += dy / (d * d);
+                sc++;
+              }
+            }
+            if (sc > 0) {
+              const [fx, fy] = steerToward(sx, sy, boid);
+              ax += fx * SEP_W;
+              ay += fy * SEP_W;
+            }
+
+            // ── alignment: match average velocity of neighbors ────────────
+            let avgVx = 0,
+              avgVy = 0;
+            for (const n of neighbors) {
+              avgVx += n.vx;
+              avgVy += n.vy;
+            }
+            const [afX, afY] = steerToward(
+              avgVx / neighbors.length,
+              avgVy / neighbors.length,
+              boid,
+            );
+            ax += afX * ALIGN_W;
+            ay += afY * ALIGN_W;
+
+            // ── cohesion: steer toward average position of neighbors ───────
+            let avgX = 0,
+              avgY = 0;
+            for (const n of neighbors) {
+              avgX += n.x;
+              avgY += n.y;
+            }
+            const [cfX, cfY] = steerToward(
+              avgX / neighbors.length - boid.x,
+              avgY / neighbors.length - boid.y,
+              boid,
+            );
+            ax += cfX * COH_W;
+            ay += cfY * COH_W;
+          }
+
+          boid.vx += ax;
+          boid.vy += ay;
+          [boid.vx, boid.vy] = clamp(boid.vx, boid.vy, MAX_SPEED);
+
+          // enforce a minimum speed so boids never fully stop
+          if (Math.hypot(boid.vx, boid.vy) < 0.5) {
+            const a = Math.random() * Math.PI * 2;
+            boid.vx = Math.cos(a);
+            boid.vy = Math.sin(a);
+          }
+
+          boid.x += boid.vx;
+          boid.y += boid.vy;
+
+          // toroidal wrap
+          if (boid.x < 0) boid.x += W;
+          else if (boid.x > W) boid.x -= W;
+          if (boid.y < 0) boid.y += H;
+          else if (boid.y > H) boid.y -= H;
+        }
+      }
+
+      // ── draw ─────────────────────────────────────────────────────────────
+      function drawTreeNode(node) {
+        ctx.strokeRect(
+          node.bounds.x,
+          node.bounds.y,
+          node.bounds.width,
+          node.bounds.height,
+        );
+        for (const q of node.quadrants) drawTreeNode(q);
+      }
+
+      function draw() {
+        // partial clear for motion blur
+        ctx.fillStyle = "rgba(5, 5, 16, 0.28)";
+        ctx.fillRect(0, 0, W, H);
+
+        if (showTree) {
+          ctx.strokeStyle = "rgba(124, 77, 255, 0.22)";
+          ctx.lineWidth = 0.5;
+          drawTreeNode(tree);
+        }
+
+        if (showPerc) {
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+          ctx.lineWidth = 1;
+          for (const b of boids) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, PERCEPTION_R, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        for (const b of boids) {
+          const angle = Math.atan2(b.vy, b.vx);
+          // color by heading so flocking formations show up as color bands
+          const hue = ((angle / Math.PI + 1) * 180) % 360;
+          ctx.fillStyle = `hsl(${hue}, 85%, 65%)`;
+
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.rotate(angle);
+          // arrow / fish shape with a concave tail notch
+          ctx.beginPath();
+          ctx.moveTo(BOID_SIZE, 0);
+          ctx.lineTo(-BOID_SIZE * 0.65, BOID_SIZE * 0.55);
+          ctx.lineTo(-BOID_SIZE * 0.3, 0);
+          ctx.lineTo(-BOID_SIZE * 0.65, -BOID_SIZE * 0.55);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // ── loop ─────────────────────────────────────────────────────────────
+      let lastTime = 0,
+        frameCount = 0,
+        fpsTime = 0;
+
+      function loop(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+        frameCount++;
+        fpsTime += dt;
+        if (fpsTime >= 500) {
+          document.getElementById("fps").textContent = Math.round(
+            frameCount / (fpsTime / 1000),
+          );
+          document.getElementById("neighbors").textContent = (
+            totalNeighbors / BOID_COUNT
+          ).toFixed(1);
+          frameCount = 0;
+          fpsTime = 0;
+        }
+        update();
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>

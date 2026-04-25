@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>simplequad — Gravity Sandbox</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #050510;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: monospace;
+        color: #eee;
+      }
+      canvas {
+        border: 2px solid #1a1a3e;
+        display: block;
+        cursor: crosshair;
+      }
+      #hud {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #666;
+        display: flex;
+        gap: 24px;
+      }
+      #controls {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #444;
+      }
+      label {
+        color: #888;
+      }
+      input[type="range"] {
+        vertical-align: middle;
+        width: 90px;
+        accent-color: #7c4dff;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="540"></canvas>
+    <div id="hud">
+      <span>blobs: <b id="count">0</b></span>
+      <span>fps: <b id="fps">0</b></span>
+      <span
+        ><label
+          >gravity
+          <input
+            type="range"
+            id="grav"
+            min="-0.3"
+            max="0.3"
+            step="0.01"
+            value="0.08" /></label
+      ></span>
+      <span
+        ><label
+          >drag
+          <input
+            type="range"
+            id="drag"
+            min="0.90"
+            max="0.999"
+            step="0.001"
+            value="0.985" /></label
+      ></span>
+    </div>
+    <div id="controls">
+      click to spawn blobs &nbsp;|&nbsp; right-click to attract to cursor
+      &nbsp;|&nbsp; sliders adjust physics
+    </div>
+
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width,
+        H = canvas.height;
+
+      const tree = SimpleQuad.createQuadTree({
+        x: 0,
+        y: 0,
+        width: W,
+        height: H,
+      });
+
+      // ── config ─────────────────────────────────────────────────────────────
+      const MAX_BLOBS = 220;
+      const PALETTE = [
+        "#7c4dff",
+        "#e040fb",
+        "#00e5ff",
+        "#69f0ae",
+        "#ffea00",
+        "#ff6d00",
+        "#f50057",
+        "#40c4ff",
+      ];
+
+      let gravityY = 0.08;
+      let drag = 0.985;
+      let attractMode = false;
+      const mouse = { x: W / 2, y: H / 2 };
+
+      document.getElementById("grav").addEventListener("input", (e) => {
+        gravityY = parseFloat(e.target.value);
+      });
+      document.getElementById("drag").addEventListener("input", (e) => {
+        drag = parseFloat(e.target.value);
+      });
+      canvas.addEventListener("mousemove", (e) => {
+        const r = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - r.left;
+        mouse.y = e.clientY - r.top;
+      });
+      canvas.addEventListener("mousedown", (e) => {
+        if (e.button === 2) {
+          attractMode = true;
+          return;
+        }
+        spawnBlob(mouse.x, mouse.y);
+      });
+      canvas.addEventListener("mouseup", (e) => {
+        if (e.button === 2) attractMode = false;
+      });
+      canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      // ── blobs ──────────────────────────────────────────────────────────────
+      const blobs = [];
+
+      function spawnBlob(x, y, count = 5) {
+        for (let i = 0; i < count && blobs.length < MAX_BLOBS; i++) {
+          const r = 8 + Math.random() * 14;
+          blobs.push({
+            x: x + (Math.random() - 0.5) * 30,
+            y: y + (Math.random() - 0.5) * 30,
+            r,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+            trail: [],
+          });
+        }
+        document.getElementById("count").textContent = blobs.length;
+      }
+
+      // seed a few to start
+      for (let i = 0; i < 6; i++) {
+        spawnBlob(
+          100 + Math.random() * (W - 200),
+          100 + Math.random() * (H - 200),
+          6,
+        );
+      }
+
+      // ── loop ───────────────────────────────────────────────────────────────
+      let lastTime = 0,
+        fps = 0,
+        frameCount = 0,
+        fpsTime = 0;
+
+      function update(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+        frameCount++;
+        fpsTime += dt;
+        if (fpsTime >= 500) {
+          fps = Math.round(frameCount / (fpsTime / 1000));
+          frameCount = 0;
+          fpsTime = 0;
+          document.getElementById("fps").textContent = fps;
+        }
+
+        // rebuild tree
+        tree.clear();
+        for (const b of blobs) tree.add(b);
+
+        for (const blob of blobs) {
+          // gravity
+          blob.vy += gravityY;
+
+          // attract to cursor on right-click
+          if (attractMode) {
+            const dx = mouse.x - blob.x;
+            const dy = mouse.y - blob.y;
+            const d = Math.hypot(dx, dy) || 1;
+            const strength = Math.min(4000 / (d * d), 1.2);
+            blob.vx += (dx / d) * strength;
+            blob.vy += (dy / d) * strength;
+          }
+
+          // drag
+          blob.vx *= drag;
+          blob.vy *= drag;
+
+          blob.x += blob.vx;
+          blob.y += blob.vy;
+
+          // wall bounce
+          if (blob.x - blob.r < 0) {
+            blob.x = blob.r;
+            blob.vx *= -0.6;
+          }
+          if (blob.x + blob.r > W) {
+            blob.x = W - blob.r;
+            blob.vx *= -0.6;
+          }
+          if (blob.y - blob.r < 0) {
+            blob.y = blob.r;
+            blob.vy *= -0.6;
+          }
+          if (blob.y + blob.r > H) {
+            blob.y = H - blob.r;
+            blob.vy *= -0.6;
+          }
+
+          // trail
+          blob.trail.push({ x: blob.x, y: blob.y });
+          if (blob.trail.length > 18) blob.trail.shift();
+
+          // collision response via MTV — push blobs apart
+          const hits = tree.query(blob);
+          for (const { object, mtv } of hits) {
+            if (object === blob) continue;
+            // split the push between the two objects
+            const half = 0.5;
+            blob.x += mtv.vector.x * half;
+            blob.y += mtv.vector.y * half;
+            object.x -= mtv.vector.x * half;
+            object.y -= mtv.vector.y * half;
+
+            // elastic-ish velocity exchange along collision axis
+            const nx = mtv.direction.x;
+            const ny = mtv.direction.y;
+            const dvx = blob.vx - object.vx;
+            const dvy = blob.vy - object.vy;
+            const dot = dvx * nx + dvy * ny;
+            if (dot < 0) {
+              const impulse = dot * 0.7;
+              blob.vx -= impulse * nx;
+              blob.vy -= impulse * ny;
+              object.vx += impulse * nx;
+              object.vy += impulse * ny;
+            }
+          }
+        }
+      }
+
+      function draw() {
+        // motion blur fade
+        ctx.fillStyle = "rgba(5, 5, 16, 0.25)";
+        ctx.fillRect(0, 0, W, H);
+
+        for (const blob of blobs) {
+          // trail
+          if (blob.trail.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(blob.trail[0].x, blob.trail[0].y);
+            for (let i = 1; i < blob.trail.length; i++) {
+              ctx.lineTo(blob.trail[i].x, blob.trail[i].y);
+            }
+            ctx.strokeStyle = blob.color + "33";
+            ctx.lineWidth = blob.r * 0.6;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.stroke();
+          }
+
+          // glow
+          const glow = ctx.createRadialGradient(
+            blob.x,
+            blob.y,
+            0,
+            blob.x,
+            blob.y,
+            blob.r * 1.8,
+          );
+          glow.addColorStop(0, blob.color + "cc");
+          glow.addColorStop(1, blob.color + "00");
+          ctx.beginPath();
+          ctx.arc(blob.x, blob.y, blob.r * 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = glow;
+          ctx.fill();
+
+          // core
+          ctx.beginPath();
+          ctx.arc(blob.x, blob.y, blob.r, 0, Math.PI * 2);
+          ctx.fillStyle = blob.color;
+          ctx.fill();
+        }
+
+        // cursor attractor ring
+        if (attractMode) {
+          ctx.beginPath();
+          ctx.arc(mouse.x, mouse.y, 18, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(255,255,255,0.5)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(mouse.x, mouse.y, 5, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,0.6)";
+          ctx.fill();
+        }
+      }
+
+      function loop(ts) {
+        update(ts);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>simplequad — Breakout</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #0a0a18;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+        color: #eee;
+      }
+      canvas {
+        display: block;
+        border: 2px solid #1a1a3e;
+        cursor: none;
+      }
+      #hud {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #666;
+        display: flex;
+        gap: 24px;
+      }
+      #hud b {
+        color: #aaa;
+      }
+      #controls {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #444;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="560"></canvas>
+    <div id="hud">
+      <span>score: <b id="score">0</b></span>
+      <span>level: <b id="level">1</b></span>
+      <span>lives: <b id="lives">♥ ♥ ♥</b></span>
+      <span>bricks in tree: <b id="inTree">0</b></span>
+      <span>fps: <b id="fps">0</b></span>
+    </div>
+    <div id="controls">
+      mouse or A / D / arrows to move paddle &nbsp;|&nbsp; space or click to launch
+    </div>
+
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+
+      // ── layout constants ──────────────────────────────────────────────────
+      const BALL_R = 8;
+      const PADDLE_W = 100, PADDLE_H = 14;
+      const BRICK_COLS = 10, BRICK_ROWS = 6;
+      const BRICK_W = 68, BRICK_H = 22, BRICK_GAP = 5;
+      const BRICK_AREA_W = BRICK_COLS * (BRICK_W + BRICK_GAP) - BRICK_GAP;
+      const BRICK_START_X = (W - BRICK_AREA_W) / 2;
+      const BRICK_START_Y = 52;
+      const BALL_SPEED_BASE = 4.5;
+
+      const ROW_COLORS  = ['#ff3a3a', '#ff7a3a', '#ffcc00', '#3adb6e', '#3adeff', '#a855f7'];
+      const ROW_POINTS  = [7, 5, 4, 3, 2, 1];
+
+      // ── state ─────────────────────────────────────────────────────────────
+      const tree = SimpleQuad.createQuadTree({ x: 0, y: 0, width: W, height: H });
+
+      let score = 0, lives = 3, level = 1;
+      let ballSpeed = BALL_SPEED_BASE;
+      let gameState = 'waiting'; // 'waiting' | 'playing' | 'gameover'
+
+      const paddle = { x: W / 2 - PADDLE_W / 2, y: H - 46, width: PADDLE_W, height: PADDLE_H };
+      const ball   = { x: W / 2, y: paddle.y - BALL_R - 1, r: BALL_R, vx: 0, vy: 0 };
+      const bricks = [];
+      const particles = [];
+      const popups = [];
+
+      // tracks mouse position; keyboard nudges this same value so both work
+      let cursorX = W / 2;
+
+      // ── input ─────────────────────────────────────────────────────────────
+      const keys = {};
+      canvas.addEventListener('mousemove', e => {
+        cursorX = e.clientX - canvas.getBoundingClientRect().left;
+      });
+      canvas.addEventListener('click', tryLaunch);
+      document.addEventListener('keydown', e => {
+        keys[e.code] = true;
+        if (e.code === 'Space') tryLaunch();
+      });
+      document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+      function tryLaunch() {
+        if (gameState !== 'waiting') return;
+        gameState = 'playing';
+        // slight random spread so the launch angle isn't always the same
+        const spread = (Math.random() - 0.5) * (Math.PI / 5);
+        ball.vx = Math.sin(spread) * ballSpeed;
+        ball.vy = -Math.cos(spread) * ballSpeed;
+      }
+
+      // ── bricks ────────────────────────────────────────────────────────────
+      function buildGrid() {
+        bricks.length = 0;
+        for (let row = 0; row < BRICK_ROWS; row++) {
+          // higher rows get extra HP on later levels
+          const hp = (level >= 3 && row < 3) ? 2 : (level >= 2 && row < 1) ? 2 : 1;
+          for (let col = 0; col < BRICK_COLS; col++) {
+            bricks.push({
+              x: BRICK_START_X + col * (BRICK_W + BRICK_GAP),
+              y: BRICK_START_Y + row * (BRICK_H + BRICK_GAP),
+              width: BRICK_W, height: BRICK_H,
+              hp, maxHp: hp,
+              color: ROW_COLORS[row],
+              points: ROW_POINTS[row],
+              flash: 0,
+            });
+          }
+        }
+        document.getElementById('inTree').textContent = bricks.length;
+      }
+
+      // ── particles ─────────────────────────────────────────────────────────
+      function spawnParticles(x, y, color, n = 10) {
+        for (let i = 0; i < n; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const spd = 1 + Math.random() * 3.5;
+          particles.push({
+            x: x + (Math.random() - 0.5) * 20,
+            y: y + (Math.random() - 0.5) * 10,
+            vx: Math.cos(a) * spd, vy: Math.sin(a) * spd - 1,
+            life: 1.0, decay: 0.03 + Math.random() * 0.04,
+            w: 2 + Math.random() * 5, h: 2 + Math.random() * 4,
+            color,
+          });
+        }
+      }
+
+      // ── helpers ───────────────────────────────────────────────────────────
+      function livesText(n) {
+        return Array.from({ length: 3 }, (_, i) => i < n ? '♥' : '♡').join(' ');
+      }
+
+      function resetBall() {
+        gameState = 'waiting';
+        ball.vx = 0; ball.vy = 0;
+        ball.x = paddle.x + paddle.width / 2;
+        ball.y = paddle.y - BALL_R - 1;
+      }
+
+      // ── update ────────────────────────────────────────────────────────────
+      function update() {
+        // keyboard nudges cursorX so it works as a unified paddle driver
+        const kspd = 5;
+        if (keys['ArrowLeft']  || keys['KeyA']) cursorX = Math.max(PADDLE_W / 2, cursorX - kspd);
+        if (keys['ArrowRight'] || keys['KeyD']) cursorX = Math.min(W - PADDLE_W / 2, cursorX + kspd);
+
+        paddle.x = Math.max(0, Math.min(W - PADDLE_W, cursorX - PADDLE_W / 2));
+
+        if (gameState === 'waiting') {
+          ball.x = paddle.x + PADDLE_W / 2;
+          ball.y = paddle.y - BALL_R - 1;
+          return;
+        }
+        if (gameState !== 'playing') return;
+
+        // advance particles and popups
+        for (const p of particles) {
+          p.x += p.vx; p.y += p.vy;
+          p.vy += 0.09; p.vx *= 0.97;
+          p.life -= p.decay;
+        }
+        particles.splice(0, particles.length, ...particles.filter(p => p.life > 0));
+
+        for (const pop of popups) { pop.y -= 0.9; pop.life -= 0.025; }
+        popups.splice(0, popups.length, ...popups.filter(p => p.life > 0));
+
+        for (const b of bricks) { if (b.flash > 0) b.flash = Math.max(0, b.flash - 0.12); }
+
+        // move ball
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+
+        // wall bounces (left/right/top)
+        if (ball.x - BALL_R < 0)  { ball.x = BALL_R;      ball.vx =  Math.abs(ball.vx); }
+        if (ball.x + BALL_R > W)  { ball.x = W - BALL_R;  ball.vx = -Math.abs(ball.vx); }
+        if (ball.y - BALL_R < 0)  { ball.y = BALL_R;      ball.vy =  Math.abs(ball.vy); }
+
+        // ball lost
+        if (ball.y > H + 20) {
+          lives--;
+          document.getElementById('lives').textContent = livesText(lives);
+          if (lives <= 0) { gameState = 'gameover'; return; }
+          resetBall();
+          return;
+        }
+
+        // ── collision via tree ─────────────────────────────────────────────
+        tree.clear();
+        for (const b of bricks) tree.add(b);
+        tree.add(paddle);
+
+        const hits = tree.query(ball);
+        let reflected = false;
+        const dead = new Set();
+
+        for (const { object, mtv } of hits) {
+          // push ball out of the overlap
+          ball.x += mtv.vector.x;
+          ball.y += mtv.vector.y;
+
+          // reflect velocity along the MTV normal — only once per frame to
+          // prevent double-flipping on simultaneous corner hits
+          if (!reflected) {
+            const nx = mtv.direction.x, ny = mtv.direction.y;
+            const dot = ball.vx * nx + ball.vy * ny;
+            if (dot < 0) {
+              ball.vx -= 2 * dot * nx;
+              ball.vy -= 2 * dot * ny;
+              reflected = true;
+            }
+          }
+
+          if (object === paddle) {
+            // bias the exit angle based on where the ball hits the paddle face
+            // so players have control over the shot direction
+            const rel = (ball.x - (paddle.x + PADDLE_W / 2)) / (PADDLE_W / 2);
+            ball.vx += rel * 1.6;
+            // renormalize to constant speed and force upward exit
+            const spd = Math.hypot(ball.vx, ball.vy);
+            ball.vx = ball.vx / spd * ballSpeed;
+            ball.vy = -Math.abs(ball.vy / spd * ballSpeed);
+          } else {
+            object.hp--;
+            object.flash = 1.0;
+            if (object.hp <= 0) {
+              dead.add(object);
+              const pts = object.points * level;
+              score += pts;
+              document.getElementById('score').textContent = score;
+              spawnParticles(object.x + object.width / 2, object.y + object.height / 2, object.color);
+              popups.push({
+                x: object.x + object.width / 2,
+                y: object.y,
+                text: '+' + pts,
+                life: 1.0,
+                color: object.color,
+              });
+            }
+          }
+        }
+
+        bricks.splice(0, bricks.length, ...bricks.filter(b => !dead.has(b)));
+        document.getElementById('inTree').textContent = bricks.length;
+
+        // cleared all bricks — next level
+        if (bricks.length === 0) {
+          level++;
+          ballSpeed = BALL_SPEED_BASE + (level - 1) * 0.35;
+          document.getElementById('level').textContent = level;
+          buildGrid();
+          resetBall();
+        }
+      }
+
+      // ── draw ──────────────────────────────────────────────────────────────
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#0a0a18';
+        ctx.fillRect(0, 0, W, H);
+
+        // bricks
+        for (const b of bricks) {
+          const alpha = b.maxHp > 1 ? 0.35 + (b.hp / b.maxHp) * 0.65 : 1;
+          ctx.globalAlpha = alpha;
+
+          // flash white on hit, otherwise show base color
+          ctx.fillStyle = b.flash > 0
+            ? `hsl(0, 0%, ${50 + b.flash * 50}%)`
+            : b.color;
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+
+          // top-edge highlight
+          ctx.globalAlpha = alpha * 0.35;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(b.x + 1, b.y + 1, b.width - 2, 3);
+
+          // HP number on multi-hit bricks
+          if (b.maxHp > 1 && b.hp > 0) {
+            ctx.globalAlpha = 0.9;
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(b.hp, b.x + b.width / 2, b.y + b.height / 2 + 4);
+          }
+        }
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'left';
+
+        // particles (colored square chips)
+        for (const p of particles) {
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h);
+        }
+        ctx.globalAlpha = 1;
+
+        // score popups
+        for (const pop of popups) {
+          ctx.globalAlpha = pop.life;
+          ctx.fillStyle = pop.color;
+          ctx.font = 'bold 13px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(pop.text, pop.x, pop.y);
+        }
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'left';
+
+        // paddle
+        ctx.fillStyle = '#7c4dff';
+        ctx.fillRect(paddle.x, paddle.y, PADDLE_W, PADDLE_H);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(paddle.x + 2, paddle.y + 2, PADDLE_W - 4, 3);
+
+        // ball glow
+        const grd = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, BALL_R * 3.5);
+        grd.addColorStop(0,    'rgba(200, 220, 255, 0.85)');
+        grd.addColorStop(0.35, 'rgba(160, 190, 255, 0.3)');
+        grd.addColorStop(1,    'rgba(100, 140, 255, 0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, BALL_R * 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ball core
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2);
+        ctx.fill();
+
+        // launch hint
+        if (gameState === 'waiting') {
+          ctx.strokeStyle = 'rgba(124, 77, 255, 0.45)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 5]);
+          ctx.beginPath();
+          ctx.moveTo(ball.x, ball.y - BALL_R);
+          ctx.lineTo(ball.x, ball.y - 52);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.font = '13px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('space or click to launch', W / 2, paddle.y - 28);
+          ctx.textAlign = 'left';
+        }
+
+        // game over overlay
+        if (gameState === 'gameover') {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = '#f44';
+          ctx.font = 'bold 42px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('GAME OVER', W / 2, H / 2 - 20);
+          ctx.fillStyle = '#aaa';
+          ctx.font = '18px monospace';
+          ctx.fillText(`score: ${score}  ·  level: ${level}`, W / 2, H / 2 + 22);
+          ctx.fillStyle = '#555';
+          ctx.font = '13px monospace';
+          ctx.fillText('refresh to play again', W / 2, H / 2 + 56);
+          ctx.textAlign = 'left';
+        }
+      }
+
+      // ── loop ──────────────────────────────────────────────────────────────
+      buildGrid();
+
+      let lastTime = 0, frameCount = 0, fpsTime = 0;
+      function loop(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+        frameCount++;
+        fpsTime += dt;
+        if (fpsTime >= 500) {
+          document.getElementById('fps').textContent = Math.round(frameCount / (fpsTime / 1000));
+          frameCount = 0; fpsTime = 0;
+        }
+        update();
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>

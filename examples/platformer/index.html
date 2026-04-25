@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>simplequad — Platformer</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #1a1a2e;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: monospace;
+        color: #eee;
+      }
+      canvas {
+        border: 2px solid #444;
+        display: block;
+      }
+      #hud {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #aaa;
+      }
+      #controls {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="500"></canvas>
+    <div id="hud">
+      objects in tree: <span id="count">0</span> &nbsp;|&nbsp; fps:
+      <span id="fps">0</span>
+    </div>
+    <div id="controls">
+      Arrow keys / WASD to move &nbsp;|&nbsp; Up / W / Space to jump
+    </div>
+
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width,
+        H = canvas.height;
+
+      // ── world ──────────────────────────────────────────────────────────────
+      const GRAVITY = 0.5;
+      const PLAYER_SPEED = 4;
+      const JUMP_FORCE = -11;
+      const TILE = 24;
+
+      const tree = SimpleQuad.createQuadTree({
+        x: 0,
+        y: 0,
+        width: W,
+        height: H,
+      });
+
+      // platforms: array of {x,y,width,height,color}
+      const platforms = [
+        // ground
+        { x: 0, y: H - TILE, width: W, height: TILE, color: "#4a7c59" },
+        // mid platforms
+        { x: 100, y: 360, width: 160, height: TILE, color: "#4a7c59" },
+        { x: 340, y: 300, width: 120, height: TILE, color: "#4a7c59" },
+        { x: 540, y: 250, width: 140, height: TILE, color: "#4a7c59" },
+        { x: 200, y: 210, width: 100, height: TILE, color: "#4a7c59" },
+        { x: 620, y: 380, width: 130, height: TILE, color: "#4a7c59" },
+        // high platforms
+        { x: 50, y: 140, width: 120, height: TILE, color: "#3d6b4f" },
+        { x: 660, y: 150, width: 110, height: TILE, color: "#3d6b4f" },
+        { x: 350, y: 120, width: 100, height: TILE, color: "#3d6b4f" },
+        // coins (small boxes used as collectibles)
+      ];
+
+      // coins
+      const coins = [];
+      const coinPositions = [
+        [130, 340],
+        [200, 340],
+        [380, 280],
+        [440, 280],
+        [570, 230],
+        [640, 230],
+        [230, 190],
+        [260, 190],
+        [80, 120],
+        [130, 120],
+        [380, 100],
+        [430, 100],
+        [680, 130],
+        [720, 130],
+        [660, 360],
+      ];
+      coinPositions.forEach(([cx, cy]) => {
+        coins.push({ x: cx, y: cy, width: 10, height: 10, collected: false });
+      });
+
+      const player = {
+        x: 60,
+        y: H - TILE - 32,
+        width: 24,
+        height: 32,
+        vx: 0,
+        vy: 0,
+        onGround: false,
+        color: "#e8a838",
+      };
+
+      const keys = {};
+      document.addEventListener("keydown", (e) => (keys[e.code] = true));
+      document.addEventListener("keyup", (e) => (keys[e.code] = false));
+
+      function isJump() {
+        return keys["ArrowUp"] || keys["KeyW"] || keys["Space"];
+      }
+
+      let score = 0;
+      let lastTime = 0,
+        fps = 0,
+        frameCount = 0,
+        fpsTime = 0;
+
+      function update(dt) {
+        // horizontal
+        if (keys["ArrowLeft"] || keys["KeyA"]) player.vx = -PLAYER_SPEED;
+        else if (keys["ArrowRight"] || keys["KeyD"]) player.vx = PLAYER_SPEED;
+        else player.vx = 0;
+
+        // jump
+        if (isJump() && player.onGround) {
+          player.vy = JUMP_FORCE;
+          player.onGround = false;
+        }
+
+        player.vy += GRAVITY;
+        player.x += player.vx;
+        player.y += player.vy;
+
+        // clamp to canvas horizontally
+        player.x = Math.max(0, Math.min(W - player.width, player.x));
+
+        // rebuild tree each frame
+        tree.clear();
+        platforms.forEach((p) => tree.add(p));
+        coins.filter((c) => !c.collected).forEach((c) => tree.add(c));
+
+        // query player
+        const hits = tree.query(player);
+        player.onGround = false;
+
+        for (const { object, mtv } of hits) {
+          if (object.collected !== undefined) {
+            // coin
+            object.collected = true;
+            score++;
+            continue;
+          }
+          // platform collision response via MTV
+          player.x += mtv.vector.x;
+          player.y += mtv.vector.y;
+
+          // landing: MTV pushed us upward (negative y component dominates)
+          if (mtv.vector.y < -0.1) {
+            player.vy = 0;
+            player.onGround = true;
+          }
+          // hitting ceiling
+          if (mtv.vector.y > 0.1 && player.vy < 0) {
+            player.vy = 0;
+          }
+          // wall
+          if (Math.abs(mtv.vector.x) > 0.1) {
+            player.vx = 0;
+          }
+        }
+
+        // fall off bottom resets
+        if (player.y > H + 50) {
+          player.x = 60;
+          player.y = H - TILE - 32;
+          player.vx = 0;
+          player.vy = 0;
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // background gradient
+        const bg = ctx.createLinearGradient(0, 0, 0, H);
+        bg.addColorStop(0, "#1a1a2e");
+        bg.addColorStop(1, "#16213e");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+
+        // platforms
+        for (const p of platforms) {
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+          // top highlight
+          ctx.fillStyle = "rgba(255,255,255,0.08)";
+          ctx.fillRect(p.x, p.y, p.width, 3);
+        }
+
+        // coins
+        for (const c of coins) {
+          if (c.collected) continue;
+          ctx.fillStyle = "#f5c518";
+          ctx.beginPath();
+          ctx.arc(c.x + 5, c.y + 5, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // player
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        // eyes
+        ctx.fillStyle = "#1a1a2e";
+        ctx.fillRect(player.x + 5, player.y + 8, 4, 4);
+        ctx.fillRect(player.x + 15, player.y + 8, 4, 4);
+
+        // score
+        ctx.fillStyle = "#f5c518";
+        ctx.font = "bold 16px monospace";
+        ctx.fillText(`coins: ${score} / ${coins.length}`, 12, 24);
+
+        if (score === coins.length) {
+          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "#f5c518";
+          ctx.font = "bold 32px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("You collected all coins!", W / 2, H / 2);
+          ctx.font = "16px monospace";
+          ctx.fillStyle = "#aaa";
+          ctx.fillText("Refresh to play again", W / 2, H / 2 + 36);
+          ctx.textAlign = "left";
+        }
+      }
+
+      function loop(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+        frameCount++;
+        fpsTime += dt;
+        if (fpsTime >= 500) {
+          fps = Math.round(frameCount / (fpsTime / 1000));
+          frameCount = 0;
+          fpsTime = 0;
+          document.getElementById("fps").textContent = fps;
+          document.getElementById("count").textContent = tree.getData().length;
+        }
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
