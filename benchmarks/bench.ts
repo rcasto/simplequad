@@ -62,6 +62,23 @@ export function printHeader(title: string): void {
     console.log('─'.repeat(90));
 }
 
+export function averageResults(results: BenchResult[]): BenchResult {
+    if (results.length === 0) throw new Error('No results to average');
+    if (results.length === 1) return results[0];
+    const n = results.length;
+    const avg = (fn: (r: BenchResult) => number) => results.reduce((s, r) => s + fn(r), 0) / n;
+    return {
+        name: results[0].name,
+        opsPerSec: Math.round(avg(r => r.opsPerSec)),
+        avgMs: avg(r => r.avgMs),
+        minMs: avg(r => r.minMs),
+        p50Ms: avg(r => r.p50Ms),
+        p95Ms: avg(r => r.p95Ms),
+        totalMs: avg(r => r.totalMs),
+        iterations: results[0].iterations,
+    };
+}
+
 export function printSectionHeader(title: string): void {
     console.log(`\n  ${title}`);
     console.log(`  ${'·'.repeat(60)}`);

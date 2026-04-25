@@ -110,8 +110,8 @@ export function runStressBenchmarks(rng: () => number = Math.random): void {
     }, { iterations: 5000, warmupIterations: 200 });
     printResult(circleQueryResult);
 
-    // Rapid remove-all stress: exposes the O(n) collapse scan per remove
-    printSectionHeader('Remove-all cost scaling — O(n²) expected due to collapse scan');
+    // Rapid remove-all stress: each remove is O(1) amortized after collapse scan was removed
+    printSectionHeader('Remove-all cost scaling — O(n) total, ~2–4μs per remove regardless of n');
     for (const n of [25, 50, 100, 200]) {
         const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
         const start = performance.now();

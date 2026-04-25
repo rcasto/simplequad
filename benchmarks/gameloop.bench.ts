@@ -1,47 +1,53 @@
 import { createQuadTree } from '../src';
-import { bench, printHeader, printResult, printSectionHeader } from './bench';
-import { TREE_BOUNDS, makeRandomBoxes } from './helpers';
+import { averageResults, bench, printHeader, printResult, printSectionHeader } from './bench';
+import { TREE_BOUNDS, makeRandomBoxes, seededRandom } from './helpers';
 
 // Simulates the most common dynamic-scene usage pattern:
 //   each "frame" — clear the tree, re-add all objects, query each object
 // This is how most game devs use a quadtree when objects move every frame.
 
-export function runGameloopBenchmarks(rng: () => number = Math.random): void {
-    printHeader('GAME LOOP — simulated frame: clear → add all → query each object');
+export function runGameloopBenchmarks(seeds: number[]): void {
+    printHeader(`GAME LOOP — simulated frame: clear → add all → query each object (averaged across ${seeds.length} seeds)`);
 
     printSectionHeader('Full frame cost at varying object counts');
     for (const n of [25, 50, 100, 200, 400, 750, 1000]) {
-        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
-        const tree = createQuadTree(TREE_BOUNDS, 5);
-
-        const result = bench(`frame with n=${n} AABB objects`, () => {
-            tree.clear();
-            for (let i = 0; i < n; i++) tree.add(objects[i]);
-            for (let i = 0; i < n; i++) tree.query(objects[i]);
-        }, { iterations: 500, warmupIterations: 50 });
-        printResult(result);
+        const results = seeds.map(seed => {
+            const objects = makeRandomBoxes(n, TREE_BOUNDS, seededRandom(seed));
+            const tree = createQuadTree(TREE_BOUNDS, 5);
+            return bench(`frame with n=${n} AABB objects`, () => {
+                tree.clear();
+                for (let i = 0; i < n; i++) tree.add(objects[i]);
+                for (let i = 0; i < n; i++) tree.query(objects[i]);
+            }, { iterations: 500, warmupIterations: 50 });
+        });
+        printResult(averageResults(results));
     }
 
     printSectionHeader('Frame budget check — can we hit 60fps (16.7ms/frame)?');
-    // Print which object counts stay within a 16.7ms budget
     const budgetMs = 16.7;
     console.log(`\n  Target: <${budgetMs}ms per frame for 60fps`);
     for (const n of [25, 50, 100, 150, 200, 300, 400, 500, 750, 1000]) {
-        const objects = makeRandomBoxes(n, TREE_BOUNDS, rng);
-        const tree = createQuadTree(TREE_BOUNDS, 5);
+        const results = seeds.map(seed => {
+            const objects = makeRandomBoxes(n, TREE_BOUNDS, seededRandom(seed));
+            const tree = createQuadTree(TREE_BOUNDS, 5);
+            return bench(`n=${n}`, () => {
+                tree.clear();
+                for (let i = 0; i < n; i++) tree.add(objects[i]);
+                for (let i = 0; i < n; i++) tree.query(objects[i]);
+            }, { iterations: 200, warmupIterations: 30 });
+        });
 
-        const result = bench(`n=${n}`, () => {
-            tree.clear();
-            for (let i = 0; i < n; i++) tree.add(objects[i]);
-            for (let i = 0; i < n; i++) tree.query(objects[i]);
-        }, { iterations: 200, warmupIterations: 30 });
-
+        const result = averageResults(results);
         const withinBudget = result.avgMs <= budgetMs;
         const budgetUsed = ((result.avgMs / budgetMs) * 100).toFixed(1);
         const fmtMs = (ms: number) => ms < 1 ? `${(ms * 1000).toFixed(0)}μs` : `${ms.toFixed(3)}ms`;
         const marker = withinBudget ? '✓' : '✗';
         console.log(`  ${marker}  n=${String(n).padEnd(4)}  avg ${result.avgMs.toFixed(3)}ms   p95 ${fmtMs(result.p95Ms)}   (${budgetUsed}% of 16.7ms frame budget)`);
     }
+
+    // Capacity effect and rebuild sections use a single seed since they test structural
+    // behavior rather than spatial variance.
+    const rng = seededRandom(seeds[0]);
 
     printSectionHeader('Capacity effect on frame cost at n=100');
     const objects100 = makeRandomBoxes(100, TREE_BOUNDS, rng);
