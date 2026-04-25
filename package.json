@@ -20,9 +20,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run test && npm run build",
-    "perf-client": "http-server -p 8080 ./",
-    "benchmark": "vite-node benchmarks/index.ts"
+    "prepack": "npm run test && npm run build",
+    "benchmark": "tsx benchmarks/index.ts"
   },
   "author": "Richie Casto (https://github.com/rcasto)",
   "homepage": "https://github.com/rcasto/simplequad#readme",
@@ -40,7 +39,7 @@
   "license": "MIT",
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.5",
-    "http-server": "13.0.1",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
     "vitest": "^4.1.5"
