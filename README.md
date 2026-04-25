@@ -2,9 +2,7 @@
 
 [![Node.js CI](https://github.com/rcasto/simplequad/actions/workflows/ci.yml/badge.svg)](https://github.com/rcasto/simplequad/actions/workflows/ci.yml)
 
-Most spatial indexers return candidates — simplequad returns results. One `query()` call gives you the colliding objects _and_ the overlap vector to push them apart. No second library, no glue code.
-
-Bundles quadtree spatial partitioning, SAT intersection testing, and minimum translation vector (MTV) output in a single zero-dependency TypeScript package. Supports `BoundingBox`, `Circle`, and `Point`, freely mixed. It detects and measures collisions — resolution is up to you.
+Bundles quadtree spatial partitioning, SAT intersection testing, and minimum translation vector (MTV) output in a single zero-dependency TypeScript package.
 
 ![simplequad](./simplequad.gif)  
 [Examples →](https://rcasto.github.io/simplequad/)
@@ -106,40 +104,6 @@ function gameLoop(entities: Entity[]) {
     }
   }
 }
-```
-
-### Basic example
-
-```typescript
-import { BoundingBox, Bound, createQuadTree, QuadTree } from "simplequad";
-
-interface Monster extends Bound {
-  hp: number;
-  attack: number;
-  favoriteFood: string;
-}
-
-const bounds: BoundingBox = { x: 0, y: 0, width: 800, height: 600 };
-const quadTree: QuadTree<Monster> = createQuadTree(bounds);
-
-const monster: Monster = {
-  x: 0,
-  y: 0,
-  width: 200,
-  height: 200,
-  hp: 100,
-  attack: 50,
-  favoriteFood: "tacos",
-};
-
-quadTree.add(monster);
-
-const results = quadTree.query({ x: 0, y: 0, width: 100, height: 100 });
-// results[0].object === monster
-// results[0].mtv contains the overlap vector
-
-quadTree.remove(monster);
-quadTree.clear();
 ```
 
 ### Moving a single object
