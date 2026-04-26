@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>simplequad — Horde Survival</title>
+    <style>
+      :root {
+        --bg: #0d0505;
+        --border: #3a1010;
+        --text: #eee;
+        --muted: #aaa;
+        --muted2: #555;
+        --accent: #ff4422;
+        --btn-bg: rgba(255, 255, 255, 0.07);
+        --btn-border: rgba(255, 68, 34, 0.3);
+        --btn-text: #aaa;
+      }
+      [data-theme="light"] {
+        --bg: #f8f0f0;
+        --border: #e0c0c0;
+        --text: #1a0a0a;
+        --muted: #666;
+        --muted2: #999;
+        --accent: #cc2200;
+        --btn-bg: rgba(0, 0, 0, 0.05);
+        --btn-border: rgba(0, 0, 0, 0.15);
+        --btn-text: #555;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+        color: var(--text);
+        padding: 16px;
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+      canvas {
+        border: 2px solid var(--border);
+        display: block;
+        cursor: none;
+        width: min(800px, calc(100vw - 32px));
+        aspect-ratio: 800 / 560;
+        touch-action: none;
+      }
+      #hud {
+        margin-top: 8px;
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+      }
+      #hud b {
+        color: var(--text);
+      }
+      #controls {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--muted2);
+        text-align: center;
+      }
+      #btn-theme {
+        background: none;
+        border: 1px solid var(--btn-border);
+        border-radius: 4px;
+        color: var(--btn-text);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px 7px;
+        font-family: monospace;
+        transition: border-color 0.15s;
+      }
+      #btn-theme:hover {
+        border-color: var(--accent);
+      }
+      #touch-controls {
+        display: none;
+        margin-top: 12px;
+        gap: 24px;
+        align-items: center;
+        justify-content: center;
+      }
+      #joystick-pad {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
+        position: relative;
+        touch-action: none;
+        flex-shrink: 0;
+      }
+      #joystick-knob {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid var(--btn-border);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      #btn-blast-touch {
+        width: 92px;
+        height: 92px;
+        background: rgba(255, 68, 34, 0.15);
+        border: 2px solid rgba(255, 68, 34, 0.45);
+        border-radius: 50%;
+        color: #ff8866;
+        font-size: 12px;
+        font-weight: bold;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+        flex-shrink: 0;
+        gap: 4px;
+        letter-spacing: 0.05em;
+      }
+      @media (hover: none), (max-width: 600px) {
+        #controls {
+          display: none;
+        }
+        #touch-controls {
+          display: flex;
+        }
+      }
+    </style>
+    <script>
+      (function () {
+        var t = localStorage.getItem("sq-theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="560"></canvas>
+    <div id="hud">
+      <span>score: <b id="score">0</b></span>
+      <span>best: <b id="best">0</b></span>
+      <span>wave: <b id="wave">1</b></span>
+      <span>enemies: <b id="enemy-count">0</b></span>
+      <span>fps: <b id="fps">0</b></span>
+      <button id="btn-theme" title="toggle theme">☀</button>
+    </div>
+    <div id="controls">
+      WASD / arrows — move &nbsp;|&nbsp; space / click — shockwave blast
+    </div>
+    <div id="touch-controls">
+      <div id="joystick-pad"><div id="joystick-knob"></div></div>
+      <button id="btn-blast-touch">
+        <span>BLAST</span>
+        <span id="touch-cd" style="font-size: 10px; opacity: 0.65"></span>
+      </button>
+    </div>
+
+    <script src="../../dist/simplequad.umd.js"></script>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width,
+        H = canvas.height;
+
+      const tree = SimpleQuad.createQuadTree({
+        x: -60,
+        y: -60,
+        width: W + 120,
+        height: H + 120,
+      });
+
+      // ── constants ──────────────────────────────────────────────────────────
+      const PLAYER_R = 14;
+      const ENEMY_R = 10;
+      const PLAYER_SPEED = 3.5;
+      const BLAST_KILL_R = 70; // enemies inside this radius die instantly
+      const BLAST_PUSH_R = 165; // enemies outside kill radius get knocked back
+      const BLAST_FORCE = 22;
+      const BLAST_CD = 3500; // ms cooldown
+      const RESTART_DELAY = 2000;
+      const WAVE_INTERVAL = 13000;
+      const WAVE_BASE = 35;
+      const WAVE_STEP = 28;
+      const SEP_FACTOR = 0.5; // MTV separation strength per neighbor
+
+      // ── state ──────────────────────────────────────────────────────────────
+      let score = 0,
+        wave = 1,
+        playerHp = 5;
+      let gameOver = false,
+        gameOverTime = -Infinity,
+        currentTs = 0;
+      let lastTime = 0,
+        fps = 0,
+        frameCount = 0,
+        fpsTimer = 0;
+      let survived = 0,
+        waveTimer = 0;
+      let blastReady = true,
+        blastCdLeft = 0;
+      let screenShake = 0;
+      let highScore = parseInt(localStorage.getItem("sq-horde-hi") || "0");
+
+      const mouse = { x: W / 2, y: H / 2 };
+      const keys = {};
+      let mouseDown = false;
+
+      const player = {
+        x: W / 2,
+        y: H / 2,
+        r: PLAYER_R,
+        type: "player",
+        invincible: 0,
+      };
+      const enemies = [];
+      const particles = [];
+      const blastRings = [];
+
+      // ── input ──────────────────────────────────────────────────────────────
+      function canvasPos(cx, cy) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: (cx - rect.left) * (W / rect.width),
+          y: (cy - rect.top) * (H / rect.height),
+        };
+      }
+
+      canvas.addEventListener("mousemove", (e) => {
+        const p = canvasPos(e.clientX, e.clientY);
+        mouse.x = p.x;
+        mouse.y = p.y;
+      });
+      canvas.addEventListener("mousedown", () => (mouseDown = true));
+      canvas.addEventListener("mouseup", () => (mouseDown = false));
+      document.addEventListener("keydown", (e) => (keys[e.code] = true));
+      document.addEventListener("keyup", (e) => (keys[e.code] = false));
+
+      canvas.addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          if (gameOver) {
+            if (currentTs - gameOverTime >= RESTART_DELAY) resetGame();
+            return;
+          }
+          activateBlast();
+        },
+        { passive: false },
+      );
+
+      // ── joystick ──────────────────────────────────────────────────────────
+      const joystickPad = document.getElementById("joystick-pad");
+      const joystickKnob = document.getElementById("joystick-knob");
+      const JOYSTICK_MAX = 38;
+      let joystickActive = false;
+
+      function applyJoystick(touch) {
+        const rect = joystickPad.getBoundingClientRect();
+        const dx = touch.clientX - (rect.left + rect.width / 2);
+        const dy = touch.clientY - (rect.top + rect.height / 2);
+        const d = Math.hypot(dx, dy) || 1;
+        const r = Math.min(d, JOYSTICK_MAX) / d;
+        const tx = dx * r,
+          ty = dy * r;
+        joystickKnob.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+        const thresh = JOYSTICK_MAX * 0.3;
+        keys["ArrowLeft"] = tx < -thresh;
+        keys["ArrowRight"] = tx > thresh;
+        keys["ArrowUp"] = ty < -thresh;
+        keys["ArrowDown"] = ty > thresh;
+      }
+
+      function resetJoystick() {
+        joystickKnob.style.transform = "translate(-50%, -50%)";
+        keys["ArrowLeft"] =
+          keys["ArrowRight"] =
+          keys["ArrowUp"] =
+          keys["ArrowDown"] =
+            false;
+      }
+
+      joystickPad.addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          joystickActive = true;
+          applyJoystick(e.changedTouches[0]);
+        },
+        { passive: false },
+      );
+      joystickPad.addEventListener(
+        "touchmove",
+        (e) => {
+          e.preventDefault();
+          if (joystickActive) applyJoystick(e.changedTouches[0]);
+        },
+        { passive: false },
+      );
+      joystickPad.addEventListener(
+        "touchend",
+        (e) => {
+          e.preventDefault();
+          joystickActive = false;
+          resetJoystick();
+        },
+        { passive: false },
+      );
+      joystickPad.addEventListener("touchcancel", () => {
+        joystickActive = false;
+        resetJoystick();
+      });
+
+      document.getElementById("btn-blast-touch").addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          activateBlast();
+        },
+        { passive: false },
+      );
+
+      // ── theme ──────────────────────────────────────────────────────────────
+      const themeBtn = document.getElementById("btn-theme");
+      themeBtn.textContent =
+        document.documentElement.getAttribute("data-theme") === "light"
+          ? "☾"
+          : "☀";
+      themeBtn.addEventListener("click", () => {
+        const isLight =
+          document.documentElement.getAttribute("data-theme") === "light";
+        const next = isLight ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("sq-theme", next);
+        themeBtn.textContent = isLight ? "☀" : "☾";
+      });
+
+      // ── game functions ─────────────────────────────────────────────────────
+      function spawnEnemy() {
+        const side = Math.floor(Math.random() * 4);
+        let x, y;
+        if (side === 0) {
+          x = Math.random() * W;
+          y = -ENEMY_R - 12;
+        } else if (side === 1) {
+          x = W + ENEMY_R + 12;
+          y = Math.random() * H;
+        } else if (side === 2) {
+          x = Math.random() * W;
+          y = H + ENEMY_R + 12;
+        } else {
+          x = -ENEMY_R - 12;
+          y = Math.random() * H;
+        }
+        enemies.push({
+          x,
+          y,
+          r: ENEMY_R,
+          vx: 0,
+          vy: 0,
+          speed: 0.5 + Math.random() * 0.5 + (wave - 1) * 0.04,
+          type: "enemy",
+        });
+      }
+
+      function spawnWave(n) {
+        const count = WAVE_BASE + (n - 1) * WAVE_STEP;
+        for (let i = 0; i < count; i++) spawnEnemy();
+      }
+
+      function spawnParticles(x, y, color, count) {
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+          const speed = 2 + Math.random() * 3.5;
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1.0,
+            decay: 0.032 + Math.random() * 0.028,
+            r: 2 + Math.random() * 3,
+            color,
+          });
+        }
+      }
+
+      function activateBlast() {
+        if (!blastReady || gameOver) return;
+        blastReady = false;
+        blastCdLeft = BLAST_CD;
+
+        blastRings.push({ r: PLAYER_R + 4, maxR: BLAST_PUSH_R, alpha: 1.0 });
+
+        // Query blast zone — mtv.direction points toward player (querier), so
+        // negating it gives the push-away direction for knockback.
+        const blastBounds = { x: player.x, y: player.y, r: BLAST_PUSH_R };
+        const hits = tree.query(blastBounds);
+        let killed = 0;
+
+        for (const { mtv, object } of hits) {
+          if (object.type !== "enemy") continue;
+          const dist = Math.hypot(object.x - player.x, object.y - player.y);
+          if (dist <= BLAST_KILL_R) {
+            object._dead = true;
+            spawnParticles(object.x, object.y, "#ff7733", 10);
+            score += 10;
+            killed++;
+          } else {
+            const t = 1 - (dist - BLAST_KILL_R) / (BLAST_PUSH_R - BLAST_KILL_R);
+            const force = BLAST_FORCE * t;
+            object.vx -= mtv.direction.x * force;
+            object.vy -= mtv.direction.y * force;
+          }
+        }
+
+        spawnParticles(player.x, player.y, "#ffffff", 14);
+        if (killed > 0) document.getElementById("score").textContent = score;
+      }
+
+      function resetGame() {
+        score = 0;
+        wave = 1;
+        playerHp = 5;
+        survived = 0;
+        gameOver = false;
+        gameOverTime = -Infinity;
+        waveTimer = 0;
+        blastReady = true;
+        blastCdLeft = 0;
+        screenShake = 0;
+        player.x = W / 2;
+        player.y = H / 2;
+        player.invincible = 0;
+        enemies.length = 0;
+        particles.length = 0;
+        blastRings.length = 0;
+        spawnWave(1);
+        document.getElementById("score").textContent = "0";
+        document.getElementById("wave").textContent = "1";
+      }
+
+      // ── update ─────────────────────────────────────────────────────────────
+      function update(ts) {
+        const dt = Math.min(ts - lastTime, 64); // cap at ~15fps equivalent to avoid spiral
+        lastTime = ts;
+
+        if (gameOver) {
+          if (ts - gameOverTime >= RESTART_DELAY && keys["Space"]) resetGame();
+          return;
+        }
+
+        frameCount++;
+        fpsTimer += dt;
+        if (fpsTimer >= 500) {
+          fps = Math.round(frameCount / (fpsTimer / 1000));
+          frameCount = 0;
+          fpsTimer = 0;
+          document.getElementById("fps").textContent = fps;
+        }
+
+        survived += dt / 1000;
+
+        if (!blastReady) {
+          blastCdLeft -= dt;
+          if (blastCdLeft <= 0) {
+            blastReady = true;
+            blastCdLeft = 0;
+          }
+        }
+
+        screenShake = Math.max(0, screenShake - dt * 0.015);
+
+        waveTimer += dt;
+        if (waveTimer >= WAVE_INTERVAL || enemies.length === 0) {
+          waveTimer = 0;
+          wave++;
+          spawnWave(wave);
+          document.getElementById("wave").textContent = wave;
+        }
+
+        // Player movement
+        if (keys["ArrowLeft"] || keys["KeyA"]) player.x -= PLAYER_SPEED;
+        if (keys["ArrowRight"] || keys["KeyD"]) player.x += PLAYER_SPEED;
+        if (keys["ArrowUp"] || keys["KeyW"]) player.y -= PLAYER_SPEED;
+        if (keys["ArrowDown"] || keys["KeyS"]) player.y += PLAYER_SPEED;
+        player.x = Math.max(PLAYER_R, Math.min(W - PLAYER_R, player.x));
+        player.y = Math.max(PLAYER_R, Math.min(H - PLAYER_R, player.y));
+
+        if (keys["Space"] || mouseDown) activateBlast();
+
+        player.invincible = Math.max(0, player.invincible - dt);
+
+        // Enemy movement: apply knockback decay, then drift toward player
+        for (const e of enemies) {
+          e.vx *= 0.87;
+          e.vy *= 0.87;
+          e.x += e.vx;
+          e.y += e.vy;
+          if (Math.hypot(e.vx, e.vy) < 1.5) {
+            const dx = player.x - e.x,
+              dy = player.y - e.y;
+            const d = Math.hypot(dx, dy) || 1;
+            e.x += (dx / d) * e.speed;
+            e.y += (dy / d) * e.speed;
+          }
+        }
+
+        for (const p of particles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= 0.91;
+          p.vy *= 0.91;
+          p.life -= p.decay;
+        }
+        for (const ring of blastRings) {
+          ring.r += (ring.maxR - ring.r) * 0.16;
+          ring.alpha -= 0.038;
+        }
+
+        // ── rebuild quadtree ───────────────────────────────────────────────
+        tree.clear();
+        for (const e of enemies) {
+          if (!e._dead) tree.add(e);
+        }
+        tree.add(player);
+
+        // ── MTV separation — each enemy resolves overlaps with its neighbors.
+        // mtv.vector points toward the querier, so adding it pushes the querier away.
+        for (const e of enemies) {
+          if (e._dead) continue;
+          for (const { mtv, object } of tree.query(e)) {
+            if (object.type !== "enemy") continue;
+            e.x += mtv.vector.x * SEP_FACTOR;
+            e.y += mtv.vector.y * SEP_FACTOR;
+          }
+          // Soft boundary: allow off-screen staging but not teleporting far away
+          e.x = Math.max(-ENEMY_R * 4, Math.min(W + ENEMY_R * 4, e.x));
+          e.y = Math.max(-ENEMY_R * 4, Math.min(H + ENEMY_R * 4, e.y));
+        }
+
+        // ── player collision ───────────────────────────────────────────────
+        if (player.invincible <= 0) {
+          for (const { object } of tree.query(player)) {
+            if (object.type !== "enemy") continue;
+            playerHp--;
+            player.invincible = 1400;
+            screenShake = 9;
+            spawnParticles(player.x, player.y, "#88ccff", 10);
+            if (playerHp <= 0) {
+              gameOver = true;
+              gameOverTime = ts;
+              score += Math.floor(survived * wave * 0.5);
+              if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("sq-horde-hi", highScore);
+              }
+              document.getElementById("score").textContent = score;
+              document.getElementById("best").textContent = highScore;
+            }
+            break;
+          }
+        }
+
+        enemies.splice(0, enemies.length, ...enemies.filter((e) => !e._dead));
+        particles.splice(
+          0,
+          particles.length,
+          ...particles.filter((p) => p.life > 0),
+        );
+        blastRings.splice(
+          0,
+          blastRings.length,
+          ...blastRings.filter((r) => r.alpha > 0),
+        );
+
+        document.getElementById("enemy-count").textContent = enemies.length;
+      }
+
+      // ── draw ───────────────────────────────────────────────────────────────
+      function draw() {
+        const isLight =
+          document.documentElement.getAttribute("data-theme") === "light";
+
+        ctx.save();
+        if (screenShake > 0) {
+          ctx.translate(
+            (Math.random() - 0.5) * screenShake * 2,
+            (Math.random() - 0.5) * screenShake * 2,
+          );
+        }
+
+        ctx.clearRect(-20, -20, W + 40, H + 40);
+        ctx.fillStyle = isLight ? "#f8f0f0" : "#0d0505";
+        ctx.fillRect(-20, -20, W + 40, H + 40);
+
+        // Grid
+        ctx.strokeStyle = isLight
+          ? "rgba(160,80,80,0.07)"
+          : "rgba(255,60,40,0.045)";
+        ctx.lineWidth = 1;
+        for (let gx = 0; gx <= W; gx += 40) {
+          ctx.beginPath();
+          ctx.moveTo(gx, 0);
+          ctx.lineTo(gx, H);
+          ctx.stroke();
+        }
+        for (let gy = 0; gy <= H; gy += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, gy);
+          ctx.lineTo(W, gy);
+          ctx.stroke();
+        }
+
+        // Kill zone ring around player (only when blast ready)
+        if (blastReady && !gameOver) {
+          ctx.strokeStyle = isLight
+            ? "rgba(200,60,30,0.18)"
+            : "rgba(255,80,50,0.18)";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([5, 9]);
+          ctx.beginPath();
+          ctx.arc(player.x, player.y, BLAST_KILL_R, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Particles
+        ctx.save();
+        for (const p of particles) {
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // Blast rings
+        ctx.save();
+        for (const ring of blastRings) {
+          ctx.globalAlpha = ring.alpha * 0.65;
+          ctx.strokeStyle = "#ff6633";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(player.x, player.y, ring.r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = ring.alpha * 0.2;
+          ctx.lineWidth = 12;
+          ctx.beginPath();
+          ctx.arc(player.x, player.y, ring.r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Enemies — color by proximity to player (orange-red → white-hot when close)
+        for (const e of enemies) {
+          const dist = Math.hypot(e.x - player.x, e.y - player.y);
+          const heat = Math.max(0, 1 - dist / 220);
+          const er = Math.round(200 + heat * 55);
+          const eg = Math.round(30 + heat * 60);
+          ctx.fillStyle = isLight
+            ? `rgba(${er},${eg},20,0.9)`
+            : `rgb(${er},${eg},20)`;
+          ctx.beginPath();
+          ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+          ctx.fill();
+          // Eye toward player
+          const angle = Math.atan2(player.y - e.y, player.x - e.x);
+          ctx.fillStyle = heat > 0.6 ? "#fff" : "rgba(255,255,255,0.7)";
+          ctx.beginPath();
+          ctx.arc(
+            e.x + Math.cos(angle) * 4,
+            e.y + Math.sin(angle) * 4,
+            3,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+        }
+
+        // Player
+        const blink =
+          player.invincible > 0 && Math.floor(player.invincible / 80) % 2 === 0;
+        if (!blink) {
+          // Outer glow when blast ready
+          if (blastReady) {
+            ctx.strokeStyle = isLight
+              ? "rgba(220,80,50,0.5)"
+              : "rgba(255,100,60,0.55)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, PLAYER_R + 6, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.fillStyle = "#4fc3f7";
+          ctx.beginPath();
+          ctx.arc(player.x, player.y, PLAYER_R, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // HP pips (bottom left)
+        for (let i = 0; i < 5; i++) {
+          ctx.fillStyle =
+            i < playerHp ? "#ff4422" : isLight ? "#ccc" : "#1e0808";
+          ctx.beginPath();
+          ctx.arc(16 + i * 20, H - 16, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Blast cooldown bar (bottom right)
+        const cdFrac = blastReady ? 1 : 1 - blastCdLeft / BLAST_CD;
+        const barW = 140;
+        ctx.fillStyle = isLight ? "#e8d0d0" : "#1a0808";
+        ctx.fillRect(W - barW - 12, H - 22, barW, 10);
+        ctx.fillStyle = blastReady ? "#ff6633" : "#5a1a0a";
+        ctx.fillRect(W - barW - 12, H - 22, barW * cdFrac, 10);
+        ctx.fillStyle = "#777";
+        ctx.font = "11px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(blastReady ? "blast ready" : "blast", W - 12, H - 26);
+
+        // Wave progress bar (above blast bar)
+        const waveBarW = 160;
+        const waveP = Math.min(waveTimer / WAVE_INTERVAL, 1);
+        ctx.fillStyle = isLight ? "#e8d0d0" : "#1a0808";
+        ctx.fillRect(W - waveBarW - 12, H - 40, waveBarW, 6);
+        ctx.fillStyle = "#bb2200";
+        ctx.fillRect(W - waveBarW - 12, H - 40, waveBarW * waveP, 6);
+        ctx.fillText("next wave", W - 12, H - 44);
+        ctx.textAlign = "left";
+
+        // Survived timer (top right)
+        const mins = Math.floor(survived / 60);
+        const secs = Math.floor(survived % 60);
+        ctx.fillStyle = "#666";
+        ctx.font = "12px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(`${mins}:${String(secs).padStart(2, "0")}`, W - 12, 20);
+        ctx.textAlign = "left";
+
+        // Update touch blast CD label
+        const touchCdEl = document.getElementById("touch-cd");
+        if (touchCdEl)
+          touchCdEl.textContent = blastReady
+            ? ""
+            : `${(blastCdLeft / 1000).toFixed(1)}s`;
+
+        // Game over overlay
+        if (gameOver) {
+          ctx.fillStyle = "rgba(0,0,0,0.72)";
+          ctx.fillRect(-20, -20, W + 40, H + 40);
+          ctx.fillStyle = "#ff3311";
+          ctx.font = "bold 40px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("OVERWHELMED", W / 2, H / 2 - 32);
+          ctx.fillStyle = "#eee";
+          ctx.font = "17px monospace";
+          const sm = Math.floor(survived / 60),
+            ss = Math.floor(survived % 60);
+          ctx.fillText(
+            `wave ${wave}  ·  ${sm}:${String(ss).padStart(2, "0")} survived  ·  score ${score}`,
+            W / 2,
+            H / 2 + 12,
+          );
+          const elapsed = currentTs - gameOverTime;
+          const delayLeft = Math.max(0, RESTART_DELAY - elapsed);
+          ctx.fillStyle = "#888";
+          ctx.font = "13px monospace";
+          ctx.fillText(
+            delayLeft > 0
+              ? `ready in ${Math.ceil(delayLeft / 1000)}…`
+              : "space to play again  ·  tap to retry",
+            W / 2,
+            H / 2 + 50,
+          );
+          ctx.textAlign = "left";
+        }
+
+        ctx.restore();
+      }
+
+      function loop(ts) {
+        currentTs = ts;
+        update(ts);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      document.getElementById("best").textContent = highScore;
+      resetGame();
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
