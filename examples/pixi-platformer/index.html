@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>simplequad × PixiJS — Platformer</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #0d0d1a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: monospace;
+        color: #aaa;
+        gap: 10px;
+      }
+      canvas { display: block; max-width: 100%; }
+      #controls { font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div id="controls">Arrow keys / WASD to move &nbsp;|&nbsp; Up / W / Space to jump</div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
