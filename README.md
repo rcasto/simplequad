@@ -298,7 +298,7 @@ Objects added to the tree must either extend one of these types directly, or be 
 
 ## Extractor pattern
 
-By default, simplequad reads spatial bounds directly from the objects you add (`x`, `y`, `width`/`height` or `r`). If your objects store their position elsewhere — or you're using a library like PixiJS whose types you don't own — pass an `extractor` function at tree creation time instead.
+By default, simplequad reads spatial bounds directly from the objects you add (`x`, `y`, `width`/`height` or `r`). If your objects store their position elsewhere, pass an `extractor` function at tree creation time instead.
 
 ```ts
 import { create } from "simplequad";
@@ -331,42 +331,6 @@ const hits = tree.query(spriteExtractor(sprite)).filter(r => r.object !== sprite
 
 // Area query (no specific entity):
 const areaHits = tree.query({ x: 100, y: 100, width: 200, height: 200 });
-```
-
-### PixiJS integration
-
-PixiJS sprites expose `x`, `y`, `width`, and `height` directly — they fit the extractor pattern with no wrapper needed:
-
-```ts
-import * as PIXI from "pixi.js";
-import { create } from "simplequad";
-
-const pixiExtractor = (sprite: PIXI.Sprite) => ({
-  x: sprite.x,
-  y: sprite.y,
-  width: sprite.width,
-  height: sprite.height,
-});
-
-const tree = create<PIXI.Sprite>(
-  { x: 0, y: 0, width: app.screen.width, height: app.screen.height },
-  { extractor: pixiExtractor }
-);
-
-// In your game loop:
-function update(sprites: PIXI.Sprite[]) {
-  tree.clear();
-  for (const sprite of sprites) {
-    tree.add(sprite);
-  }
-  for (const sprite of sprites) {
-    const hits = tree.query(pixiExtractor(sprite)).filter((r) => r.object !== sprite);
-    for (const { object, mtv } of hits) {
-      // object: the PixiJS sprite this one is colliding with
-      // mtv.vector: push-out translation
-    }
-  }
-}
 ```
 
 ---
