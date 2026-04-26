@@ -144,6 +144,7 @@ Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequa
 | [Query Explorer](examples/hello-world/index.html)      | All three shape types, live query window, MTV arrows drawn — start here                             |
 | [Platformer](examples/platformer/index.html)           | AABB collision and MTV resolution — player stands on platforms and collects coins                   |
 | [Top-down Shooter](examples/shooter/index.html)        | Circle queries across escalating enemy waves, 100–200 dynamic objects                               |
+| [Horde Survival](examples/horde-survival/index.html)   | Wave-based survival with escalating enemy counts; stress-tests the tree at high object densities    |
 | [Breakout](examples/breakout/index.html)               | Mixed shapes — circle ball vs. AABB bricks, MTV drives push-out and reflection angle                |
 | [Boids](examples/boids/index.html)                     | 150 flocking agents querying spatial neighborhoods every frame; toggle tree overlay                 |
 | [Gravity Sandbox](examples/gravity-sandbox/index.html) | Spawn colliding blobs with real-time gravity and drag controls                                      |
@@ -157,25 +158,52 @@ Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequa
 
 All schema definitions are also available in `schema.ts` in the repo.
 
-### `createQuadTree(bounds, capacity?, maxDepth?)`
+### `createQuadTree` / `create`
+
+`create` is an alias for `createQuadTree` — both refer to the same function.
+
+**Standard form** — object type must extend `Bound`:
 
 ```typescript
 export function createQuadTree<T extends Bound>(
   bounds: BoundingBox,
-  capacity: number = 5,
-  maxDepth: number = 8,
+  options?: QuadTreeOptions<T>,
+): QuadTree<T>;
+```
+
+**Extractor form** — use when your objects don't extend `Bound` directly:
+
+```typescript
+export function createQuadTree<T>(
+  bounds: BoundingBox,
+  options: QuadTreeOptions<T> & { extractor: (obj: T) => Bound },
 ): QuadTree<T>;
 ```
 
 Creates a quadtree over the given bounds. All objects added should intersect or be contained within these bounds.
 
-- `capacity` — number of objects a node holds before subdividing. Higher values mean shallower trees; lower values mean finer spatial partitioning. Tune upward for scenes with many objects clustered in small areas.
-- `maxDepth` — maximum subdivision depth. Nodes at this depth store objects regardless of capacity, preventing unbounded recursion when many objects share a small region.
+- `capacity` (default `5`) — number of objects a node holds before subdividing. Higher values mean shallower trees; lower values mean finer spatial partitioning. Tune upward for scenes with many objects clustered in small areas.
+- `maxDepth` (default `8`) — maximum subdivision depth. Nodes at this depth store objects regardless of capacity, preventing unbounded recursion when many objects share a small region.
+- `extractor` — function that derives a `Bound` from your object. When provided, `T` can be any type. When omitted, `T` must extend `Bound`. See [Extractor pattern](#extractor-pattern) below.
+
+> Positional `capacity` and `maxDepth` arguments (`createQuadTree(bounds, 5, 8)`) remain supported for backwards compatibility but are not the preferred form.
+
+### `QuadTreeOptions<T>`
+
+```typescript
+export interface QuadTreeOptions<T = Bound> {
+  capacity?: number;
+  maxDepth?: number;
+  extractor?: (obj: T) => Bound;
+}
+```
+
+When `extractor` is provided, `T` can be any type. When `extractor` is omitted, `T` must extend `Bound`.
 
 ### `QuadTree<T>`
 
 ```typescript
-export interface QuadTree<T extends Bound = Bound> {
+export interface QuadTree<T = Bound> {
   bounds: BoundingBox;
   capacity: number;
 
@@ -203,7 +231,15 @@ Removes all objects and resets all subdivisions.
 
 #### `query(bounds)`
 
-Returns all objects in the tree whose bounds intersect the given query bounds. The query bounds themselves are not included in the results.
+Returns all objects in the tree whose bounds intersect `bounds`.
+
+If the exact same object reference was added to the tree and is passed as `bounds`, it is automatically excluded from results via reference equality. This means `tree.query(myBox)` naturally skips `myBox` itself when `T extends Bound`.
+
+When using an extractor, pass the extracted bound directly; filter self from results manually if needed:
+
+```ts
+const hits = tree.query(spriteExtractor(sprite)).filter(r => r.object !== sprite);
+```
 
 #### `getData()`
 
@@ -256,7 +292,82 @@ export interface Circle extends Point {
 }
 ```
 
-Objects added to the tree must extend one of these types directly (the relevant fields must be present on the object itself).
+Objects added to the tree must either extend one of these types directly, or be used with the [extractor pattern](#extractor-pattern) described below.
+
+---
+
+## Extractor pattern
+
+By default, simplequad reads spatial bounds directly from the objects you add (`x`, `y`, `width`/`height` or `r`). If your objects store their position elsewhere — or you're using a library like PixiJS whose types you don't own — pass an `extractor` function at tree creation time instead.
+
+```ts
+import { create } from "simplequad";
+
+// Works with any object shape
+interface Sprite {
+  id: string;
+  pos: { x: number; y: number };
+  w: number;
+  h: number;
+}
+
+const tree = create<Sprite>(
+  { x: 0, y: 0, width: 800, height: 600 },
+  {
+    extractor: (sprite) => ({
+      x: sprite.pos.x,
+      y: sprite.pos.y,
+      width: sprite.w,
+      height: sprite.h,
+    }),
+  }
+);
+
+tree.add(sprite);
+tree.remove(sprite);
+
+// query always takes a Bound — extract from the sprite first:
+const hits = tree.query(spriteExtractor(sprite)).filter(r => r.object !== sprite);
+
+// Area query (no specific entity):
+const areaHits = tree.query({ x: 100, y: 100, width: 200, height: 200 });
+```
+
+### PixiJS integration
+
+PixiJS sprites expose `x`, `y`, `width`, and `height` directly — they fit the extractor pattern with no wrapper needed:
+
+```ts
+import * as PIXI from "pixi.js";
+import { create } from "simplequad";
+
+const pixiExtractor = (sprite: PIXI.Sprite) => ({
+  x: sprite.x,
+  y: sprite.y,
+  width: sprite.width,
+  height: sprite.height,
+});
+
+const tree = create<PIXI.Sprite>(
+  { x: 0, y: 0, width: app.screen.width, height: app.screen.height },
+  { extractor: pixiExtractor }
+);
+
+// In your game loop:
+function update(sprites: PIXI.Sprite[]) {
+  tree.clear();
+  for (const sprite of sprites) {
+    tree.add(sprite);
+  }
+  for (const sprite of sprites) {
+    const hits = tree.query(pixiExtractor(sprite)).filter((r) => r.object !== sprite);
+    for (const { object, mtv } of hits) {
+      // object: the PixiJS sprite this one is colliding with
+      // mtv.vector: push-out translation
+    }
+  }
+}
+```
 
 ---
 

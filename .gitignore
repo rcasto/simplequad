@@ -4,3 +4,5 @@ simplequad-*.tgz
 .nyc_output
 coverage
 benchmarks/results/
+analysis/
+.claude
