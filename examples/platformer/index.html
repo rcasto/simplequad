@@ -12,8 +12,8 @@
         --muted: #aaa;
         --muted2: #666;
         --accent: #7c4dff;
-        --btn-bg: rgba(255,255,255,0.07);
-        --btn-border: rgba(255,255,255,0.18);
+        --btn-bg: rgba(255, 255, 255, 0.07);
+        --btn-border: rgba(255, 255, 255, 0.18);
         --btn-text: #bbb;
       }
       [data-theme="light"] {
@@ -23,61 +23,16 @@
         --muted: #666;
         --muted2: #999;
         --accent: #5c2ddf;
-        --btn-bg: rgba(0,0,0,0.05);
-        --btn-border: rgba(0,0,0,0.15);
+        --btn-bg: rgba(0, 0, 0, 0.05);
+        --btn-border: rgba(0, 0, 0, 0.15);
         --btn-text: #555;
       }
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        background: var(--bg);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        font-family: monospace;
-        color: var(--text);
-        padding: 16px;
-        transition: background 0.2s, color 0.2s;
-      }
       canvas {
-        border: 2px solid var(--border);
-        display: block;
-        width: min(800px, calc(100vw - 32px));
         aspect-ratio: 800 / 500;
       }
       #hud {
-        margin-top: 8px;
-        font-size: 13px;
-        color: var(--muted);
-        display: flex;
         gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        justify-content: center;
       }
-      #controls {
-        margin-top: 6px;
-        font-size: 12px;
-        color: var(--muted2);
-        text-align: center;
-      }
-      #btn-theme {
-        background: none;
-        border: 1px solid var(--btn-border);
-        border-radius: 4px;
-        color: var(--btn-text);
-        cursor: pointer;
-        font-size: 14px;
-        padding: 2px 7px;
-        font-family: monospace;
-        transition: border-color 0.15s;
-      }
-      #btn-theme:hover { border-color: var(--accent); }
       /* On-screen touch controls */
       #touch-controls {
         display: none;
@@ -109,11 +64,21 @@
         color: #e8a838;
       }
       @media (hover: none), (max-width: 600px) {
-        #controls { display: none; }
-        #touch-controls { display: flex; }
+        #controls {
+          display: none;
+        }
+        #touch-controls {
+          display: flex;
+        }
       }
     </style>
-    <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
+    <link rel="stylesheet" href="../engine.css" />
+    <script>
+      (function () {
+        var t = localStorage.getItem("sq-theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <canvas id="canvas" width="800" height="500"></canvas>
@@ -132,11 +97,18 @@
     </div>
 
     <script src="../../dist/simplequad.umd.js"></script>
+    <script src="../engine.js"></script>
     <script>
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       const W = canvas.width,
         H = canvas.height;
+
+      const fpsTick = SQEngine.createFpsTracker(
+        document.getElementById("fps"),
+        canvas,
+      );
+      SQEngine.initTheme();
 
       // ── world ──────────────────────────────────────────────────────────────
       const GRAVITY = 0.5;
@@ -167,14 +139,29 @@
       ];
 
       const coinPositions = [
-        [130, 340], [200, 340], [380, 280], [440, 280],
-        [570, 230], [640, 230], [230, 190], [260, 190],
-        [80, 120],  [130, 120], [380, 100], [430, 100],
-        [680, 130], [720, 130], [660, 360],
+        [130, 340],
+        [200, 340],
+        [380, 280],
+        [440, 280],
+        [570, 230],
+        [640, 230],
+        [230, 190],
+        [260, 190],
+        [80, 120],
+        [130, 120],
+        [380, 100],
+        [430, 100],
+        [680, 130],
+        [720, 130],
+        [660, 360],
       ];
 
       const coins = coinPositions.map(([cx, cy]) => ({
-        x: cx, y: cy, width: 10, height: 10, collected: false,
+        x: cx,
+        y: cy,
+        width: 10,
+        height: 10,
+        collected: false,
       }));
 
       const player = {
@@ -188,16 +175,6 @@
         color: "#e8a838",
       };
 
-      const themeBtn = document.getElementById("btn-theme");
-      themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀";
-      themeBtn.addEventListener("click", () => {
-        const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        const next = isLight ? "dark" : "light";
-        document.documentElement.setAttribute("data-theme", next);
-        localStorage.setItem("sq-theme", next);
-        themeBtn.textContent = isLight ? "☀" : "☾";
-      });
-
       const keys = {};
       document.addEventListener("keydown", (e) => (keys[e.code] = true));
       document.addEventListener("keyup", (e) => (keys[e.code] = false));
@@ -206,9 +183,25 @@
       function addTouchBtn(id, code) {
         const btn = document.getElementById(id);
         if (!btn) return;
-        btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[code] = true; }, { passive: false });
-        btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[code] = false; }, { passive: false });
-        btn.addEventListener("touchcancel", () => { keys[code] = false; });
+        btn.addEventListener(
+          "touchstart",
+          (e) => {
+            e.preventDefault();
+            keys[code] = true;
+          },
+          { passive: false },
+        );
+        btn.addEventListener(
+          "touchend",
+          (e) => {
+            e.preventDefault();
+            keys[code] = false;
+          },
+          { passive: false },
+        );
+        btn.addEventListener("touchcancel", () => {
+          keys[code] = false;
+        });
       }
       addTouchBtn("btn-left", "ArrowLeft");
       addTouchBtn("btn-right", "ArrowRight");
@@ -220,7 +213,6 @@
 
       let score = 0;
       let gameState = "playing"; // 'playing' | 'won'
-      let lastTime = 0, fps = 0, frameCount = 0, fpsTime = 0;
 
       function resetGame() {
         score = 0;
@@ -230,16 +222,25 @@
         player.vx = 0;
         player.vy = 0;
         player.onGround = false;
-        coins.forEach((c) => { c.collected = false; });
+        coins.forEach((c) => {
+          c.collected = false;
+        });
       }
 
       // Tap canvas on win screen to restart
       canvas.addEventListener("click", () => {
         if (gameState === "won") resetGame();
       });
-      canvas.addEventListener("touchstart", (e) => {
-        if (gameState === "won") { e.preventDefault(); resetGame(); }
-      }, { passive: false });
+      canvas.addEventListener(
+        "touchstart",
+        (e) => {
+          if (gameState === "won") {
+            e.preventDefault();
+            resetGame();
+          }
+        },
+        { passive: false },
+      );
 
       function update(dt) {
         if (gameState === "won") {
@@ -355,17 +356,8 @@
       }
 
       function loop(ts) {
-        const dt = ts - lastTime;
-        lastTime = ts;
-        frameCount++;
-        fpsTime += dt;
-        if (fpsTime >= 500) {
-          fps = Math.round(frameCount / (fpsTime / 1000));
-          frameCount = 0;
-          fpsTime = 0;
-          document.getElementById("fps").textContent = fps;
-          document.getElementById("count").textContent = tree.getData().length;
-        }
+        const dt = fpsTick(ts);
+        document.getElementById("count").textContent = tree.getData().length;
         update(dt);
         draw();
         requestAnimationFrame(loop);

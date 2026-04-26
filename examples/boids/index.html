@@ -29,23 +29,6 @@
         --btn-text: #666;
         --label-color: #888;
       }
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        background: var(--bg);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        font-family: monospace;
-        color: var(--text);
-        padding: 16px;
-        transition: background 0.2s, color 0.2s;
-      }
       #game {
         display: flex;
         align-items: flex-start;
@@ -55,10 +38,7 @@
         justify-content: center;
       }
       canvas {
-        display: block;
-        border: 2px solid var(--border);
         flex-shrink: 0;
-        width: min(800px, calc(100vw - 32px));
         aspect-ratio: 800 / 520;
       }
       #sidebar {
@@ -72,9 +52,9 @@
         display: flex;
         flex-direction: column;
         gap: 2px;
-      }
-      #hud b {
-        color: var(--text);
+        align-items: flex-start;
+        flex-wrap: nowrap;
+        margin-top: 0;
       }
       #controls-toggle {
         display: none; /* shown only on mobile */
@@ -126,7 +106,6 @@
         align-self: flex-start;
         transition: border-color 0.15s;
       }
-      #btn-theme:hover { border-color: var(--accent); }
 
       /* ── Mobile layout ─────────────────────────────────────────────────── */
       @media (max-width: 860px) {
@@ -165,6 +144,7 @@
         }
       }
     </style>
+    <link rel="stylesheet" href="../engine.css" />
     <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
   </head>
   <body>
@@ -225,6 +205,7 @@
       </section>
     </main>
     <script src="../../dist/simplequad.umd.js"></script>
+    <script src="../engine.js"></script>
     <script>
       // Toggle controls panel on mobile
       document.getElementById("controls-toggle").addEventListener("click", () => {
@@ -234,20 +215,13 @@
         btn.textContent = isOpen ? "▴ controls" : "▾ controls";
       });
 
-      const themeBtn = document.getElementById("btn-theme");
-      themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀";
-      themeBtn.addEventListener("click", () => {
-        const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        const next = isLight ? "dark" : "light";
-        document.documentElement.setAttribute("data-theme", next);
-        localStorage.setItem("sq-theme", next);
-        themeBtn.textContent = isLight ? "☀" : "☾";
-      });
-
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       const W = canvas.width,
         H = canvas.height;
+
+      const fpsTick = SQEngine.createFpsTracker(document.getElementById("fps"), canvas);
+      SQEngine.initTheme();
 
       // ── tunables ────────────────────────────────────────────────────────
       const BOID_COUNT = 150;
@@ -460,25 +434,9 @@
       }
 
       // ── loop ─────────────────────────────────────────────────────────────
-      let lastTime = 0,
-        frameCount = 0,
-        fpsTime = 0;
-
       function loop(ts) {
-        const dt = ts - lastTime;
-        lastTime = ts;
-        frameCount++;
-        fpsTime += dt;
-        if (fpsTime >= 500) {
-          document.getElementById("fps").textContent = Math.round(
-            frameCount / (fpsTime / 1000),
-          );
-          document.getElementById("neighbors").textContent = (
-            totalNeighbors / BOID_COUNT
-          ).toFixed(1);
-          frameCount = 0;
-          fpsTime = 0;
-        }
+        fpsTick(ts);
+        document.getElementById("neighbors").textContent = (totalNeighbors / BOID_COUNT).toFixed(1);
         update();
         draw();
         requestAnimationFrame(loop);

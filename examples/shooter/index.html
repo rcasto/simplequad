@@ -27,60 +27,11 @@
         --btn-border: rgba(0,0,0,0.15);
         --btn-text: #555;
       }
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        background: var(--bg);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        font-family: monospace;
-        color: var(--text);
-        padding: 16px;
-        transition: background 0.2s, color 0.2s;
-      }
       canvas {
-        border: 2px solid var(--border);
-        display: block;
         cursor: none;
-        width: min(800px, calc(100vw - 32px));
         aspect-ratio: 800 / 560;
         touch-action: none;
       }
-      #hud {
-        margin-top: 8px;
-        font-size: 13px;
-        color: var(--muted);
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-      }
-      #hud b { color: var(--text); }
-      #controls {
-        margin-top: 4px;
-        font-size: 12px;
-        color: var(--muted2);
-        text-align: center;
-      }
-      #btn-theme {
-        background: none;
-        border: 1px solid var(--btn-border);
-        border-radius: 4px;
-        color: var(--btn-text);
-        cursor: pointer;
-        font-size: 14px;
-        padding: 2px 7px;
-        font-family: monospace;
-        transition: border-color 0.15s;
-      }
-      #btn-theme:hover { border-color: var(--accent); }
       /* On-screen touch controls */
       #touch-move {
         display: none;
@@ -134,6 +85,7 @@
         #touch-move { display: flex; }
       }
     </style>
+    <link rel="stylesheet" href="../engine.css" />
     <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
   </head>
   <body>
@@ -159,11 +111,16 @@
     </div>
 
     <script src="../../dist/simplequad.umd.js"></script>
+    <script src="../engine.js"></script>
     <script>
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       const W = canvas.width,
         H = canvas.height;
+
+      const getPos    = SQEngine.makeToCanvas(canvas, W, H);
+      const fpsTick   = SQEngine.createFpsTracker(document.getElementById("fps"), canvas);
+      SQEngine.initTheme();
 
       const tree = SimpleQuad.createQuadTree({
         x: -50,
@@ -205,15 +162,6 @@
       const bullets = [];
       const enemies = [];
       const particles = [];
-
-      // ── coordinate helper ──────────────────────────────────────────────────
-      function getPos(clientX, clientY) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-          x: (clientX - rect.left) * (W / rect.width),
-          y: (clientY - rect.top) * (H / rect.height),
-        };
-      }
 
       canvas.addEventListener("mousemove", (e) => {
         const pos = getPos(e.clientX, e.clientY);
@@ -271,17 +219,6 @@
       joystickPad.addEventListener("touchmove",  (e) => { e.preventDefault(); if (joystickActive) applyJoystick(e.changedTouches[0]); }, { passive: false });
       joystickPad.addEventListener("touchend",   (e) => { e.preventDefault(); joystickActive = false; resetJoystick(); }, { passive: false });
       joystickPad.addEventListener("touchcancel", () => { joystickActive = false; resetJoystick(); });
-
-      // Theme toggle
-      const themeBtn = document.getElementById("btn-theme");
-      themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀";
-      themeBtn.addEventListener("click", () => {
-        const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        const next = isLight ? "dark" : "light";
-        document.documentElement.setAttribute("data-theme", next);
-        localStorage.setItem("sq-theme", next);
-        themeBtn.textContent = isLight ? "☀" : "☾";
-      });
 
       // Touch fire button — shoots at nearest enemy while held
       let touchFireActive = false;
@@ -389,14 +326,8 @@
 
       spawnWave(wave);
 
-      let lastTime = 0,
-        fps = 0,
-        frameCount = 0,
-        fpsTime = 0;
-
       function update(ts) {
-        const dt = ts - lastTime;
-        lastTime = ts;
+        const dt = fpsTick(ts);
 
         if (gameOver) {
           // Require a pause before spacebar can restart — prevents accidental
@@ -406,15 +337,6 @@
             resetGame(ts);
           }
           return;
-        }
-
-        frameCount++;
-        fpsTime += dt;
-        if (fpsTime >= 500) {
-          fps = Math.round(frameCount / (fpsTime / 1000));
-          frameCount = 0;
-          fpsTime = 0;
-          document.getElementById("fps").textContent = fps;
         }
 
         // wave timer
