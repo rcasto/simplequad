@@ -27,6 +27,7 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run build
+      - run: npm run build:examples
       - name: Stage site
         run: |
           mkdir -p _site

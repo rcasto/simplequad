@@ -17,6 +17,7 @@
     "build": "npm run clean && npm run build:bundles && npm run build:types",
     "build:bundles": "vite build",
     "build:types": "tsc --emitDeclarationOnly",
+    "build:examples": "cd examples; make build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "clean": "rm -rf dist",

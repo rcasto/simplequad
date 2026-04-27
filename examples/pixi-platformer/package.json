@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "pixi.js": "8.18.1",
-    "simplequad": "^3.0.0"
+    "simplequad": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
