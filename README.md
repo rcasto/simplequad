@@ -133,6 +133,64 @@ for (const { mtv } of hits) {
 }
 ```
 
+### Physics response patterns
+
+simplequad tells you *where* objects overlap and by *how much*. What to do with that depends on your game type.
+
+**Platformer** — detect floor, ceiling, and wall contacts by MTV direction, then zero the matching velocity component:
+
+```typescript
+const hits = tree.query(player.body);
+player.onGround = false;
+
+for (const { mtv } of hits) {
+  player.x += mtv.vector.x;
+  player.y += mtv.vector.y;
+
+  if (mtv.vector.y < -0.1) {                         // pushed upward → landed on floor
+    player.vy = 0;
+    player.onGround = true;
+  }
+  if (mtv.vector.y > 0.1 && player.vy < 0) player.vy = 0;  // hit ceiling while moving up
+  if (Math.abs(mtv.vector.x) > 0.1)        player.vx = 0;  // hit wall
+}
+```
+
+The `0.1` threshold filters near-zero y values from diagonal MTVs so they don't trigger floor/ceiling detection incorrectly. See [Pixi.js Platformer](examples/pixi-platformer/src/main.ts) for a full implementation with dt-based gravity and smooth acceleration.
+
+**Elastic collision** — split the MTV equally between two moving bodies and exchange an impulse along the collision normal:
+
+```typescript
+for (const { object, mtv } of tree.query(body)) {
+  // Shared push-out (each body moves half)
+  body.x   += mtv.vector.x * 0.5;   body.y   += mtv.vector.y * 0.5;
+  object.x -= mtv.vector.x * 0.5;  object.y -= mtv.vector.y * 0.5;
+
+  // Impulse along normal (equal masses, restitution coefficient e)
+  const nx = mtv.direction.x, ny = mtv.direction.y;
+  const dvx = body.vx - object.vx, dvy = body.vy - object.vy;
+  const dot = dvx * nx + dvy * ny;
+  if (dot < 0) {                           // only exchange impulse if approaching
+    const impulse = dot * (1 + e) / 2;
+    body.vx -= impulse * nx;    body.vy -= impulse * ny;
+    object.vx += impulse * nx;  object.vy += impulse * ny;
+  }
+}
+```
+
+See [Gravity Sandbox](examples/gravity-sandbox/index.html).
+
+**Soft separation** — for crowd simulation where only positions matter, not velocities:
+
+```typescript
+for (const { mtv } of tree.query(entity)) {
+  entity.x += mtv.vector.x * 0.5;
+  entity.y += mtv.vector.y * 0.5;
+}
+```
+
+See [Horde Survival](examples/horde-survival/index.html) — this keeps 500+ enemies from overlapping without any velocity math.
+
 ---
 
 ## Examples
@@ -149,8 +207,10 @@ Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequa
 | [Boids](examples/boids/index.html)                     | 150 flocking agents querying spatial neighborhoods every frame; toggle tree overlay                 |
 | [Gravity Sandbox](examples/gravity-sandbox/index.html) | Spawn colliding blobs with real-time gravity and drag controls                                      |
 | [Asteroid Field](examples/asteroid-field/index.html)   | Split mechanic — rocks fragment on impact, mixed-size circle queries grow each frame                |
-| [Tower Defense](examples/tower-defense/index.html)     | Fixed towers query a range circle every frame against many path-following enemies                   |
-| [Predator-Prey](examples/predator-prey/index.html)     | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles |
+| [Tower Defense](examples/tower-defense/index.html)                       | Fixed towers query a range circle every frame against many path-following enemies                              |
+| [Predator-Prey](examples/predator-prey/index.html)                       | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles            |
+| [Pixi.js Platformer](examples/pixi-platformer])           | Rolling circle player on a scrolling level; Pixi.js renders, simplequad handles circle-vs-AABB MTV collision  |
+| [Image Compression](examples/image-compression)          | Upload any image — a quadtree progressively compresses it, subdividing where colors vary most                  |
 
 ---
 
