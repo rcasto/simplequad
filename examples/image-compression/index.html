@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Compression — simplequad</title>
+    <style>
+      :root {
+        --bg: #0d0d1a;
+        --surface: #14142a;
+        --border: #2a2a4a;
+        --text: #eee;
+        --muted: #777;
+        --accent: #7c4dff;
+        --upload-border: #2a2a4a;
+        --upload-hover: #7c4dff;
+      }
+      [data-theme="light"] {
+        --bg: #f0f0f8;
+        --surface: #ffffff;
+        --border: #d0d0e8;
+        --text: #1a1a2e;
+        --muted: #666;
+        --accent: #5c2ddf;
+        --upload-border: #c8c8e0;
+        --upload-hover: #5c2ddf;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 24px 64px;
+        min-height: 100vh;
+        gap: 24px;
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+      }
+      a.back {
+        color: var(--muted);
+        font-size: 13px;
+        text-decoration: none;
+      }
+      a.back:hover {
+        color: var(--accent);
+      }
+      h1 {
+        font-size: 22px;
+        color: var(--accent);
+      }
+      #btn-theme {
+        position: absolute;
+        right: 0;
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px 8px;
+        font-family: monospace;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      #btn-theme:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+
+      /* ── Upload area ─────────────────────────────────────────────────── */
+      #upload-area {
+        width: 100%;
+        max-width: 600px;
+        border: 1.5px dashed var(--upload-border);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+        color: var(--muted);
+        font-size: 13px;
+        user-select: none;
+      }
+      #upload-area:hover,
+      #upload-area.drag-over {
+        border-color: var(--upload-hover);
+        color: var(--text);
+        background: color-mix(in srgb, var(--accent) 5%, transparent);
+      }
+      #upload-area input {
+        display: none;
+      }
+
+      /* ── Canvas ──────────────────────────────────────────────────────── */
+      .canvas-wrap {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        line-height: 0;
+        max-width: 100%;
+      }
+      canvas {
+        display: block;
+        max-width: 100%;
+        image-rendering: pixelated;
+      }
+
+      /* ── Controls ────────────────────────────────────────────────────── */
+      #controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        max-width: 600px;
+        flex-wrap: wrap;
+      }
+      #controls.hidden {
+        display: none;
+      }
+      #controls button {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-size: 14px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-family: monospace;
+        transition: border-color 0.15s;
+      }
+      #controls button:hover {
+        border-color: var(--accent);
+      }
+      #slider {
+        flex: 1;
+        min-width: 120px;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+      #frame-label {
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      /* ── Info strip ──────────────────────────────────────────────────── */
+      .info-strip {
+        display: flex;
+        gap: 24px;
+        width: 100%;
+        max-width: 600px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      #capacity-label {
+        color: var(--accent);
+      }
+      #status-bar {
+        margin-left: auto;
+      }
+
+      /* ── Explanation ─────────────────────────────────────────────────── */
+      .explainer {
+        width: 100%;
+        max-width: 600px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px 24px;
+        background: var(--surface);
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.7;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .explainer h2 {
+        font-size: 14px;
+        color: var(--text);
+        margin-bottom: 2px;
+      }
+      .explainer code {
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+    </style>
+    <script>
+      (function () {
+        var t = localStorage.getItem("sq-theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+  </head>
+  <body>
+    <header>
+      <!-- <a class="back" href="../../index.html">← simplequad</a> -->
+      <h1>Image Compression</h1>
+      <button id="btn-theme" title="toggle theme">☀</button>
+    </header>
+
+    <div id="upload-area">
+      <input type="file" id="file-input" accept="image/*" />
+      drop an image here · or click to upload
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="controls" class="hidden">
+      <button id="prev-btn">◄</button>
+      <button id="play-btn">▶</button>
+      <button id="next-btn">►</button>
+      <input type="range" id="slider" min="0" max="0" value="0" />
+      <span id="frame-label">frame 0 / 0</span>
+    </div>
+
+    <div class="info-strip">
+      <span id="capacity-label">—</span>
+      <span id="status-bar">upload an image to begin</span>
+    </div>
+
+    <div class="explainer">
+      <h2>how it works</h2>
+      <p>
+        A quadtree recursively splits a 2D region into four equal quadrants. The
+        <code>capacity</code> setting determines how many pixels a leaf node can
+        hold before it subdivides. When a node is full, it splits — and each
+        quarter inherits the same capacity limit.
+      </p>
+      <p>
+        At high capacity, the tree barely subdivides: the whole image might fit
+        in a handful of leaf nodes, each averaged to a single color — extreme
+        compression. Lower capacity forces finer subdivision, letting
+        colour-rich areas resolve to pixel-level detail.
+      </p>
+      <p>
+        Each leaf's colour is the RMS average of its pixels, which preserves
+        perceptual brightness better than a linear mean. The animation steps
+        from maximum compression down to the original image.
+      </p>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
