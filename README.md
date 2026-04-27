@@ -209,7 +209,7 @@ Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequa
 | [Asteroid Field](examples/asteroid-field/index.html)   | Split mechanic — rocks fragment on impact, mixed-size circle queries grow each frame                |
 | [Tower Defense](examples/tower-defense/index.html)                       | Fixed towers query a range circle every frame against many path-following enemies                              |
 | [Predator-Prey](examples/predator-prey/index.html)                       | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles            |
-| [Pixi.js Platformer](examples/pixi-platformer])           | Rolling circle player on a scrolling level; Pixi.js renders, simplequad handles circle-vs-AABB MTV collision  |
+| [Pixi.js Platformer](examples/pixi-platformer)           | Rolling circle player on a scrolling level; Pixi.js renders, simplequad handles circle-vs-AABB MTV collision  |
 | [Image Compression](examples/image-compression)          | Upload any image — a quadtree progressively compresses it, subdividing where colors vary most                  |
 
 ---
