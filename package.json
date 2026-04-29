@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite & cd examples && make build-and-watch",
     "build": "npm run clean && npm run build:bundles && npm run build:types",
     "build:bundles": "vite build",
     "build:types": "tsc --emitDeclarationOnly",
