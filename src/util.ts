@@ -168,6 +168,35 @@ export function divideBoundingBox(bounds: BoundingBox): BoundingBox[] {
 }
 
 /**
+ * Allocation-free boolean intersection test between any two Bounds.
+ * Used for queryBroad where SAT and MTV are not needed.
+ */
+export function doBoundsIntersectBool(bound1: Bound, bound2: Bound): boolean {
+    if (isBoundingBox(bound1)) {
+        if (isBoundingBox(bound2)) return doBoxAndBoxIntersect(bound1, bound2);
+        if (isCircle(bound2)) return doBoxAndCircleIntersect(bound1, bound2);
+        return doPointAndBoxIntersect(bound2 as Point, bound1);
+    }
+    if (isCircle(bound1)) {
+        if (isCircle(bound2)) return doCircleAndCircleIntersect(bound1, bound2);
+        if (isBoundingBox(bound2)) return doBoxAndCircleIntersect(bound2, bound1);
+        // bound2 is a point — treat as r=0 circle
+        const dx = bound1.x - (bound2 as Point).x;
+        const dy = bound1.y - (bound2 as Point).y;
+        return dx * dx + dy * dy <= bound1.r * bound1.r;
+    }
+    // bound1 is a point
+    if (isBoundingBox(bound2)) return doPointAndBoxIntersect(bound1 as Point, bound2);
+    if (isCircle(bound2)) {
+        const dx = (bound1 as Point).x - bound2.x;
+        const dy = (bound1 as Point).y - bound2.y;
+        return dx * dx + dy * dy <= bound2.r * bound2.r;
+    }
+    // both points — coincident
+    return (bound1 as Point).x === (bound2 as Point).x && (bound1 as Point).y === (bound2 as Point).y;
+}
+
+/**
  * Cheap boolean-only intersection test between any Bound and a BoundingBox.
  * Used for add/remove routing where no MTV is needed.
  */

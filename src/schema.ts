@@ -29,6 +29,8 @@ export interface QueryResult<T> {
   object: T;
 }
 
+export type QueryBroadResult<T> = Omit<QueryResult<T>, "mtv">;
+
 export interface Point {
   x: number;
   y: number;
@@ -77,13 +79,13 @@ export interface QuadTree<T = Bound> {
    * Collision objects within this node are within these bounds.
    * Child nodes have there bounds derived from these bounds.
    */
-  bounds: BoundingBox;
+  bounds: Readonly<BoundingBox>;
   /**
    * Holds collision objects at this leaf node as a flat array.
    * Object identity (===) is used for deduplication.
    * This will be empty for container nodes (nodes with children).
    */
-  data: T[];
+  data: Readonly<T[]>;
   /**
    * The number of collision objects this node can hold
    * before subdividing.
@@ -106,7 +108,7 @@ export interface QuadTree<T = Bound> {
    * This will be of length 4 for "container" nodes.
    * This will be empty for leaf nodes.
    */
-  quadrants: QuadTree<T>[];
+  quadrants: Readonly<QuadTree<T>[]>;
   // Methods
   /**
    * Adds a collision object to the quadtree.
@@ -139,6 +141,19 @@ export interface QuadTree<T = Bound> {
    * @return {Array<QueryResult<T>>} Intersecting objects, excluding any in-tree object whose bound is the same reference as `bounds`.
    */
   query: (bounds: Bound) => Array<QueryResult<T>>;
+  /**
+   * Queries the quadtree for objects whose bounds broadly intersect the given region.
+   * Unlike `query()`, no SAT or MTV is computed — this is a fast proximity/range check.
+   * Useful for AI sight ranges, audio zones, spawn checks, and flocking neighbor lookups.
+   *
+   * Pass a `Bound` to define the query region. If the exact same object reference
+   * was added to the tree and is passed here, it is automatically excluded from
+   * results via reference equality.
+   *
+   * @param {Bound} bounds - The spatial region to query.
+   * @return {Array<QueryBroadResult<T>>} Objects broadly intersecting the region, excluding any in-tree object whose bound is the same reference as `bounds`.
+   */
+  queryBroad: (bounds: Bound) => Array<QueryBroadResult<T>>;
   /**
    * Convenience method offered to get the data for a node in an easier manner
    * Will take a flatten the map of data to a collection.

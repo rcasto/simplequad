@@ -61,6 +61,19 @@ export function runGameloopBenchmarks(seeds: number[]): void {
         printResult(result);
     }
 
+    printSectionHeader('Add-only cost (clear + re-add, no query) — isolates _posKeys path');
+    for (const n of [100, 200, 400, 750, 1000]) {
+        const results = seeds.map(seed => {
+            const objects = makeRandomBoxes(n, TREE_BOUNDS, seededRandom(seed));
+            const tree = createQuadTree(TREE_BOUNDS, 5);
+            return bench(`clear+add n=${n}`, () => {
+                tree.clear();
+                for (let i = 0; i < n; i++) tree.add(objects[i]);
+            }, { iterations: 500, warmupIterations: 50 });
+        });
+        printResult(averageResults(results));
+    }
+
     printSectionHeader('Rebuild-from-scratch vs clear+re-add at n=100');
     const objects100b = makeRandomBoxes(100, TREE_BOUNDS, rng);
     const existingTree = createQuadTree(TREE_BOUNDS, 5);

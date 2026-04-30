@@ -7,14 +7,20 @@ import {
   QueryResult,
   QuadTreeOptions,
   isBound,
+  QueryBroadResult,
 } from "./schema";
-import { divideBoundingBox, doesBoundIntersectBox } from "./util";
+import {
+  divideBoundingBox,
+  doesBoundIntersectBox,
+  doBoundsIntersectBool,
+} from "./util";
 
 interface QuadTreeNode<T> extends QuadTree<T> {
   _items: Set<T>;
-  _posKeys: Map<string, number>;
+  _posKeys: Map<number, Map<number, number>>;
   _extractor: ((obj: T) => Bound) | null;
   quadrants: QuadTreeNode<T>[];
+  data: T[];
 }
 
 function getBound<T>(object: T, extractor: ((obj: T) => Bound) | null): Bound {
@@ -58,8 +64,8 @@ function addToQuadTree<T>(
   }
 
   // O(1) co-location check: objects sharing a position can't be separated by subdivision
-  const posKey = `(${bound.x},${bound.y})`;
-  const sharesPosition = quadTree._posKeys.has(posKey);
+  const xMap = quadTree._posKeys.get(bound.x);
+  const sharesPosition = xMap !== undefined && xMap.has(bound.y);
 
   if (
     depth >= quadTree.maxDepth ||
@@ -68,7 +74,12 @@ function addToQuadTree<T>(
   ) {
     quadTree.data.push(object);
     quadTree._items.add(object);
-    quadTree._posKeys.set(posKey, (quadTree._posKeys.get(posKey) ?? 0) + 1);
+    let posXMap = quadTree._posKeys.get(bound.x);
+    if (!posXMap) {
+      posXMap = new Map<number, number>();
+      quadTree._posKeys.set(bound.x, posXMap);
+    }
+    posXMap.set(bound.y, (posXMap.get(bound.y) ?? 0) + 1);
     return true;
   }
 
@@ -104,12 +115,15 @@ function removeFromQuadTree<T>(quadTree: QuadTreeNode<T>, object: T): boolean {
     quadTree.data[idx] = quadTree.data[quadTree.data.length - 1];
     quadTree.data.pop();
     quadTree._items.delete(object);
-    const posKey = `(${bound.x},${bound.y})`;
-    const remaining = quadTree._posKeys.get(posKey)! - 1;
+    const posXMap = quadTree._posKeys.get(bound.x)!;
+    const remaining = posXMap.get(bound.y)! - 1;
     if (remaining === 0) {
-      quadTree._posKeys.delete(posKey);
+      posXMap.delete(bound.y);
+      if (posXMap.size === 0) {
+        quadTree._posKeys.delete(bound.x);
+      }
     } else {
-      quadTree._posKeys.set(posKey, remaining);
+      posXMap.set(bound.y, remaining);
     }
     return true;
   }
@@ -163,6 +177,34 @@ function queryQuadTree<T>(
   }
 }
 
+function queryBroadQuadTree<T>(
+  quadTree: QuadTreeNode<T>,
+  bounds: Bound,
+  seen: Set<T>,
+  results: Array<QueryBroadResult<T>>,
+): void {
+  if (!doesBoundIntersectBox(bounds, quadTree.bounds)) {
+    return;
+  }
+
+  if (quadTree.quadrants.length === 0) {
+    for (const quadObject of quadTree.data) {
+      if (seen.has(quadObject)) continue;
+      const quadBound = getBound(quadObject, quadTree._extractor);
+      if ((quadBound as unknown) === bounds) continue;
+      if (doBoundsIntersectBool(quadBound, bounds)) {
+        seen.add(quadObject);
+        results.push({ object: quadObject });
+      }
+    }
+    return;
+  }
+
+  for (const quadrant of quadTree.quadrants) {
+    queryBroadQuadTree(quadrant, bounds, seen, results);
+  }
+}
+
 function getQuadTreeData<T>(
   quadTree: QuadTreeNode<T>,
   seen: Set<T> = new Set(),
@@ -182,11 +224,13 @@ function createQuadTreeNode<T>(
   maxDepth: number,
   extractor: ((obj: T) => Bound) | null,
 ): QuadTreeNode<T> {
+  const _seen = new Set<T>();
+
   const quadTree: QuadTreeNode<T> = {
     bounds,
     data: [],
     _items: new Set<T>(),
-    _posKeys: new Map<string, number>(),
+    _posKeys: new Map<number, Map<number, number>>(),
     _extractor: extractor,
     capacity,
     maxDepth,
@@ -195,9 +239,15 @@ function createQuadTreeNode<T>(
     remove: (object) => removeFromQuadTree(quadTree, object),
     clear: () => clearQuadTree(quadTree),
     query: (bounds) => {
-      const seen = new Set<T>();
+      _seen.clear();
       const results: Array<QueryResult<T>> = [];
-      queryQuadTree(quadTree, bounds, seen, results);
+      queryQuadTree(quadTree, bounds, _seen, results);
+      return results;
+    },
+    queryBroad: (bounds) => {
+      _seen.clear();
+      const results: Array<QueryBroadResult<T>> = [];
+      queryBroadQuadTree(quadTree, bounds, _seen, results);
       return results;
     },
     getData: () => getQuadTreeData(quadTree),
@@ -245,3 +295,4 @@ export function createQuadTree<T>(
 
 export const create = createQuadTree;
 export * from "./schema";
+export * from "./debug";
