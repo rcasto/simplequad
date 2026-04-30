@@ -22,22 +22,22 @@ One call returns the colliding objects and the overlap vectors you need to push 
 
 If you're using a canvas renderer or something like Pixi.js — which has no built-in collision — simplequad plugs in cleanly.
 
-### Games that fit
+### Object count guide
 
-| Genre                                       | Typical active objects | Fits?       |
-| ------------------------------------------- | ---------------------- | ----------- |
-| Casual / puzzle                             | < 100                  | Comfortably |
-| Platformer (player + enemies + projectiles) | 50–80                  | Comfortably |
-| Top-down shooter / twin-stick               | 100–200                | Yes         |
-| Tower defense (peak wave)                   | 150–350                | Yes         |
-| Bullet hell                                 | 500–2000               | No          |
-| RTS (large armies)                          | 300–1000+              | No          |
+| Scale  | Object count | Example genres                        | Budget used |
+| ------ | ------------ | ------------------------------------- | ----------- |
+| Small  | < 100        | Casual, puzzle, platformer            | < 1.5%      |
+| Medium | 100–500      | Shooter, tower defense, boids         | 1.5–10%     |
+| Large  | 500–1 000    | Horde survival, light RTS             | 10–26%      |
+| XL     | 1 000+       | Dense bullet hell, large armies       | Not advised |
+
+At 1 000 objects, simplequad uses ~26% of the frame budget — real headroom for game logic and rendering. Drop below 500 and it's nearly free.
 
 ---
 
 ## When to look elsewhere
 
-- **Beyond ~1000 dynamic objects.** Stays within the 60fps budget up to 1000 objects; past that, you want something purpose-built for high object counts.
+- **Beyond 1000 dynamic objects.** Stays within the 60fps budget up to 1000 objects; past that, you want something purpose-built for high object counts.
 - **Rotation or convex polygons.** Only axis-aligned boxes, circles, and points are supported.
 - **Continuous collision detection.** Intersections are checked at query time — fast-moving objects can tunnel through thin geometry between frames.
 - **Full physics simulation.** No mass, inertia, joints, or constraints. simplequad tells you _that_ objects overlap and _by how much_, not how they should physically react.
@@ -207,10 +207,10 @@ Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequa
 | [Boids](examples/boids/index.html)                     | 150 flocking agents querying spatial neighborhoods every frame; toggle tree overlay                 |
 | [Gravity Sandbox](examples/gravity-sandbox/index.html) | Spawn colliding blobs with real-time gravity and drag controls                                      |
 | [Asteroid Field](examples/asteroid-field/index.html)   | Split mechanic — rocks fragment on impact, mixed-size circle queries grow each frame                |
-| [Tower Defense](examples/tower-defense/index.html)                       | Fixed towers query a range circle every frame against many path-following enemies                              |
-| [Predator-Prey](examples/predator-prey/index.html)                       | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles            |
-| [Pixi.js Platformer](examples/pixi-platformer)           | Rolling circle player on a scrolling level; Pixi.js renders, simplequad handles circle-vs-AABB MTV collision  |
-| [Image Compression](examples/image-compression)          | Upload any image — a quadtree progressively compresses it, subdividing where colors vary most                  |
+| [Tower Defense](examples/tower-defense/index.html)      | Fixed towers query a range circle every frame against many path-following enemies                             |
+| [Predator-Prey](examples/predator-prey/index.html)      | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles           |
+| [Pixi.js Platformer](examples/pixi-platformer)          | Rolling circle player on a scrolling level; Pixi.js renders, simplequad handles circle-vs-AABB MTV collision  |
+| [Image Compression](examples/image-compression)         | Upload any image — a quadtree progressively compresses it, subdividing where colors vary most                  |
 
 ---
 

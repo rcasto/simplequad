@@ -35,6 +35,31 @@
         touch-action: none;
       }
 
+      /* ── touch joystick (shown only on touch/small screens) ─────────────── */
+      #touch-controls {
+        display: none;
+      }
+      @media (hover: none), (max-width: 600px) {
+        #touch-controls { display: flex; gap: 16px; }
+        #controls       { display: none; }
+      }
+      #joystick-pad {
+        position: relative;
+        width: 100px; height: 100px;
+        border: 2px solid var(--border);
+        border-radius: 50%;
+        touch-action: none;
+      }
+      #joystick-knob {
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        background: var(--accent);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
       /* ── example-specific styles below ──────────────────────────────────── */
     </style>
     <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
@@ -47,6 +72,10 @@
       <button id="btn-theme" title="toggle theme">☀</button>
     </div>
     <div id="controls">wasd / arrows — move &nbsp;|&nbsp; click — action</div>
+    <!-- touch controls: only visible on touch/small screens -->
+    <div id="touch-controls">
+      <div id="joystick-pad"><div id="joystick-knob"></div></div>
+    </div>
 
     <script src="../../dist/simplequad.umd.js"></script>
     <script src="../engine.js"></script>
@@ -58,6 +87,13 @@
       const toCanvas = SQEngine.makeToCanvas(canvas, W, H);
       const fpsTick  = SQEngine.createFpsTracker(document.getElementById("fps"), canvas);
       SQEngine.initTheme();
+
+      // Touch joystick — returns a live { dx, dy } direction object (-1..1).
+      // Remove if this example has no movement input.
+      const joystick = SQEngine.createTouchJoystick(
+        document.getElementById("joystick-pad"),
+        document.getElementById("joystick-knob")
+      );
 
       const tree = SimpleQuad.createQuadTree({ x: 0, y: 0, width: W, height: H });
 
@@ -77,7 +113,21 @@
       // ── update ─────────────────────────────────────────────────────────────
       function update(dt) {
         tree.clear();
-        // ...
+
+        for (const entity of entities) {
+          tree.add(entity);
+        }
+
+        for (const entity of entities) {
+          // Move entity using keyboard or joystick input:
+          //   entity.x += (keys["ArrowRight"] || joystick.dx > 0 ? 1 : 0) * speed * dt;
+
+          // Resolve collisions:
+          //   for (const { object, mtv } of tree.query(entity)) { ... }
+
+          // Screen-wrap moving entities (remove if not needed):
+          SQEngine.screenWrap(entity, W, H);
+        }
       }
 
       // ── draw ───────────────────────────────────────────────────────────────
@@ -86,7 +136,12 @@
         ctx.clearRect(0, 0, W, H);
         ctx.fillStyle = isLight ? "#f0f0f8" : "#0a0a18";
         ctx.fillRect(0, 0, W, H);
-        // ...
+
+        for (const entity of entities) {
+          // Draw shapes using engine helpers:
+          //   SQEngine.drawBox(ctx, entity, "#7c4dff");
+          //   SQEngine.drawCircle(ctx, entity, "#7c4dff");
+        }
       }
 
       // ── loop ───────────────────────────────────────────────────────────────

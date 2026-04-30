@@ -374,11 +374,7 @@
           boid.x += boid.vx;
           boid.y += boid.vy;
 
-          // toroidal wrap
-          if (boid.x < 0) boid.x += W;
-          else if (boid.x > W) boid.x -= W;
-          if (boid.y < 0) boid.y += H;
-          else if (boid.y > H) boid.y -= H;
+          SQEngine.screenWrap(boid, W, H);
         }
       }
 

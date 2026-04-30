@@ -189,36 +189,10 @@
       }, { passive: false });
 
       // Virtual joystick
-      const joystickPad = document.getElementById("joystick-pad");
-      const joystickKnob = document.getElementById("joystick-knob");
-      const JOYSTICK_MAX = 38;
-      let joystickActive = false;
-
-      function applyJoystick(touch) {
-        const rect = joystickPad.getBoundingClientRect();
-        const dx = touch.clientX - (rect.left + rect.width / 2);
-        const dy = touch.clientY - (rect.top + rect.height / 2);
-        const dist = Math.hypot(dx, dy) || 1;
-        const ratio = Math.min(dist, JOYSTICK_MAX) / dist;
-        const tx = dx * ratio;
-        const ty = dy * ratio;
-        joystickKnob.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
-        const threshold = JOYSTICK_MAX * 0.3;
-        keys["ArrowLeft"]  = tx < -threshold;
-        keys["ArrowRight"] = tx >  threshold;
-        keys["ArrowUp"]    = ty < -threshold;
-        keys["ArrowDown"]  = ty >  threshold;
-      }
-
-      function resetJoystick() {
-        joystickKnob.style.transform = "translate(-50%, -50%)";
-        keys["ArrowLeft"] = keys["ArrowRight"] = keys["ArrowUp"] = keys["ArrowDown"] = false;
-      }
-
-      joystickPad.addEventListener("touchstart", (e) => { e.preventDefault(); joystickActive = true; applyJoystick(e.changedTouches[0]); }, { passive: false });
-      joystickPad.addEventListener("touchmove",  (e) => { e.preventDefault(); if (joystickActive) applyJoystick(e.changedTouches[0]); }, { passive: false });
-      joystickPad.addEventListener("touchend",   (e) => { e.preventDefault(); joystickActive = false; resetJoystick(); }, { passive: false });
-      joystickPad.addEventListener("touchcancel", () => { joystickActive = false; resetJoystick(); });
+      const joystick = SQEngine.createTouchJoystick(
+        document.getElementById("joystick-pad"),
+        document.getElementById("joystick-knob"),
+      );
 
       // Touch fire button — shoots at nearest enemy while held
       let touchFireActive = false;
@@ -349,10 +323,10 @@
         }
 
         // player movement
-        if (keys["ArrowLeft"] || keys["KeyA"]) player.x -= PLAYER_SPEED;
-        if (keys["ArrowRight"] || keys["KeyD"]) player.x += PLAYER_SPEED;
-        if (keys["ArrowUp"] || keys["KeyW"]) player.y -= PLAYER_SPEED;
-        if (keys["ArrowDown"] || keys["KeyS"]) player.y += PLAYER_SPEED;
+        if (keys["ArrowLeft"]  || keys["KeyA"] || joystick.dx < -0.3) player.x -= PLAYER_SPEED;
+        if (keys["ArrowRight"] || keys["KeyD"] || joystick.dx >  0.3) player.x += PLAYER_SPEED;
+        if (keys["ArrowUp"]    || keys["KeyW"] || joystick.dy < -0.3) player.y -= PLAYER_SPEED;
+        if (keys["ArrowDown"]  || keys["KeyS"] || joystick.dy >  0.3) player.y += PLAYER_SPEED;
         player.x = Math.max(PLAYER_R, Math.min(W - PLAYER_R, player.x));
         player.y = Math.max(PLAYER_R, Math.min(H - PLAYER_R, player.y));
 

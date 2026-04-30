@@ -180,12 +180,6 @@
         return Array.from({ length: 3 }, (_, i) => (i < n ? "♥" : "♡")).join(" ");
       }
 
-      function wrap(obj) {
-        if (obj.x < -obj.r) obj.x += W + obj.r * 2;
-        else if (obj.x > W + obj.r) obj.x -= W + obj.r * 2;
-        if (obj.y < -obj.r) obj.y += H + obj.r * 2;
-        else if (obj.y > H + obj.r) obj.y -= H + obj.r * 2;
-      }
 
       function spawnParticles(x, y, color, n = 10) {
         for (let i = 0; i < n; i++) {
@@ -298,7 +292,7 @@
           for (const a of asteroids) {
             a.x += a.vx; a.y += a.vy;
             a.angle += a.spin;
-            wrap(a);
+            SQEngine.screenWrap(a, W, H);
           }
           return;
         }
@@ -317,7 +311,7 @@
         ship.vy *= DRAG;
         ship.x += ship.vx;
         ship.y += ship.vy;
-        wrap(ship);
+        SQEngine.screenWrap(ship, W, H);
 
         if (ship.invincible > 0) ship.invincible -= dt;
 
@@ -341,7 +335,7 @@
           b.x += b.vx;
           b.y += b.vy;
           b.life -= b.decay;
-          wrap(b);
+          SQEngine.screenWrap(b, W, H);
         }
 
         // ── move asteroids ─────────────────────────────────────────────────
@@ -349,7 +343,7 @@
           a.x += a.vx;
           a.y += a.vy;
           a.angle += a.spin;
-          wrap(a);
+          SQEngine.screenWrap(a, W, H);
         }
 
         // ── particles ──────────────────────────────────────────────────────

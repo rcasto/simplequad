@@ -90,6 +90,70 @@ const SQEngine = (() => {
     };
   }
 
+  // ── draw helpers ──────────────────────────────────────────────────────────
+  function drawBox(ctx, box, color) {
+    ctx.strokeStyle = color;
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+  }
+
+  function drawCircle(ctx, circle, color) {
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // ── screen wrap ────────────────────────────────────────────────────────────
+  // Teleports an entity to the opposite edge when it exits the canvas.
+  // Works with circle entities (uses .r) and box entities (uses .width/.height).
+  function screenWrap(entity, W, H) {
+    const hw = entity.r ?? entity.width  ?? 0;
+    const hh = entity.r ?? entity.height ?? 0;
+    if      (entity.x < -hw)    entity.x += W + hw * 2;
+    else if (entity.x > W + hw) entity.x -= W + hw * 2;
+    if      (entity.y < -hh)    entity.y += H + hh * 2;
+    else if (entity.y > H + hh) entity.y -= H + hh * 2;
+  }
+
+  // ── touch joystick ────────────────────────────────────────────────────────
+  // Wires up a virtual joystick from existing pad/knob DOM elements.
+  // Returns a live { dx, dy } direction object (values normalized -1 to 1).
+  //
+  // Usage:
+  //   const dir = SQEngine.createTouchJoystick(
+  //     document.getElementById("joystick-pad"),
+  //     document.getElementById("joystick-knob")
+  //   );
+  //   // In update: entity.x += dir.dx * speed * dt;
+  function createTouchJoystick(padEl, knobEl) {
+    const dir = { dx: 0, dy: 0 };
+    let active = false;
+
+    function apply(touch) {
+      const rect = padEl.getBoundingClientRect();
+      const MAX  = rect.width / 2;
+      const tx   = Math.max(-MAX, Math.min(MAX, touch.clientX - (rect.left + MAX)));
+      const ty   = Math.max(-MAX, Math.min(MAX, touch.clientY - (rect.top  + MAX)));
+      dir.dx = tx / MAX;
+      dir.dy = ty / MAX;
+      knobEl.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+    }
+
+    function reset() {
+      active = false;
+      dir.dx = 0;
+      dir.dy = 0;
+      knobEl.style.transform = "translate(-50%, -50%)";
+    }
+
+    padEl.addEventListener("touchstart",  e => { active = true; apply(e.changedTouches[0]); }, { passive: true });
+    padEl.addEventListener("touchmove",   e => { if (active) apply(e.changedTouches[0]); },   { passive: true });
+    padEl.addEventListener("touchend",    reset);
+    padEl.addEventListener("touchcancel", reset);
+
+    return dir;
+  }
+
   // ── internals ──────────────────────────────────────────────────────────────
   function _wrapCanvas(canvas) {
     if (
@@ -169,5 +233,5 @@ const SQEngine = (() => {
     ctx.fillText(Math.round(latest), W - 3, H - 3);
   }
 
-  return { initTheme, makeToCanvas, createFpsTracker };
+  return { initTheme, makeToCanvas, createFpsTracker, drawBox, drawCircle, screenWrap, createTouchJoystick };
 })();

@@ -222,13 +222,6 @@
         return s > max ? { vx: vx / s * max, vy: vy / s * max } : { vx, vy };
       }
 
-      function wrap(agent, r) {
-        if (agent.x < -r)    agent.x += W + r * 2;
-        if (agent.x > W + r) agent.x -= W + r * 2;
-        if (agent.y < -r)    agent.y += H + r * 2;
-        if (agent.y > H + r) agent.y -= H + r * 2;
-      }
-
       // ── update ────────────────────────────────────────────────────────────
       function updatePrey(p) {
         // Single query covers both flocking (PERCEPTION_R) and flee (FLEE_R) ranges.
@@ -293,7 +286,7 @@
         }
 
         p.x += p.vx; p.y += p.vy;
-        wrap(p, PREY_R);
+        SQEngine.screenWrap(p, W, H);
       }
 
       const toEat = new Set();
@@ -348,7 +341,7 @@
         pred.vx = clamped.vx; pred.vy = clamped.vy;
 
         pred.x += pred.vx; pred.y += pred.vy;
-        wrap(pred, PRED_R);
+        SQEngine.screenWrap(pred, W, H);
       }
 
       // ── tree overlay helper ───────────────────────────────────────────────
