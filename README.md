@@ -1,6 +1,7 @@
 # simplequad
 
 [![Node.js CI](https://github.com/rcasto/simplequad/actions/workflows/ci.yml/badge.svg)](https://github.com/rcasto/simplequad/actions/workflows/ci.yml)
+[![Bundle Size](https://deno.bundlejs.com/badge?q=simplequad@latest)](https://deno.bundlejs.com/badge?q=simplequad@latest)
 
 Bundles quadtree spatial partitioning, SAT intersection testing, and minimum translation vector (MTV) output in a single zero-dependency TypeScript package.
 
@@ -24,12 +25,12 @@ If you're using a canvas renderer or something like Pixi.js — which has no bui
 
 ### Object count guide
 
-| Scale  | Object count | Example genres                        | Budget used |
-| ------ | ------------ | ------------------------------------- | ----------- |
-| Small  | < 100        | Casual, puzzle, platformer            | < 1.5%      |
-| Medium | 100–500      | Shooter, tower defense, boids         | 1.5–10%     |
-| Large  | 500–1 000    | Horde survival, light RTS             | 10–26%      |
-| XL     | 1 000+       | Dense bullet hell, large armies       | Not advised |
+| Scale  | Object count | Example genres                  | Budget used |
+| ------ | ------------ | ------------------------------- | ----------- |
+| Small  | < 100        | Casual, puzzle, platformer      | < 1.5%      |
+| Medium | 100–500      | Shooter, tower defense, boids   | 1.5–10%     |
+| Large  | 500–1 000    | Horde survival, light RTS       | 10–26%      |
+| XL     | 1 000+       | Dense bullet hell, large armies | Not advised |
 
 At 1 000 objects, simplequad uses ~26% of the frame budget — real headroom for game logic and rendering. Drop below 500 and it's nearly free.
 
@@ -108,14 +109,16 @@ function gameLoop(entities: Entity[]) {
 
 ### Moving a single object
 
-simplequad doesn't track object movement. To reposition an object:
+Use `move()` to atomically remove, mutate, and re-insert an object:
 
 ```ts
-tree.remove(entity);
-entity.x = newX;
-entity.y = newY;
-tree.add(entity);
+tree.move(entity, (e) => {
+  e.x = newX;
+  e.y = newY;
+});
 ```
+
+Returns `false` if the object wasn't in the tree. Manually doing `remove` → mutate → `add` also works, but forgetting the `remove` first silently leaves a stale entry.
 
 For scenes with many moving objects, the clear+rebuild pattern above is simpler at scale.
 
@@ -135,7 +138,7 @@ for (const { mtv } of hits) {
 
 ### Physics response patterns
 
-simplequad tells you *where* objects overlap and by *how much*. What to do with that depends on your game type.
+simplequad tells you _where_ objects overlap and by _how much_. What to do with that depends on your game type.
 
 **Platformer** — detect floor, ceiling, and wall contacts by MTV direction, then zero the matching velocity component:
 
@@ -147,12 +150,13 @@ for (const { mtv } of hits) {
   player.x += mtv.vector.x;
   player.y += mtv.vector.y;
 
-  if (mtv.vector.y < -0.1) {                         // pushed upward → landed on floor
+  if (mtv.vector.y < -0.1) {
+    // pushed upward → landed on floor
     player.vy = 0;
     player.onGround = true;
   }
-  if (mtv.vector.y > 0.1 && player.vy < 0) player.vy = 0;  // hit ceiling while moving up
-  if (Math.abs(mtv.vector.x) > 0.1)        player.vx = 0;  // hit wall
+  if (mtv.vector.y > 0.1 && player.vy < 0) player.vy = 0; // hit ceiling while moving up
+  if (Math.abs(mtv.vector.x) > 0.1) player.vx = 0; // hit wall
 }
 ```
 
@@ -163,17 +167,24 @@ The `0.1` threshold filters near-zero y values from diagonal MTVs so they don't 
 ```typescript
 for (const { object, mtv } of tree.query(body)) {
   // Shared push-out (each body moves half)
-  body.x   += mtv.vector.x * 0.5;   body.y   += mtv.vector.y * 0.5;
-  object.x -= mtv.vector.x * 0.5;  object.y -= mtv.vector.y * 0.5;
+  body.x += mtv.vector.x * 0.5;
+  body.y += mtv.vector.y * 0.5;
+  object.x -= mtv.vector.x * 0.5;
+  object.y -= mtv.vector.y * 0.5;
 
   // Impulse along normal (equal masses, restitution coefficient e)
-  const nx = mtv.direction.x, ny = mtv.direction.y;
-  const dvx = body.vx - object.vx, dvy = body.vy - object.vy;
+  const nx = mtv.direction.x,
+    ny = mtv.direction.y;
+  const dvx = body.vx - object.vx,
+    dvy = body.vy - object.vy;
   const dot = dvx * nx + dvy * ny;
-  if (dot < 0) {                           // only exchange impulse if approaching
-    const impulse = dot * (1 + e) / 2;
-    body.vx -= impulse * nx;    body.vy -= impulse * ny;
-    object.vx += impulse * nx;  object.vy += impulse * ny;
+  if (dot < 0) {
+    // only exchange impulse if approaching
+    const impulse = (dot * (1 + e)) / 2;
+    body.vx -= impulse * nx;
+    body.vy -= impulse * ny;
+    object.vx += impulse * nx;
+    object.vy += impulse * ny;
   }
 }
 ```
@@ -197,20 +208,20 @@ See [Horde Survival](examples/horde-survival/index.html) — this keeps 500+ ene
 
 Live demos at **[rcasto.github.io/simplequad](https://rcasto.github.io/simplequad/)**
 
-| Example                                                | What it shows                                                                                       |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| [Query Explorer](examples/hello-world/index.html)      | All three shape types, live query window, MTV arrows drawn — start here                             |
-| [Platformer](examples/platformer/index.html)           | AABB collision and MTV resolution — player stands on platforms and collects coins                   |
-| [Top-down Shooter](examples/shooter/index.html)        | Circle queries across escalating enemy waves, 100–200 dynamic objects                               |
-| [Horde Survival](examples/horde-survival/index.html)   | Wave-based survival with escalating enemy counts; stress-tests the tree at high object densities    |
-| [Breakout](examples/breakout/index.html)               | Mixed shapes — circle ball vs. AABB bricks, MTV drives push-out and reflection angle                |
-| [Boids](examples/boids/index.html)                     | 150 flocking agents querying spatial neighborhoods every frame; toggle tree overlay                 |
-| [Gravity Sandbox](examples/gravity-sandbox/index.html) | Spawn colliding blobs with real-time gravity and drag controls                                      |
-| [Asteroid Field](examples/asteroid-field/index.html)   | Split mechanic — rocks fragment on impact, mixed-size circle queries grow each frame                |
-| [Tower Defense](examples/tower-defense/index.html)      | Fixed towers query a range circle every frame against many path-following enemies                             |
-| [Predator-Prey](examples/predator-prey/index.html)      | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles           |
-| [Pixi.js Platformer](examples/pixi-platformer)          | Rolling circle player on a scrolling level; Pixi.js renders, simplequad handles circle-vs-AABB MTV collision  |
-| [Image Compression](examples/image-compression)         | Upload any image — a quadtree progressively compresses it, subdividing where colors vary most                  |
+| Example                                                | What it shows                                                                                                |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| [Query Explorer](examples/hello-world/index.html)      | All three shape types, live query window, MTV arrows drawn — start here                                      |
+| [Platformer](examples/platformer/index.html)           | AABB collision and MTV resolution — player stands on platforms and collects coins                            |
+| [Top-down Shooter](examples/shooter/index.html)        | Circle queries across escalating enemy waves, 100–200 dynamic objects                                        |
+| [Horde Survival](examples/horde-survival/index.html)   | Wave-based survival with escalating enemy counts; stress-tests the tree at high object densities             |
+| [Breakout](examples/breakout/index.html)               | Mixed shapes — circle ball vs. AABB bricks, MTV drives push-out and reflection angle                         |
+| [Boids](examples/boids/index.html)                     | 150 flocking agents querying spatial neighborhoods every frame; toggle tree overlay                          |
+| [Gravity Sandbox](examples/gravity-sandbox/index.html) | Spawn colliding blobs with real-time gravity and drag controls                                               |
+| [Asteroid Field](examples/asteroid-field/index.html)   | Split mechanic — rocks fragment on impact, mixed-size circle queries grow each frame                         |
+| [Tower Defense](examples/tower-defense/index.html)     | Fixed towers query a range circle every frame against many path-following enemies                            |
+| [Predator-Prey](examples/predator-prey/index.html)     | Prey flock and flee via spatial queries; predators hunt and eat on collision — same tree, two roles          |
+| [Pixi.js Platformer](examples/pixi-platformer)         | Rolling circle player on a scrolling level; Pixi.js renders, simplequad handles circle-vs-AABB MTV collision |
+| [Image Compression](examples/image-compression)        | Upload any image — a quadtree progressively compresses it, subdividing where colors vary most                |
 
 ---
 
@@ -262,48 +273,29 @@ When `extractor` is provided, `T` can be any type. When `extractor` is omitted, 
 
 ### `QuadTree<T>`
 
-```typescript
-export interface QuadTree<T = Bound> {
-  bounds: BoundingBox;
-  capacity: number;
+#### Mutation
 
-  add(object: T): boolean;
-  remove(object: T): boolean;
-  clear(): void;
-  query(bounds: Bound): Array<QueryResult<T>>;
-  getData(): T[];
-}
-```
+**`add(object: T): boolean`** — Adds an object. Returns `false` if it falls outside the tree's bounds. Subdivides the containing node when capacity is reached.
 
-#### `add(object)`
+**`remove(object: T): boolean`** — Removes an object by reference equality. Returns `false` if not found.
 
-Adds a collision object to the tree. Returns `true` if added, `false` if the object falls outside the tree's bounds.
+**`clear(): void`** — Removes all objects and resets all subdivisions.
 
-Subdivides the containing node when capacity is reached, redistributing its objects into child quadrants.
+**`move(object: T, updateFn: (obj: T) => void): boolean`** — Atomically removes, calls `updateFn` to mutate, then re-inserts. Returns `false` if the object was not in the tree. Use this instead of manual `remove` → mutate → `add` to avoid leaving stale entries.
 
-#### `remove(object)`
+#### Querying
 
-Removes a collision object from the tree. Returns `true` if found and removed, `false` otherwise.
+**`query(bounds: Bound): Array<QueryResult<T>>`** — Returns all objects whose bounds intersect `bounds`, with MTV for each. If the same object reference was added to the tree and passed as `bounds`, it is automatically excluded. When using an extractor, use `queryFor()` instead.
 
-#### `clear()`
+**`queryFor(object: T): Array<QueryResult<T>>`** — Like `query()` but takes a `T` directly. When an extractor is configured, applies it automatically and excludes `object` from results by reference. Prefer this over `query()` for entity-vs-world collision checks.
 
-Removes all objects and resets all subdivisions.
+**`queryBroad(bounds: Bound): T[]`** — Like `query()` but skips SAT — returns the objects themselves (no MTV) whose bounds broadly overlap `bounds`. Faster; use for AI sight ranges, audio zones, spawn checks, and flocking neighbor lookups.
 
-#### `query(bounds)`
+#### Inspection
 
-Returns all objects in the tree whose bounds intersect `bounds`.
+**`getData(): T[]`** — Returns all objects currently in the tree as a flat deduplicated array.
 
-If the exact same object reference was added to the tree and is passed as `bounds`, it is automatically excluded from results via reference equality. This means `tree.query(myBox)` naturally skips `myBox` itself when `T extends Bound`.
-
-When using an extractor, pass the extracted bound directly; filter self from results manually if needed:
-
-```ts
-const hits = tree.query(spriteExtractor(sprite)).filter(r => r.object !== sprite);
-```
-
-#### `getData()`
-
-Returns all objects currently in the tree as a flat array.
+**`contains(object: T): boolean`** — Returns `true` if the given object reference is in the tree.
 
 ---
 
@@ -380,16 +372,16 @@ const tree = create<Sprite>(
       width: sprite.w,
       height: sprite.h,
     }),
-  }
+  },
 );
 
 tree.add(sprite);
 tree.remove(sprite);
 
-// query always takes a Bound — extract from the sprite first:
-const hits = tree.query(spriteExtractor(sprite)).filter(r => r.object !== sprite);
+// query for a specific entity's collisions — extractor and self-exclusion handled automatically:
+const hits = tree.queryFor(sprite);
 
-// Area query (no specific entity):
+// area query (no specific entity):
 const areaHits = tree.query({ x: 100, y: 100, width: 200, height: 200 });
 ```
 

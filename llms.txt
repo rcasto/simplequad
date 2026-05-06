@@ -18,59 +18,152 @@ Or via CDN (UMD global `SimpleQuad`):
 <script src="https://unpkg.com/simplequad@latest/dist/simplequad.umd.js"></script>
 ```
 
-## Key API
+## Creating a tree
 
-### createQuadTree(bounds, capacity?, maxDepth?)
+`create` is an alias for `createQuadTree` — both are exported and identical.
 
-Creates a quadtree over the given bounding box.
-
-- `bounds: BoundingBox` — the spatial region to manage (e.g. `{ x: 0, y: 0, width: 800, height: 600 }`)
-- `capacity?: number` — objects per node before subdividing (default: 5)
-- `maxDepth?: number` — max subdivision depth (default: 8)
-
-Returns a `QuadTree<T>` where `T extends Bound`.
-
-### QuadTree<T> methods
-
-- `add(object: T): boolean` — add an object; returns false if it falls outside bounds
-- `remove(object: T): boolean` — remove a specific object by reference
-- `clear(): void` — remove all objects and reset all subdivisions
-- `query(bounds: Bound): Array<QueryResult<T>>` — find all intersecting objects with MTVs; the query object itself is excluded
-- `getData(): T[]` — flat deduplicated array of all objects currently in the tree
-
-### Types
+**Standard form** — T must extend `Bound` (has `x`, `y`, and `width`/`height` or `r`):
 
 ```typescript
-type Bound = BoundingBox | Circle | Point;
+import { createQuadTree } from 'simplequad';
 
-interface Point { x: number; y: number; }
-interface BoundingBox extends Point { width: number; height: number; }
-interface Circle extends Point { r: number; }
+const tree = createQuadTree<Entity>(
+  { x: 0, y: 0, width: 800, height: 600 },
+  { capacity: 5, maxDepth: 8 }  // options are optional
+);
+```
 
-interface QueryResult<T> {
+**Extractor form** — use when your objects don't embed `x`/`y` directly:
+
+```typescript
+import { create } from 'simplequad';
+
+interface Sprite {
+  id: string;
+  pos: { x: number; y: number };
+  w: number;
+  h: number;
+}
+
+const tree = create<Sprite>(
+  { x: 0, y: 0, width: 800, height: 600 },
+  {
+    extractor: (sprite) => ({
+      x: sprite.pos.x,
+      y: sprite.pos.y,
+      width: sprite.w,
+      height: sprite.h,
+    }),
+  }
+);
+```
+
+When using an extractor, `T` can be any type. `query()` takes a `Bound`, not a `T` — use `queryObject()` to pass a `T` directly.
+
+> Legacy positional form `createQuadTree(bounds, capacity, maxDepth)` is still supported but not preferred.
+
+## QuadTree\<T\> — full API
+
+### Mutation
+
+```typescript
+tree.add(object: T): boolean
+```
+Adds an object. Returns `false` if it falls outside the tree's bounds. Subdivides the containing node when capacity is reached.
+
+```typescript
+tree.remove(object: T): boolean
+```
+Removes an object by reference equality. Returns `false` if not found. O(1) per call regardless of tree size.
+
+```typescript
+tree.clear(): void
+```
+Removes all objects and resets all subdivisions.
+
+```typescript
+tree.move(object: T, updateFn: (obj: T) => void): boolean
+```
+Atomically removes, calls `updateFn` to mutate, then re-inserts. Returns `false` if the object was not in the tree. Use this instead of manual `remove` → mutate → `add` to avoid leaving stale entries.
+
+### Querying
+
+```typescript
+tree.query(bounds: Bound): Array<QueryResult<T>>
+```
+Returns all objects whose bounds intersect `bounds`, with MTV for each. If the same object reference was added to the tree and passed as `bounds`, it is automatically excluded. When using an extractor, filter self manually or use `queryObject()`.
+
+```typescript
+tree.queryBroad(bounds: Bound): T[]
+```
+Like `query()` but skips SAT — returns the objects themselves (no MTV) whose bounds broadly overlap `bounds`. Faster; use for AI sight ranges, audio zones, spawn checks, and flocking neighbor lookups.
+
+```typescript
+tree.queryFor(object: T): Array<QueryResult<T>>
+```
+Like `query()` but takes a `T` instead of a raw `Bound`. When an extractor is configured, applies it automatically and excludes `object` from results by reference. When no extractor is provided, behaves identically to `query(object)`. Prefer this over `query()` when querying for an entity's own collisions.
+
+### Inspection
+
+```typescript
+tree.getData(): T[]
+```
+Returns all objects currently in the tree as a flat deduplicated array.
+
+```typescript
+tree.contains(object: T): boolean
+```
+Returns `true` if the given object reference is in the tree. O(log n) — traverses only the nodes overlapping the object's bounds.
+
+### Structural properties
+
+```typescript
+tree.bounds: Readonly<BoundingBox>
+tree.capacity: number
+tree.maxDepth: number
+tree.data: Readonly<T[]>         // objects at this leaf node
+tree.quadrants: Readonly<QuadTree<T>[]>  // 4 children (container) or empty (leaf)
+```
+
+## Types
+
+```typescript
+export interface QuadTreeOptions<T = Bound> {
+  capacity?: number;   // default: 5
+  maxDepth?: number;   // default: 8
+  extractor?: (obj: T) => Bound;
+}
+
+export type Bound = BoundingBox | Circle | Point;
+
+export interface Point { x: number; y: number; }
+export interface BoundingBox extends Point { width: number; height: number; }
+export interface Circle extends Point { r: number; }
+
+export interface QueryResult<T> {
   object: T;
   mtv: MinimumTranslationVectorInfo;
 }
 
-interface MinimumTranslationVectorInfo {
+export type QueryBroadResult<T> = Omit<QueryResult<T>, 'mtv'>;
+
+export interface MinimumTranslationVectorInfo {
   vector: Point;     // apply to querying object's position to resolve overlap
   direction: Point;  // unit vector pointing from found object toward querying object
   magnitude: number; // overlap depth
 }
 ```
 
-Objects added to the tree must embed the relevant fields directly (`x`, `y`, and `width`/`height` for AABB, or `r` for Circle).
+The MTV points from the found object toward the querying object. Apply `mtv.vector` to the querying object's position to push it out of the overlap. Coordinate space: x increases left-to-right, y increases top-to-bottom.
 
-## Game Loop Pattern (recommended for moving objects)
-
-Clear and rebuild the tree each frame — this is the pattern the benchmarks are based on:
+## Game loop pattern (recommended for moving objects)
 
 ```typescript
 import { createQuadTree } from 'simplequad';
 
 const tree = createQuadTree({ x: 0, y: 0, width: 800, height: 600 });
 
-function gameLoop(entities) {
+function gameLoop(entities: Entity[]) {
   tree.clear();
   for (const entity of entities) {
     tree.add(entity);
@@ -78,7 +171,6 @@ function gameLoop(entities) {
   for (const entity of entities) {
     const hits = tree.query(entity);
     for (const { object, mtv } of hits) {
-      // push entity out of overlap
       entity.x += mtv.vector.x;
       entity.y += mtv.vector.y;
     }
@@ -88,46 +180,42 @@ function gameLoop(entities) {
 
 ## Moving a single object
 
-simplequad does not track movement. To reposition an object:
-
 ```typescript
-tree.remove(entity);
-entity.x = newX;
-entity.y = newY;
-tree.add(entity);
+tree.move(entity, (e) => {
+  e.x = newX;
+  e.y = newY;
+});
 ```
 
-## Performance
+## Debug overlay
 
-Benchmarked with AABB objects, clear+rebuild pattern, averaged across seeds:
+`drawDebug` renders the quadtree node boundaries onto a canvas for debugging. It is exported from the main entry point and does not add overhead when unused.
 
-| Objects | avg frame time | p95 frame time | 60fps budget used |
-|---------|----------------|----------------|-------------------|
-| 100     | 0.14ms         | 0.15ms         | 0.8%              |
-| 200     | 0.32ms         | 0.33ms         | 1.9%              |
-| 300     | 0.56ms         | 0.59ms         | 3.4%              |
-| 500     | 1.12ms         | 1.15ms         | 6.7%              |
-| 1000    | 2.98ms         | 3.3ms          | 17.8%             |
+```typescript
+import { createQuadTree, drawDebug } from 'simplequad';
 
-Circle scenes run ~1.5–2× slower than AABB-only at the same object count, due to additional geometry in circle SAT.
+// inside your render loop:
+drawDebug(tree, ctx);
 
-## Fits well for
+// with options:
+drawDebug(tree, ctx, {
+  strokeStyle: 'rgba(0, 255, 0, 0.5)',  // default
+  lineWidth: 1,                          // default
+  fillStyle: 'rgba(0, 0, 255, 0.05)',   // leaf fill (off by default)
+  showDepth: false,                      // label each node with depth
+});
+```
 
-| Genre | Typical active objects | Fits? |
-|-------|------------------------|-------|
-| Casual / puzzle | < 100 | Comfortably |
-| Platformer | 50–80 | Comfortably |
-| Top-down shooter | 100–200 | Yes |
-| Tower defense (peak wave) | 150–350 | Yes |
-| Bullet hell | 500–2000 | No |
-| RTS (large armies) | 300–1000+ | No |
+```typescript
+export interface DrawDebugOptions {
+  strokeStyle?: string;
+  lineWidth?: number;
+  fillStyle?: string;
+  showDepth?: boolean;
+}
+```
 
-## When to use something else
-
-- **Beyond ~1000 dynamic objects** — look at purpose-built high-count spatial indexes
-- **Rotation or convex polygons** — only axis-aligned shapes are supported
-- **Continuous collision detection** — fast-moving objects can tunnel through thin geometry between frames
-- **Full physics simulation** — simplequad provides collision detection and MTV, not mass, inertia, or constraints
+`drawDebug` saves and restores canvas state so it does not interfere with your drawing.
 
 ## Links
 
