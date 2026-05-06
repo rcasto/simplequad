@@ -29,7 +29,6 @@ export interface QueryResult<T> {
   object: T;
 }
 
-export type QueryBroadResult<T> = Omit<QueryResult<T>, "mtv">;
 
 export interface Point {
   x: number;
@@ -151,9 +150,9 @@ export interface QuadTree<T = Bound> {
    * results via reference equality.
    *
    * @param {Bound} bounds - The spatial region to query.
-   * @return {Array<QueryBroadResult<T>>} Objects broadly intersecting the region, excluding any in-tree object whose bound is the same reference as `bounds`.
+   * @return {T[]} Objects broadly intersecting the region, excluding any in-tree object whose bound is the same reference as `bounds`.
    */
-  queryBroad: (bounds: Bound) => Array<QueryBroadResult<T>>;
+  queryBroad: (bounds: Bound) => T[];
   /**
    * Convenience method offered to get the data for a node in an easier manner
    * Will take a flatten the map of data to a collection.
@@ -163,4 +162,23 @@ export interface QuadTree<T = Bound> {
    * @return {T[]} The list of collision objects that this "bucket" holds
    */
   getData: () => T[];
+  /**
+   * Returns true if the given object reference is currently in the tree.
+   * @param {T} object - The object to check.
+   */
+  contains: (object: T) => boolean;
+  /**
+   * Atomically removes, mutates, and re-inserts an object.
+   * Returns false if the object was not in the tree.
+   * @param {T} object - The object to reposition.
+   * @param {(obj: T) => void} updateFn - Called with the object before re-insertion.
+   */
+  move: (object: T, updateFn: (obj: T) => void) => boolean;
+  /**
+   * Like `query()` but takes an object `T` instead of a raw `Bound`.
+   * When an extractor is in use, applies it automatically and excludes the queried
+   * object from results. When no extractor is provided, behaves identically to `query(object)`.
+   * @param {T} object - The object to query for intersections.
+   */
+  queryFor: (object: T) => Array<QueryResult<T>>;
 }

@@ -7,7 +7,6 @@ import {
   QueryResult,
   QuadTreeOptions,
   isBound,
-  QueryBroadResult,
 } from "./schema";
 import {
   divideBoundingBox,
@@ -181,7 +180,7 @@ function queryBroadQuadTree<T>(
   quadTree: QuadTreeNode<T>,
   bounds: Bound,
   seen: Set<T>,
-  results: Array<QueryBroadResult<T>>,
+  results: T[],
 ): void {
   if (!doesBoundIntersectBox(bounds, quadTree.bounds)) {
     return;
@@ -194,7 +193,7 @@ function queryBroadQuadTree<T>(
       if ((quadBound as unknown) === bounds) continue;
       if (doBoundsIntersectBool(quadBound, bounds)) {
         seen.add(quadObject);
-        results.push({ object: quadObject });
+        results.push(quadObject);
       }
     }
     return;
@@ -216,6 +215,26 @@ function getQuadTreeData<T>(
     getQuadTreeData(quadrant, seen);
   }
   return [...seen];
+}
+
+
+function containsInQuadTree<T>(
+  quadTree: QuadTreeNode<T>,
+  object: T,
+): boolean {
+  const bound = getBound(object, quadTree._extractor);
+  if (!doesBoundIntersectBox(bound, quadTree.bounds)) {
+    return false;
+  }
+  if (quadTree._items.has(object)) {
+    return true;
+  }
+  for (const quadrant of quadTree.quadrants) {
+    if (containsInQuadTree(quadrant, object)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function createQuadTreeNode<T>(
@@ -246,11 +265,25 @@ function createQuadTreeNode<T>(
     },
     queryBroad: (bounds) => {
       _seen.clear();
-      const results: Array<QueryBroadResult<T>> = [];
+      const results: T[] = [];
       queryBroadQuadTree(quadTree, bounds, _seen, results);
       return results;
     },
     getData: () => getQuadTreeData(quadTree),
+    contains: (object) => containsInQuadTree(quadTree, object),
+    move: (object, updateFn) => {
+      if (!removeFromQuadTree(quadTree, object)) return false;
+      updateFn(object);
+      addToQuadTree(quadTree, object, 0);
+      return true;
+    },
+    queryFor: (object) => {
+      const bound = extractor ? extractor(object) : (object as unknown as Bound);
+      _seen.clear();
+      const results: Array<QueryResult<T>> = [];
+      queryQuadTree(quadTree, bound, _seen, results);
+      return extractor ? results.filter(r => r.object !== object) : results;
+    },
   };
   return quadTree;
 }

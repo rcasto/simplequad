@@ -9,7 +9,7 @@ test("queryBroad returns objects that overlap the query region", () => {
 
   const results = tree.queryBroad(tree.bounds);
   expect(results.length).toBe(1);
-  expect(results[0].object).toBe(obj);
+  expect(results[0]).toBe(obj);
 });
 
 test("queryBroad excludes the same reference when querying", () => {
@@ -30,7 +30,7 @@ test("queryBroad returns objects minus self, same shape", () => {
 
   const results = tree.queryBroad(obj);
   expect(results.length).toBe(1);
-  expect(results[0].object).toBe(obj2);
+  expect(results[0]).toBe(obj2);
 });
 
 test("queryBroad excludes objects outside query region", () => {
@@ -43,7 +43,7 @@ test("queryBroad excludes objects outside query region", () => {
   const queryRegion: BoundingBox = { x: 400, y: 300, width: 400, height: 300 };
   const results = tree.queryBroad(queryRegion);
   expect(results.length).toBe(1);
-  expect(results[0].object).toBe(inside);
+  expect(results[0]).toBe(inside);
 });
 
 test("queryBroad deduplicates objects that span multiple quadrants", () => {
@@ -51,7 +51,6 @@ test("queryBroad deduplicates objects that span multiple quadrants", () => {
     { x: 0, y: 0, width: 200, height: 200 },
     1,
   );
-  // Large object that spans all quadrants once tree subdivides
   const large: Bound = { x: 50, y: 50, width: 100, height: 100 };
   const small: Bound = { x: 10, y: 10, width: 5, height: 5 };
   tree.add(small);
@@ -61,14 +60,13 @@ test("queryBroad deduplicates objects that span multiple quadrants", () => {
   expect(results.length).toBe(2);
 });
 
-test("queryBroad results are T[] with no mtv property", () => {
+test("queryBroad returns T[] with no mtv property", () => {
   const tree: QuadTree = createMockQuadTree(5);
   const obj: Bound = { x: 0, y: 0, width: 50, height: 50 };
   tree.add(obj);
 
   const results = tree.queryBroad(tree.bounds);
   expect(results.length).toBe(1);
-  // queryBroad returns T[], not QueryResult<T>[] — no mtv
   expect((results[0] as any).mtv).toBeUndefined();
 });
 
@@ -79,7 +77,6 @@ test("queryBroad works with circle bounds", () => {
   tree.add(circle);
   tree.add(box);
 
-  // Query with a region covering both
   const region: BoundingBox = { x: 0, y: 0, width: 200, height: 200 };
   const results = tree.queryBroad(region);
   expect(results.length).toBe(2);
@@ -92,14 +89,13 @@ test("queryBroad with a circle query region does not include non-overlapping obj
   tree.add(nearby);
   tree.add(farAway);
 
-  // Circle centered at 100,100 with r=50 — farAway is well outside
   const circleQuery: Bound = { x: 100, y: 100, r: 50 };
   const results = tree.queryBroad(circleQuery);
   expect(results.length).toBe(1);
-  expect(results[0].object).toBe(nearby);
+  expect(results[0]).toBe(nearby);
 });
 
-test("queryBroad returns same set as query for overlapping objects", () => {
+test("queryBroad returns same set of objects as query for overlapping region", () => {
   const tree: QuadTree = createMockQuadTree(5);
   const obj1: Bound = { x: 0, y: 0, width: 50, height: 50 };
   const obj2: Bound = { x: 30, y: 30, width: 50, height: 50 };
@@ -112,7 +108,7 @@ test("queryBroad returns same set as query for overlapping objects", () => {
   const broadResults = tree.queryBroad(queryRegion);
   const fullResults = tree.query(queryRegion);
 
-  const broadObjects = new Set(broadResults.map((r) => r.object));
+  const broadObjects = new Set(broadResults);
   const fullObjects = new Set(fullResults.map((r) => r.object));
   expect(broadObjects).toEqual(fullObjects);
 });
