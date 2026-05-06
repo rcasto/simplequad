@@ -34,6 +34,7 @@ jobs:
           cp index.html _site/
           cp -r examples/ _site/examples/
           cp -r dist/ _site/dist/
+          cp llms.txt _site/
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
