@@ -24,11 +24,10 @@ export interface MinimumTranslationVectorInfo {
 export interface QueryResult<T> {
   mtv: MinimumTranslationVectorInfo;
   /**
-   * The object or bounds intersecting with the passed in query bounds or object
+   * The object intersecting with the queried bounds.
    */
   object: T;
 }
-
 
 export interface Point {
   x: number;
@@ -133,8 +132,7 @@ export interface QuadTree<T = Bound> {
    * Pass a `Bound` to define the query region. If the exact same object reference
    * was added to the tree and is passed here, it is automatically excluded from
    * results via reference equality — so `tree.query(myBoundingBox)` naturally
-   * skips `myBoundingBox` itself. When using an extractor, pass the extracted
-   * bound directly; filter self from results manually if needed.
+   * skips `myBoundingBox` itself. When using an extractor, use `queryFor()` instead.
    *
    * @param {Bound} bounds - The spatial region to query.
    * @return {Array<QueryResult<T>>} Intersecting objects, excluding any in-tree object whose bound is the same reference as `bounds`.
@@ -154,12 +152,8 @@ export interface QuadTree<T = Bound> {
    */
   queryBroad: (bounds: Bound) => T[];
   /**
-   * Convenience method offered to get the data for a node in an easier manner
-   * Will take a flatten the map of data to a collection.
-   *
-   * The data comes from being set based, so you can assume all of the items
-   * are unique or different references.
-   * @return {T[]} The list of collision objects that this "bucket" holds
+   * Returns all objects currently in the tree as a flat deduplicated array.
+   * @return {T[]} All unique objects across all nodes in the tree.
    */
   getData: () => T[];
   /**
