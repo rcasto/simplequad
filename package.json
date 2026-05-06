@@ -1,6 +1,6 @@
 {
   "name": "simplequad",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "TypeScript quadtree with SAT collision detection and MTV output. Zero dependencies.",
   "main": "dist/simplequad.umd.js",
   "module": "dist/simplequad.esm.js",
