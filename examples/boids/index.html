@@ -68,7 +68,9 @@
         font-size: 12px;
         cursor: pointer;
         text-align: left;
-        transition: border-color 0.15s, color 0.15s;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
       }
       #controls-toggle:hover {
         border-color: var(--accent);
@@ -145,7 +147,12 @@
       }
     </style>
     <link rel="stylesheet" href="../engine.css" />
-    <script>(function(){var t=localStorage.getItem('sq-theme');if(t)document.documentElement.setAttribute('data-theme',t);})()</script>
+    <script>
+      (function () {
+        var t = localStorage.getItem("sq-theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <main id="game">
@@ -208,19 +215,24 @@
     <script src="../engine.js"></script>
     <script>
       // Toggle controls panel on mobile
-      document.getElementById("controls-toggle").addEventListener("click", () => {
-        const ctrl = document.getElementById("controls");
-        const btn = document.getElementById("controls-toggle");
-        const isOpen = ctrl.classList.toggle("open");
-        btn.textContent = isOpen ? "▴ controls" : "▾ controls";
-      });
+      document
+        .getElementById("controls-toggle")
+        .addEventListener("click", () => {
+          const ctrl = document.getElementById("controls");
+          const btn = document.getElementById("controls-toggle");
+          const isOpen = ctrl.classList.toggle("open");
+          btn.textContent = isOpen ? "▴ controls" : "▾ controls";
+        });
 
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       const W = canvas.width,
         H = canvas.height;
 
-      const fpsTick = SQEngine.createFpsTracker(document.getElementById("fps"), canvas);
+      const fpsTick = SQEngine.createFpsTracker(
+        document.getElementById("fps"),
+        canvas,
+      );
       SQEngine.initTheme();
 
       // ── tunables ────────────────────────────────────────────────────────
@@ -242,13 +254,19 @@
         .addEventListener("input", (e) => (SEP_W = parseFloat(e.target.value)));
       document
         .getElementById("align")
-        .addEventListener("input", (e) => (ALIGN_W = parseFloat(e.target.value)));
+        .addEventListener(
+          "input",
+          (e) => (ALIGN_W = parseFloat(e.target.value)),
+        );
       document
         .getElementById("coh")
         .addEventListener("input", (e) => (COH_W = parseFloat(e.target.value)));
       document
         .getElementById("perc")
-        .addEventListener("input", (e) => (PERCEPTION_R = parseInt(e.target.value)));
+        .addEventListener(
+          "input",
+          (e) => (PERCEPTION_R = parseInt(e.target.value)),
+        );
       document
         .getElementById("showTree")
         .addEventListener("change", (e) => (showTree = e.target.checked));
@@ -304,8 +322,7 @@
 
         for (const boid of boids) {
           const neighbors = tree
-            .query({ x: boid.x, y: boid.y, r: PERCEPTION_R })
-            .map((r) => r.object)
+            .queryBroad({ x: boid.x, y: boid.y, r: PERCEPTION_R })
             .filter((o) => o !== boid);
 
           totalNeighbors += neighbors.length;
@@ -315,7 +332,9 @@
 
           if (neighbors.length > 0) {
             // separation: steer away from neighbors within SEP_RADIUS
-            let sx = 0, sy = 0, sc = 0;
+            let sx = 0,
+              sy = 0,
+              sc = 0;
             for (const n of neighbors) {
               const dx = boid.x - n.x,
                 dy = boid.y - n.y;
@@ -333,7 +352,8 @@
             }
 
             // alignment: match average velocity of neighbors
-            let avgVx = 0, avgVy = 0;
+            let avgVx = 0,
+              avgVy = 0;
             for (const n of neighbors) {
               avgVx += n.vx;
               avgVy += n.vy;
@@ -347,7 +367,8 @@
             ay += afY * ALIGN_W;
 
             // cohesion: steer toward average position of neighbors
-            let avgX = 0, avgY = 0;
+            let avgX = 0,
+              avgY = 0;
             for (const n of neighbors) {
               avgX += n.x;
               avgY += n.y;
@@ -379,25 +400,16 @@
       }
 
       // ── draw ─────────────────────────────────────────────────────────────
-      function drawTreeNode(node) {
-        ctx.strokeRect(
-          node.bounds.x,
-          node.bounds.y,
-          node.bounds.width,
-          node.bounds.height,
-        );
-        for (const q of node.quadrants) drawTreeNode(q);
-      }
-
       function draw() {
         // partial clear for motion blur
         ctx.fillStyle = "rgba(5, 5, 16, 0.28)";
         ctx.fillRect(0, 0, W, H);
 
         if (showTree) {
-          ctx.strokeStyle = "rgba(124, 77, 255, 0.22)";
-          ctx.lineWidth = 0.5;
-          drawTreeNode(tree);
+          SimpleQuad.drawDebug(tree, ctx, {
+            strokeStyle: "rgba(124, 77, 255, 0.22)",
+            lineWidth: 0.5,
+          });
         }
 
         if (showPerc) {
@@ -432,7 +444,9 @@
       // ── loop ─────────────────────────────────────────────────────────────
       function loop(ts) {
         fpsTick(ts);
-        document.getElementById("neighbors").textContent = (totalNeighbors / BOID_COUNT).toFixed(1);
+        document.getElementById("neighbors").textContent = (
+          totalNeighbors / BOID_COUNT
+        ).toFixed(1);
         update();
         draw();
         requestAnimationFrame(loop);
