@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>simplequad — Examples</title>
+    <meta name="description" content="Live demos for simplequad — a zero-dependency TypeScript library for 2D collision detection. Quadtree spatial partitioning + SAT with MTV output. Built for canvas games." />
+    <link rel="canonical" href="https://rcasto.github.io/simplequad/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rcasto.github.io/simplequad/" />
+    <meta property="og:title" content="simplequad — 2D Collision Detection for Canvas Games" />
+    <meta property="og:description" content="Zero-dependency TypeScript library combining quadtree spatial partitioning, SAT intersection testing, and MTV output. Explore 12+ live demos." />
+    <meta property="og:image" content="https://rcasto.github.io/simplequad/simplequad.gif" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="simplequad — 2D Collision Detection for Canvas Games" />
+    <meta name="twitter:description" content="Zero-dependency TypeScript library combining quadtree spatial partitioning, SAT intersection testing, and MTV output. Explore 12+ live demos." />
+    <meta name="twitter:image" content="https://rcasto.github.io/simplequad/simplequad.gif" />
     <style>
       :root {
         --bg: #0d0d1a;
@@ -251,6 +262,84 @@
 
       <a
         class="card"
+        href="examples/horde-survival/index.html"
+        data-tags="game circles mtv physics"
+      >
+        <div class="icon">🔴</div>
+        <h2>Horde Survival</h2>
+        <p>
+          Survive escalating waves of 500+ enemies. MTV resolves crowd
+          separation every frame — enemies jostle and press rather than
+          stack. Blast nearby enemies away using MTV-driven knockback.
+          How long can you hold out?
+        </p>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">circles</span>
+          <span class="tag">mtv</span>
+          <span class="tag">physics</span>
+        </div>
+      </a>
+
+      <a
+        class="card"
+        href="examples/gravity-sandbox/index.html"
+        data-tags="simulation circles physics"
+      >
+        <div class="icon">✨</div>
+        <h2>Gravity Sandbox</h2>
+        <p>
+          Spawn glowing blobs that collide and bounce off each other. Adjust
+          gravity and drag in real time. Right-click to attract everything to
+          the cursor.
+        </p>
+        <div class="tags">
+          <span class="tag">simulation</span>
+          <span class="tag">circles</span>
+          <span class="tag">physics</span>
+        </div>
+      </a>
+
+      <a
+        class="card"
+        href="examples/boids/index.html"
+        data-tags="simulation circles"
+      >
+        <div class="icon">🐦</div>
+        <h2>Boids</h2>
+        <p>
+          150 flocking agents. Each boid queries its spatial neighborhood every
+          frame for separation, alignment, and cohesion. Toggle the tree overlay
+          to see the partitioning in action.
+        </p>
+        <div class="tags">
+          <span class="tag">simulation</span>
+          <span class="tag">circles</span>
+        </div>
+      </a>
+
+      <a
+        class="card"
+        href="examples/pixi-platformer/dist/index.html"
+        data-tags="game mixed mtv physics"
+      >
+        <div class="icon">🟠</div>
+        <h2>Pixi.js Platformer</h2>
+        <p>
+          A scrolling platformer rendered with Pixi.js (WebGL/WebGPU). A rolling
+          circle player traverses a wide level — simplequad handles circle-vs-AABB
+          MTV collision; Pixi.js handles the rest.
+        </p>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">mixed shapes</span>
+          <span class="tag">mtv</span>
+          <span class="tag">physics</span>
+        </div>
+      </a>
+
+      <a
+        class="card"
         href="examples/platformer/index.html"
         data-tags="game aabb mtv"
       >
@@ -265,24 +354,6 @@
           <span class="tag">game</span>
           <span class="tag">aabb</span>
           <span class="tag">mtv</span>
-        </div>
-      </a>
-
-      <a
-        class="card"
-        href="examples/shooter/index.html"
-        data-tags="game circles"
-      >
-        <div class="icon">🔵</div>
-        <h2>Top-down Shooter</h2>
-        <p>
-          Shoot enemies that swarm from the edges. Escalating waves and enemy HP
-          stress the tree's circle queries across many dynamic objects.
-        </p>
-        <div class="tags">
-          <span class="tag">game</span>
-          <span class="tag">circles</span>
-          <!-- <span class="tag">dynamic</span> -->
         </div>
       </a>
 
@@ -308,96 +379,18 @@
 
       <a
         class="card"
-        href="examples/boids/index.html"
-        data-tags="simulation circles"
-      >
-        <div class="icon">🐦</div>
-        <h2>Boids</h2>
-        <p>
-          150 flocking agents. Each boid queries its spatial neighborhood every
-          frame for separation, alignment, and cohesion. Toggle the tree overlay
-          to see the partitioning in action.
-        </p>
-        <div class="tags">
-          <span class="tag">simulation</span>
-          <span class="tag">circles</span>
-        </div>
-      </a>
-
-      <a
-        class="card"
-        href="examples/gravity-sandbox/index.html"
-        data-tags="simulation circles physics"
-      >
-        <div class="icon">✨</div>
-        <h2>Gravity Sandbox</h2>
-        <p>
-          Spawn glowing blobs that collide and bounce off each other. Adjust
-          gravity and drag in real time. Right-click to attract everything to
-          the cursor.
-        </p>
-        <div class="tags">
-          <span class="tag">simulation</span>
-          <span class="tag">circles</span>
-          <span class="tag">physics</span>
-        </div>
-      </a>
-
-      <a
-        class="card"
-        href="examples/asteroid-field/index.html"
+        href="examples/shooter/index.html"
         data-tags="game circles"
       >
-        <div class="icon">🪨</div>
-        <h2>Asteroid Field</h2>
+        <div class="icon">🔵</div>
+        <h2>Top-down Shooter</h2>
         <p>
-          Classic Asteroids with a twist. Large rocks split into smaller
-          fragments on impact. The tree handles mixed-size circle queries each
-          frame as the field grows.
+          Shoot enemies that swarm from the edges. Escalating waves and enemy HP
+          stress the tree's circle queries across many dynamic objects.
         </p>
         <div class="tags">
           <span class="tag">game</span>
           <span class="tag">circles</span>
-          <!-- <span class="tag">dynamic</span> -->
-        </div>
-      </a>
-
-      <a
-        class="card"
-        href="examples/tower-defense/index.html"
-        data-tags="game circles"
-      >
-        <div class="icon">🗼</div>
-        <h2>Tower Defense</h2>
-        <p>
-          Place fixed towers to shoot enemies following a winding path. Each
-          tower queries a range circle every frame — demonstrating stationary
-          queriers against many path-following objects.
-        </p>
-        <div class="tags">
-          <span class="tag">game</span>
-          <span class="tag">circles</span>
-        </div>
-      </a>
-
-      <a
-        class="card"
-        href="examples/horde-survival/index.html"
-        data-tags="game circles mtv physics"
-      >
-        <div class="icon">🔴</div>
-        <h2>Horde Survival</h2>
-        <p>
-          Survive escalating waves of 500+ enemies. MTV resolves crowd
-          separation every frame — enemies jostle and press rather than
-          stack. Blast nearby enemies away using MTV-driven knockback.
-          How long can you hold out?
-        </p>
-        <div class="tags">
-          <span class="tag">game</span>
-          <span class="tag">circles</span>
-          <span class="tag">mtv</span>
-          <span class="tag">physics</span>
         </div>
       </a>
 
@@ -421,6 +414,42 @@
 
       <a
         class="card"
+        href="examples/asteroid-field/index.html"
+        data-tags="game circles"
+      >
+        <div class="icon">🪨</div>
+        <h2>Asteroid Field</h2>
+        <p>
+          Classic Asteroids with a twist. Large rocks split into smaller
+          fragments on impact. The tree handles mixed-size circle queries each
+          frame as the field grows.
+        </p>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">circles</span>
+        </div>
+      </a>
+
+      <a
+        class="card"
+        href="examples/tower-defense/index.html"
+        data-tags="game circles"
+      >
+        <div class="icon">🗼</div>
+        <h2>Tower Defense</h2>
+        <p>
+          Place fixed towers to shoot enemies following a winding path. Each
+          tower queries a range circle every frame — demonstrating stationary
+          queriers against many path-following objects.
+        </p>
+        <div class="tags">
+          <span class="tag">game</span>
+          <span class="tag">circles</span>
+        </div>
+      </a>
+
+      <a
+        class="card"
         href="examples/image-compression/dist/index.html"
         data-tags="visualization"
       >
@@ -434,26 +463,6 @@
         </p>
         <div class="tags">
           <span class="tag">visualization</span>
-        </div>
-      </a>
-
-      <a
-        class="card"
-        href="examples/pixi-platformer/dist/index.html"
-        data-tags="game mixed mtv physics"
-      >
-        <div class="icon">🟠</div>
-        <h2>Pixi.js Platformer</h2>
-        <p>
-          A scrolling platformer rendered with Pixi.js (WebGL/WebGPU). A rolling
-          circle player traverses a wide level — simplequad handles circle-vs-AABB
-          MTV collision; Pixi.js handles the rest.
-        </p>
-        <div class="tags">
-          <span class="tag">game</span>
-          <span class="tag">mixed shapes</span>
-          <span class="tag">mtv</span>
-          <span class="tag">physics</span>
         </div>
       </a>
     </div>
